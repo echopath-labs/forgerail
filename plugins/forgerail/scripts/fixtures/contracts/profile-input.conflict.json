@@ -1,0 +1,20 @@
+{
+  "workspace": "fixture-workspace",
+  "rules": [
+    {
+      "id": "release.test-branch",
+      "value": "release",
+      "source": "AGENTS.md",
+      "precedence": 2,
+      "status": "confirmed"
+    },
+    {
+      "id": "release.test-branch",
+      "value": "develop",
+      "source": "docs/release.md",
+      "precedence": 2,
+      "status": "confirmed"
+    }
+  ],
+  "packs": []
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "fixture-task-1",
+  "ownerWorkspace": "fixture-workspace",
+  "branch": "feat/fixture",
+  "commit": "1111111111111111111111111111111111111111",
+  "changedScope": ["README.md"],
+  "validationEvidence": ["git diff --check passed"],
+  "externalSideEffects": [],
+  "confirmedNonMutations": ["no push", "no merge", "no release"],
+  "residualRisks": [],
+  "rollbackOrRecovery": "Revert the local documentation commit.",
+  "deviations": [],
+  "closeout": "complete"
+}

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "envelope": {
+    "schemaVersion": "1.0",
+    "taskId": "fixture-task-1",
+    "intent": "Update local documentation with ForgeRail guidance.",
+    "nonGoals": ["Publish a release"],
+    "ownerWorkspace": "fixture-workspace",
+    "allowedOperations": ["read files", "edit documentation", "run local validation"],
+    "prohibitedOperations": ["push", "merge", "tag", "release"],
+    "packs": [],
+    "approvalGates": ["remote-integration-approval", "release-approval"],
+    "validation": ["git diff --check passes"],
+    "returnContract": "forgerail-return-receipt-v1"
+  },
+  "effectiveRuleSources": ["AGENTS.md", "ForgeRail Core"],
+  "hostAgent": "Codex",
+  "executionOwner": "host-agent"
+}

@@ -1,0 +1,26 @@
+{
+  "workspace": "fixture-workspace",
+  "rules": [
+    {
+      "id": "git.primary-branch",
+      "value": "main",
+      "source": "ForgeRail portable default",
+      "precedence": 6,
+      "status": "default"
+    },
+    {
+      "id": "git.primary-branch",
+      "value": "release",
+      "source": "AGENTS.md",
+      "precedence": 2,
+      "status": "confirmed"
+    }
+  ],
+  "packs": [
+    {
+      "id": "workspace-health-review",
+      "state": "available",
+      "reason": "Installed but irrelevant to the current task."
+    }
+  ]
+}

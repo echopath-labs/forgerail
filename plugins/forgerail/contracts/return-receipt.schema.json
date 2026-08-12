@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/return-receipt-v1.json",
+  "title": "ForgeRail Return Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "taskId", "ownerWorkspace", "branch", "commit", "changedScope", "validationEvidence", "externalSideEffects", "confirmedNonMutations", "residualRisks", "rollbackOrRecovery", "deviations", "closeout"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "taskId": { "type": "string", "pattern": "^[a-zA-Z0-9._:-]+$" },
+    "ownerWorkspace": { "type": "string", "minLength": 1 },
+    "branch": { "type": ["string", "null"] },
+    "commit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$" },
+    "changedScope": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "validationEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+    "externalSideEffects": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "confirmedNonMutations": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "residualRisks": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "rollbackOrRecovery": { "type": "string", "minLength": 1 },
+    "deviations": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "closeout": { "enum": ["complete", "incomplete", "blocked"] }
+  }
+}

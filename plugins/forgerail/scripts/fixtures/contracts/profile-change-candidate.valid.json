@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "candidateId": "candidate:fixture-validation-rule",
+  "workspace": "fixture-workspace",
+  "ruleId": "validation.docs-links",
+  "proposedValue": "run documentation link validation after navigation changes",
+  "evidence": ["three completed tasks required the same missing link check"],
+  "targetOwner": "fixture-workspace",
+  "targetSource": "AGENTS.md",
+  "reason": "The repeated validation requirement should become an explicit project rule.",
+  "requiresConfirmation": true,
+  "status": "candidate"
+}

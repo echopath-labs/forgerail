@@ -1,0 +1,7 @@
+interface:
+  display_name: "ForgeRail Thread Closure"
+  short_description: "Evidence-first closeout, handoff, and recovery."
+  brand_color: "#0F766E"
+  default_prompt: "Use $forgerail-thread-closure to assess closure readiness without writing durable records."
+policy:
+  allow_implicit_invocation: false

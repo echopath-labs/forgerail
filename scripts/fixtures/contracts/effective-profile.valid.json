@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "workspace": "fixture-workspace",
+  "computed": true,
+  "rules": [
+    {
+      "id": "git.primary-branch",
+      "value": "main",
+      "source": "repository metadata",
+      "precedence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "records.strategy",
+      "value": "markdown-adr",
+      "source": "docs/adr/",
+      "precedence": 5,
+      "status": "observed"
+    }
+  ],
+  "packs": [
+    {
+      "id": "workspace-health-review",
+      "state": "available",
+      "reason": "Installed with ForgeRail but not required for this task."
+    }
+  ],
+  "conflicts": []
+}

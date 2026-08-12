@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/profile-change-candidate-v1.json",
+  "title": "ForgeRail Profile Change Candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "candidateId", "workspace", "ruleId", "proposedValue", "evidence", "targetOwner", "targetSource", "reason", "requiresConfirmation", "status"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "candidateId": { "type": "string", "pattern": "^[a-zA-Z0-9._:-]+$" },
+    "workspace": { "type": "string", "minLength": 1 },
+    "ruleId": { "type": "string", "pattern": "^[a-z][a-z0-9.-]+$" },
+    "proposedValue": {},
+    "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "targetOwner": { "type": "string", "minLength": 1 },
+    "targetSource": { "type": "string", "minLength": 1 },
+    "reason": { "type": "string", "minLength": 1 },
+    "requiresConfirmation": { "const": true },
+    "status": { "const": "candidate" }
+  }
+}

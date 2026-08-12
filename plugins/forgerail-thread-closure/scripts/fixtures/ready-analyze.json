@@ -1,0 +1,10 @@
+{
+  "installed": true,
+  "state": "enabled",
+  "closureRequested": true,
+  "requiredEvidenceComplete": true,
+  "durableWriteAuthorized": false,
+  "expectedClosureState": "complete",
+  "expectedDurableWrites": [],
+  "expectedLifecycleMutations": []
+}

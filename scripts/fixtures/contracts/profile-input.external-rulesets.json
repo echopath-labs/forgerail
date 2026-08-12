@@ -1,0 +1,11 @@
+{
+  "workspace": "fixture-workspace",
+  "rules": [],
+  "packs": [
+    {
+      "id": "github-rulesets",
+      "state": "enabled",
+      "reason": "The project explicitly enabled the separately installed Rulesets pack."
+    }
+  ]
+}

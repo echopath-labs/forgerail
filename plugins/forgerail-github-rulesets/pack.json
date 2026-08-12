@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "id": "github-rulesets",
+  "purpose": "Diagnose GitHub repository policy and prepare exact, separately approved Ruleset mutations.",
+  "entry": "skills/forgerail-github-rulesets/SKILL.md",
+  "risk": "high",
+  "states": ["available", "recommended", "enabled", "required", "blocked", "disabled"],
+  "triggers": ["GitHub Ruleset assessment", "required checks governance", "repository policy change"],
+  "inputs": ["GitHub repository identity", "authenticated identity", "current Rulesets", "required check identities"],
+  "dependencies": [],
+  "conflicts": [],
+  "approvals": ["github-ruleset-mutation-approval"],
+  "validation": ["preflight state captured", "exact mutation scope approved", "post-mutation readback matches"],
+  "receiptExtensions": ["repository", "rulesetIds", "beforeState", "afterState", "rollback"]
+}

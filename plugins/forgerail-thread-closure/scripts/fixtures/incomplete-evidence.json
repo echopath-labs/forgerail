@@ -1,0 +1,9 @@
+{
+  "installed": true,
+  "state": "blocked",
+  "closureRequested": true,
+  "requiredEvidenceComplete": false,
+  "expectedClosureState": "incomplete",
+  "expectedDurableWrites": [],
+  "expectedLifecycleMutations": []
+}

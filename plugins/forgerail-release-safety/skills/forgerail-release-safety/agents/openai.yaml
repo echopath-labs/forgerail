@@ -1,0 +1,7 @@
+interface:
+  display_name: "ForgeRail Release Safety"
+  short_description: "Project-runbook-first release gates and receipts."
+  brand_color: "#B91C1C"
+  default_prompt: "Use $forgerail-release-safety to assess release readiness without publishing or deploying."
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,7 @@
+interface:
+  display_name: "ForgeRail"
+  short_description: "Guide and guard non-trivial engineering work."
+  brand_color: "#B45309"
+  default_prompt: "Use $forgerail to guide this engineering task and verify its handoff."
+policy:
+  allow_implicit_invocation: true

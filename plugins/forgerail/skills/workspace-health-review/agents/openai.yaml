@@ -1,0 +1,7 @@
+interface:
+  display_name: "Workspace Health Review"
+  short_description: "Audit workspace governance, drift, debt, and recovery."
+  brand_color: "#B45309"
+  default_prompt: "Use $workspace-health-review to audit this workspace without changing it."
+policy:
+  allow_implicit_invocation: true

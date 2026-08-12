@@ -1,0 +1,8 @@
+{
+  "installed": true,
+  "state": "blocked",
+  "runbookDiscovered": false,
+  "releaseAuthorized": false,
+  "blocker": "No adequate project-owned release runbook was found.",
+  "expectedRemoteMutations": []
+}

@@ -1,0 +1,7 @@
+interface:
+  display_name: "ForgeRail GitHub Rulesets"
+  short_description: "Read-first GitHub Ruleset governance and approvals."
+  brand_color: "#B45309"
+  default_prompt: "Use $forgerail-github-rulesets to assess this repository without changing GitHub settings."
+policy:
+  allow_implicit_invocation: false

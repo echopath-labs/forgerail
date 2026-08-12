@@ -1,0 +1,7 @@
+interface:
+  display_name: "ForgeRail Workspace Diagnosis"
+  short_description: "Diagnose workspace habits before changing governance."
+  brand_color: "#B45309"
+  default_prompt: "Use $forgerail-workspace-diagnosis to inspect this workspace and recommend only evidence-backed changes."
+policy:
+  allow_implicit_invocation: true

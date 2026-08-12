@@ -1,0 +1,21 @@
+{
+  "name": "forgerail-thread-closure",
+  "version": "0.1.0-alpha.1",
+  "description": "Evidence-first task closure and recovery pack for ForgeRail.",
+  "author": { "name": "EchoPath Labs", "url": "https://github.com/echopath-labs" },
+  "homepage": "https://github.com/echopath-labs/forgerail",
+  "repository": "https://github.com/echopath-labs/forgerail",
+  "license": "Apache-2.0",
+  "keywords": ["task-closure", "handoff", "recovery", "forgerail"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ForgeRail Thread Closure",
+    "shortDescription": "Verify closure, handoff, and recovery evidence.",
+    "longDescription": "A separate lifecycle-specific ForgeRail capability pack that checks ownership, validation, receipts, durable-record decisions, recovery entries, and follow-up candidates without implementing follow-up work or silently writing project memory.",
+    "developerName": "EchoPath Labs",
+    "category": "Engineering",
+    "capabilities": ["Task closure review", "Return Receipt verification", "Recovery entry preparation"],
+    "defaultPrompt": ["Assess whether this task has enough evidence to close without writing durable records."],
+    "brandColor": "#0F766E"
+  }
+}

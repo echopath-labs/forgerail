@@ -1,0 +1,15 @@
+{
+  "installed": true,
+  "state": "enabled",
+  "runbookDiscovered": true,
+  "runbook": "docs/release-runbook.md",
+  "releaseAuthorized": true,
+  "approvalGate": "release-approval",
+  "target": "registry.example.test/package@0.1.0-alpha.1",
+  "sourceCommit": "1111111111111111111111111111111111111111",
+  "artifactDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "allowedOperations": ["publish the exact candidate to the prerelease channel"],
+  "prohibitedOperations": ["production promotion", "destructive rollback", "repository lifecycle"],
+  "rollback": "restore the prior channel pointer; never overwrite the immutable version",
+  "implementationRemoteMutations": []
+}

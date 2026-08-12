@@ -1,0 +1,12 @@
+{
+  "installed": true,
+  "state": "enabled",
+  "closureRequested": true,
+  "requiredEvidenceComplete": true,
+  "durableWriteAuthorized": true,
+  "approvalGate": "durable-record-write-approval",
+  "destination": "docs/decisions/forgerail.md",
+  "candidateDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "implementationDurableWrites": [],
+  "expectedLifecycleMutations": []
+}

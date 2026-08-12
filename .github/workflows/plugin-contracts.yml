@@ -1,0 +1,42 @@
+name: Plugin Contracts
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: forgerail-plugin-contracts-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - 22
+          - 24
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Validate ForgeRail Core and contracts
+        run: node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures
+      - name: Validate external Capability Packs
+        run: node scripts/validate-external-packs.mjs
+      - name: Validate frozen AGW behavior coverage
+        run: node scripts/shadow-comparison.mjs
+      - name: Run disposable consumer lifecycle
+        run: node scripts/disposable-consumer.mjs

@@ -1,0 +1,56 @@
+{
+  "name": "echopath-labs",
+  "interface": {
+    "displayName": "EchoPath Labs"
+  },
+  "plugins": [
+    {
+      "name": "forgerail",
+      "source": {
+        "source": "local",
+        "path": "./plugins/forgerail"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Engineering"
+    },
+    {
+      "name": "forgerail-github-rulesets",
+      "source": {
+        "source": "local",
+        "path": "./plugins/forgerail-github-rulesets"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Engineering"
+    },
+    {
+      "name": "forgerail-release-safety",
+      "source": {
+        "source": "local",
+        "path": "./plugins/forgerail-release-safety"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Engineering"
+    },
+    {
+      "name": "forgerail-thread-closure",
+      "source": {
+        "source": "local",
+        "path": "./plugins/forgerail-thread-closure"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Engineering"
+    }
+  ]
+}

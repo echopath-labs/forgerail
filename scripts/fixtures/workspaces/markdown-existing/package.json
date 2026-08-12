@@ -1,0 +1,7 @@
+{
+  "name": "forgerail-markdown-fixture",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}

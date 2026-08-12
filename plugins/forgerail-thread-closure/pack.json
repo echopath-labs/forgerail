@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "id": "thread-closure",
+  "purpose": "Verify task evidence, handoff, recovery, and durable-record boundaries before lifecycle closeout.",
+  "entry": "skills/forgerail-thread-closure/SKILL.md",
+  "risk": "medium",
+  "states": ["available", "recommended", "enabled", "required", "blocked", "disabled"],
+  "triggers": ["task closeout", "handoff readiness", "recovery entry review"],
+  "inputs": ["Task Envelope", "Return Receipt", "validation evidence", "workspace record conventions"],
+  "dependencies": [],
+  "conflicts": [],
+  "approvals": ["durable-record-write-approval", "lifecycle-change-approval"],
+  "validation": ["ownership resolved", "required evidence verified", "recovery entry identified", "durable writes separately approved"],
+  "receiptExtensions": ["closureState", "recoveryEntry", "recordDecision", "followUpCandidates", "residualRisks"]
+}

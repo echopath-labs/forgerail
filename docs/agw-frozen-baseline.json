@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0",
+  "canonicalSource": {
+    "repository": "echopath-private",
+    "commit": "d16f306d58841c575125d7ea53f3f9dbb715562f",
+    "pluginPath": "plugins/agent-workflow-governance",
+    "pluginVersion": "0.2.0",
+    "skills": [
+      {
+        "name": "agent-workflow-governance",
+        "entryBlob": "3bd3087aeab4de33638125980a7a48b83ee2c231"
+      },
+      {
+        "name": "workspace-health-review",
+        "entryBlob": "acc042419c3a9f383c0e3cc52c1c84d23a600d1e"
+      }
+    ],
+    "behaviorSources": [
+      {
+        "path": "plugins/agent-workflow-governance/skills/agent-workflow-governance/SKILL.md",
+        "blob": "3bd3087aeab4de33638125980a7a48b83ee2c231"
+      },
+      {
+        "path": "plugins/agent-workflow-governance/skills/agent-workflow-governance/references/durable-record-decision.md",
+        "blob": "8987f030f8b89eeb304d4f3d6b4495f70ba463a2"
+      },
+      {
+        "path": "plugins/agent-workflow-governance/skills/workspace-health-review/SKILL.md",
+        "blob": "acc042419c3a9f383c0e3cc52c1c84d23a600d1e"
+      }
+    ]
+  },
+  "publicEvidence": {
+    "repository": "echopath-labs/agent-workflow-governance",
+    "draftPullRequest": "https://github.com/echopath-labs/agent-workflow-governance/pull/2",
+    "candidateCommit": "94c01a8c2b1b7af54e30a565d87d2f55fe0f5fc1",
+    "statusAtFreeze": "release-approval-not-inherited-by-forgerail-work"
+  },
+  "installEntries": ["agent-workflow-governance", "workspace-health-review"],
+  "behaviorAssertions": {
+    "featureBranchRecords": ["smallest child workspace", "durable records", "git status"],
+    "dirtyWorktreePreservation": ["Preserve user changes"],
+    "existingRecordHabit": ["existing durable record system"],
+    "workspaceHealth": ["Workspace Health Review"],
+    "githubRulesets": ["project-specific workflow or safety checklist"],
+    "releaseSafety": ["project-specific release or operations checklist"],
+    "threadClosure": ["machine-readable closeout"]
+  },
+  "rollback": "Disable ForgeRail as core owner and restore the exact validated AGW Plugin candidate or last published AGW version without modifying project records.",
+  "lifecycle": "compatibility-baseline"
+}

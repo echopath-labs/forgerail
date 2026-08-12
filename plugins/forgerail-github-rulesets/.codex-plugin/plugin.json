@@ -1,0 +1,21 @@
+{
+  "name": "forgerail-github-rulesets",
+  "version": "0.1.0-alpha.1",
+  "description": "Read-first GitHub Rulesets governance pack for ForgeRail.",
+  "author": { "name": "EchoPath Labs", "url": "https://github.com/echopath-labs" },
+  "homepage": "https://github.com/echopath-labs/forgerail",
+  "repository": "https://github.com/echopath-labs/forgerail",
+  "license": "Apache-2.0",
+  "keywords": ["github-rulesets", "repository-governance", "forgerail"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ForgeRail GitHub Rulesets",
+    "shortDescription": "Diagnose and prepare GitHub Ruleset governance.",
+    "longDescription": "A separate high-risk ForgeRail capability pack that inspects GitHub Ruleset requirements and prepares exact mutation approval packages without changing remote repository policy by default.",
+    "developerName": "EchoPath Labs",
+    "category": "Engineering",
+    "capabilities": ["GitHub Ruleset diagnosis", "Ruleset approval packages"],
+    "defaultPrompt": ["Assess whether this repository needs GitHub Rulesets without changing remote settings."],
+    "brandColor": "#B45309"
+  }
+}

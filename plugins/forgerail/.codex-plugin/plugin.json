@@ -1,0 +1,37 @@
+{
+  "name": "forgerail",
+  "version": "0.1.0-alpha.1",
+  "description": "Engineering guidance and governance for coding agents, with workspace diagnosis and composable capability packs.",
+  "author": {
+    "name": "EchoPath Labs",
+    "url": "https://github.com/echopath-labs"
+  },
+  "homepage": "https://github.com/echopath-labs/forgerail",
+  "repository": "https://github.com/echopath-labs/forgerail",
+  "license": "Apache-2.0",
+  "keywords": [
+    "agent-governance",
+    "coding-agent",
+    "workspace-diagnosis",
+    "engineering-workflow"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ForgeRail",
+    "shortDescription": "Engineering guidance and guardrails for coding agents.",
+    "longDescription": "ForgeRail diagnoses workspace habits, composes applicable governance, launches coding agents with explicit boundaries, and verifies observable results without replacing the agent or the workspace's own record system.",
+    "developerName": "EchoPath Labs",
+    "category": "Productivity",
+    "capabilities": [
+      "Agent engineering governance",
+      "Read-only workspace diagnosis",
+      "Workspace health review"
+    ],
+    "defaultPrompt": [
+      "Use ForgeRail to govern this engineering task.",
+      "Diagnose this workspace before recommending governance changes.",
+      "Review this workspace for governance and recovery risks."
+    ],
+    "brandColor": "#B45309"
+  }
+}

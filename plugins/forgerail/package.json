@@ -1,0 +1,44 @@
+{
+  "name": "forgerail",
+  "version": "0.1.0-alpha.1",
+  "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "forgerail": "scripts/forgerail.mjs"
+  },
+  "files": [
+    ".codex-plugin/",
+    "contracts/",
+    "docs/",
+    "marketplace/",
+    "packs/",
+    "scripts/",
+    "skills/",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "NOTICE",
+    "PLUGIN.md",
+    "README.md",
+    "README.zh-CN.md",
+    "SECURITY.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures",
+    "test:consumer": "node scripts/disposable-consumer.mjs",
+    "test:shadow": "node scripts/shadow-comparison.mjs",
+    "diagnose:fixture": "node scripts/forgerail.mjs diagnose --workspace scripts/fixtures/workspaces/markdown-existing"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/echopath-labs/forgerail.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "next"
+  }
+}

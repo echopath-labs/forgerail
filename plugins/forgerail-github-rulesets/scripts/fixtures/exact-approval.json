@@ -1,0 +1,11 @@
+{
+  "installed": true,
+  "state": "enabled",
+  "githubAuthenticated": true,
+  "mutationAuthorized": true,
+  "approvalGate": "github-ruleset-mutation-approval",
+  "repository": "example/example",
+  "allowedOperations": ["update ruleset 42 required checks"],
+  "prohibitedOperations": ["merge", "release", "default branch change", "repository lifecycle"],
+  "expectedRemoteMutations": ["update ruleset 42 required checks"]
+}

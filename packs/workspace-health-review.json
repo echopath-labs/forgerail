@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "id": "workspace-health-review",
+  "purpose": "Audit workspace governance, drift, context debt, ownership, and recovery health without executing implementation work.",
+  "entry": "skills/workspace-health-review/SKILL.md",
+  "risk": "low",
+  "states": ["available", "recommended", "enabled", "required", "blocked", "disabled"],
+  "triggers": ["explicit workspace health request", "pre-refactor governance audit", "pre-release governance audit", "recovery difficulty"],
+  "inputs": ["workspace boundary evidence", "agent instructions", "durable record inventory", "skill inventory", "recovery entries"],
+  "dependencies": [],
+  "conflicts": [],
+  "approvals": ["durable-write-approval"],
+  "validation": ["report separates observations from proposed modifications", "no mutation occurs in Analyze First mode"],
+  "receiptExtensions": ["healthStatus", "contextDebt", "recoveryRisks"]
+}

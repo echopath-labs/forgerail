@@ -1,0 +1,8 @@
+{
+  "installed": true,
+  "state": "recommended",
+  "runbookDiscovered": true,
+  "releaseAuthorized": false,
+  "recommendation": "Use the project release runbook for this publication task.",
+  "expectedRemoteMutations": []
+}

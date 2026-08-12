@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "source": "docs/agw-frozen-baseline.json",
+  "allowedDispositions": ["forgerail-core", "workspace-diagnosis", "workspace-profile", "task-envelope", "return-receipt", "capability-pack", "source-reference", "unresolved"],
+  "items": [
+    { "id": "owner-workspace", "target": "forgerail-core", "status": "mapped" },
+    { "id": "preserve-user-changes", "target": "forgerail-core", "status": "mapped" },
+    { "id": "durable-record-decision", "target": "workspace-diagnosis", "status": "mapped" },
+    { "id": "git-lifecycle", "target": "source-reference", "status": "mapped" },
+    { "id": "validation-and-impact", "target": "task-envelope", "status": "mapped" },
+    { "id": "independent-approval-gates", "target": "forgerail-core", "status": "mapped" },
+    { "id": "machine-readable-closeout", "target": "return-receipt", "status": "mapped" },
+    { "id": "workspace-health-review", "target": "capability-pack", "status": "mapped" },
+    { "id": "release-safety", "target": "capability-pack", "status": "mapped" },
+    { "id": "thread-closure", "target": "capability-pack", "status": "mapped" },
+    { "id": "github-rulesets", "target": "capability-pack", "status": "mapped" }
+  ],
+  "behaviorCoverageReady": true,
+  "migrationReady": false,
+  "migrationBlockers": ["remote integration and CI are not complete", "release approval is not granted", "AGW lifecycle change is not approved"]
+}

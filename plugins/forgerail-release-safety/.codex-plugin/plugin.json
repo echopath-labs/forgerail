@@ -1,0 +1,21 @@
+{
+  "name": "forgerail-release-safety",
+  "version": "0.1.0-alpha.1",
+  "description": "Project-runbook-first release governance pack for ForgeRail.",
+  "author": { "name": "EchoPath Labs", "url": "https://github.com/echopath-labs" },
+  "homepage": "https://github.com/echopath-labs/forgerail",
+  "repository": "https://github.com/echopath-labs/forgerail",
+  "license": "Apache-2.0",
+  "keywords": ["release-safety", "deployment-governance", "forgerail"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ForgeRail Release Safety",
+    "shortDescription": "Prepare project-owned release gates and receipts.",
+    "longDescription": "A separate high-risk ForgeRail capability pack that discovers the project's release runbook, binds exact release identity and prepares independent approval packages without publishing or deploying by itself.",
+    "developerName": "EchoPath Labs",
+    "category": "Engineering",
+    "capabilities": ["Release readiness diagnosis", "Release approval packages", "Release receipt verification"],
+    "defaultPrompt": ["Assess release readiness using this project's own runbook without publishing or deploying."],
+    "brandColor": "#B91C1C"
+  }
+}

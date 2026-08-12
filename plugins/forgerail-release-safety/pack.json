@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "id": "release-safety",
+  "purpose": "Discover project-owned release procedures and prepare exact, independently approved release operations.",
+  "entry": "skills/forgerail-release-safety/SKILL.md",
+  "risk": "high",
+  "states": ["available", "recommended", "enabled", "required", "blocked", "disabled"],
+  "triggers": ["release readiness", "package publication", "deployment or rollback"],
+  "inputs": ["project-owned release runbook", "exact artifact and source identity", "target environment or registry", "rollback boundary"],
+  "dependencies": [],
+  "conflicts": [],
+  "approvals": ["release-approval", "production-change-approval"],
+  "validation": ["project-owned runbook resolved", "exact release identity bound", "independent approval verified", "post-release receipt verified"],
+  "receiptExtensions": ["releaseTarget", "sourceCommit", "artifactDigests", "runbook", "rollback", "postflight"]
+}
