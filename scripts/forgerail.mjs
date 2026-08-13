@@ -108,6 +108,24 @@ function validateFixtures() {
   results.push({ type: "composition", path: "contracts/profile-input.available-pack.json", expected: true, actual: available.valid && available.activePacks.length === 0 && available.profile.rules[0]?.value === "release", passed: available.valid && available.activePacks.length === 0 && available.profile.rules[0]?.value === "release", errors: available.errors });
   const conflict = resolveProfile(readJson(resolve(fixtureRoot, "contracts/profile-input.conflict.json")), manifests);
   results.push({ type: "composition", path: "contracts/profile-input.conflict.json", expected: false, actual: conflict.valid, passed: !conflict.valid && conflict.profile.conflicts.length === 1, errors: conflict.errors });
+  const orchestrationPackCandidates = [
+    resolve(root, "../forgerail-cross-workspace-orchestration/pack.json"),
+    resolve(root, "plugins/forgerail-cross-workspace-orchestration/pack.json"),
+  ];
+  const orchestrationPackPath = orchestrationPackCandidates.find((path) => existsSync(path));
+  if (orchestrationPackPath) {
+    const orchestrationPack = readJson(orchestrationPackPath);
+    const orchestrationPackValidation = validateContract("pack", orchestrationPack);
+    const orchestrationAvailable = resolveProfile(readJson(resolve(fixtureRoot, "contracts/profile-input.orchestration-available.json")), [...manifests, orchestrationPack]);
+    results.push({
+      type: "composition",
+      path: "contracts/profile-input.orchestration-available.json",
+      expected: true,
+      actual: orchestrationPackValidation.valid && orchestrationAvailable.valid && orchestrationAvailable.activePacks.length === 0,
+      passed: orchestrationPackValidation.valid && orchestrationAvailable.valid && orchestrationAvailable.activePacks.length === 0,
+      errors: [...orchestrationPackValidation.errors, ...orchestrationAvailable.errors],
+    });
+  } else results.push({ type: "composition", path: "cross-workspace-orchestration-manifest", expected: true, actual: false, passed: false, errors: ["external orchestration Pack manifest is unavailable"] });
   const inactiveLaunch = createLaunchContract(available.profile, { ...readJson(resolve(fixtureRoot, "contracts/task-envelope.valid.json")), packs: ["workspace-health-review"] }, "Codex");
   results.push({ type: "launch", path: "inactive-pack", expected: false, actual: inactiveLaunch.valid, passed: !inactiveLaunch.valid && inactiveLaunch.errors.some((error) => error.includes("inactive pack")), errors: inactiveLaunch.errors });
   const receipt = readJson(resolve(fixtureRoot, "contracts/return-receipt.valid.json"));

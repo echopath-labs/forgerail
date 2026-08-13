@@ -16,7 +16,8 @@ Ruleset、branch protection、稳定版、其他产品与 OpenSpec archive 不�
 
 - canonical source 只在 EchoPath 工作区维护；禁止 public-only 修复。
 - 每次修正都要重新校验、确定性投影，并绑定精确 source commit、tree、inventory、manifest digest 与 projection receipt。
-- 公共候选必须是已观测 `main` 的普通子 commit；用精确 SHA refspec 推送到 `release/0.1.0-alpha.1`，不得 force push。
+- 首个公共候选必须是已观测 `main` 的普通子 commit。remote integration 后若在同一 release branch 上进行 source-first 替换，新候选必须是当前 release head 的普通 fast-forward successor。两种形式都只能用精确 SHA refspec 推送且不得 force push；PR base 与 publication comparison baseline 继续绑定已观测 `main`。
+- squash merge 后的公共 `main` tree 必须等于最终签名 projection tree。
 - Draft PR 必须绑定精确 base/head；任何 SHA、tree、版本、许可证或 check 漂移都停止。
 - 必须通过 Node.js 22 and 24 Plugin Contracts，包括 Core/contracts、渐进式采用、外部 packs、冻结 AGW 覆盖、发布源校验与一次性消费者生命周期。
 
@@ -33,7 +34,7 @@ Ruleset、branch protection、稳定版、其他产品与 OpenSpec archive 不�
 7. 精确版本 smoke 通过后才把 `latest` 移到 alpha.1；核验 exact、`next`、`latest` 隔离安装，并保留 `reserved=0.0.0-reserved.0` 作为抢注历史证据。
 8. 在精确 merged `main` 上创建 annotated `v0.1.0-alpha.1` 并推送，不移动任何已有 tag。
 9. 发布标题为 `ForgeRail v0.1.0-alpha.1` 的 GitHub prerelease，release notes 使用版本化 CHANGELOG；此版本没有 standalone binary assets。
-10. 在一次性环境中注册精确 tag Marketplace，安装主插件并启动新 Codex 任务，验证三个主 Skill；生成单宿主 Codex Adoption Plan，证明规划不修改工作区，仅在显式批准后向一次性项目写入 managed block，再启动新任务或执行受支持的等价发现检查，并校验 Host Binding Receipt；确认没有 `.forgerail/` 状态。三个外部 Capability Pack 分别安装与发现，不认证、不执行。
+10. 在一次性环境中注册精确 tag Marketplace，安装主插件并启动新 Codex 任务，验证三个主 Skill；生成单宿主 Codex Adoption Plan，证明规划不修改工作区，仅在显式批准后向一次性项目写入 managed block，再启动新任务或执行受支持的等价发现检查，并校验 Host Binding Receipt；确认没有 `.forgerail/` 状态。每个外部 Capability Pack 分别安装与发现，不认证、不执行。
 11. 返回绑定 canonical、PR/merge、tree、npm、dist-tags、tag、prerelease、Plugin discovery、校验、非变更项与恢复锚点的 durable receipt。
 
 ## 停止与回滚

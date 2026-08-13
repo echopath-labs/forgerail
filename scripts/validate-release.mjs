@@ -10,6 +10,7 @@ const expectedTag = `v${expectedVersion}`;
 const expectedDate = "2026-08-13";
 const expectedPlugins = [
   "forgerail",
+  "forgerail-cross-workspace-orchestration",
   "forgerail-github-rulesets",
   "forgerail-release-safety",
   "forgerail-thread-closure",
@@ -49,6 +50,10 @@ record(
 
 const pluginPaths = {
   forgerail: ".codex-plugin/plugin.json",
+  "forgerail-cross-workspace-orchestration": findExisting([
+    "../forgerail-cross-workspace-orchestration/.codex-plugin/plugin.json",
+    "plugins/forgerail-cross-workspace-orchestration/.codex-plugin/plugin.json",
+  ]),
   "forgerail-github-rulesets": findExisting([
     "../forgerail-github-rulesets/.codex-plugin/plugin.json",
     "plugins/forgerail-github-rulesets/.codex-plugin/plugin.json",
@@ -95,6 +100,7 @@ const installation = `${read("docs/installation.md")}\n${read("docs/installation
 for (const phrase of [
   `codex plugin marketplace add echopath-labs/forgerail --ref ${expectedTag}`,
   "codex plugin add forgerail@echopath-labs",
+  "codex plugin add forgerail-cross-workspace-orchestration@echopath-labs",
   "codex plugin add forgerail-github-rulesets@echopath-labs",
   `forgerail@${expectedVersion}`,
   "new Codex task",
@@ -127,7 +133,9 @@ record("package-adapters", packageJson.files?.includes("adapters/"), packageJson
 record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
 record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-const releaseDocs = `${read("docs/release.md")}\n${read("docs/release.zh-CN.md")}`;
+const releaseEnglish = read("docs/release.md");
+const releaseChinese = read("docs/release.zh-CN.md");
+const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
 for (const phrase of [
   "remote_integration_approval",
   "release_approval",
@@ -143,6 +151,27 @@ for (const phrase of [
 ]) {
   record(`runbook-${phrase.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, releaseDocs.includes(phrase), phrase);
 }
+for (const [id, document, phrases] of [
+  ["english", releaseEnglish, [
+    "The first public candidate must be an ordinary child of the observed public `main`.",
+    "an ordinary fast-forward successor of the current release head",
+    "the PR base and publication comparison baseline bound to the observed `main`",
+    "the resulting public `main` tree must equal the final signed projection tree",
+    "Install and discover each external Capability Pack separately",
+  ]],
+  ["chinese", releaseChinese, [
+    "首个公共候选必须是已观测 `main` 的普通子 commit。",
+    "当前 release head 的普通 fast-forward successor",
+    "PR base 与 publication comparison baseline 继续绑定已观测 `main`",
+    "公共 `main` tree 必须等于最终签名 projection tree",
+    "每个外部 Capability Pack 分别安装与发现",
+  ]],
+]) {
+  for (const phrase of phrases) {
+    record(`runbook-${id}-${phrase.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, document.includes(phrase), phrase);
+  }
+}
+record("runbook-no-fixed-external-pack-count", !releaseChinese.includes("三个外部 Capability Pack"), "external Pack count is future-proof");
 
 const workflow = read(".github/workflows/plugin-contracts.yml");
 record("ci-node-22", workflow.includes("- 22"), "Node.js 22");

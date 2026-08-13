@@ -38,6 +38,12 @@ This level is reserved for evidence that cannot be represented coherently throug
 
 Unknown hosts require a reviewed Host Adapter before ForgeRail can generate a binding. A Host Adapter is a projection boundary, not the ForgeRail Core or a second policy source.
 
+## Optional Cross-Workspace Orchestration
+
+Do not promote the orchestration Pack into a workspace binding merely because it is installed. Recommend it only after observing multiple independent owner/repository/release boundaries and a safe parallel dependency wave. Keep ordinary single-repository work on ForgeRail Core.
+
+If the project repeatedly uses this pattern, record the choice through its existing OpenSpec, Spec Kit, ADR, Markdown, issue, or instruction habit after exact durable-write confirmation. Do not create a new orchestration state directory. Task creation and every durable, remote, release, or lifecycle operation retain their own authorization.
+
 ## Verification And Removal
 
 An adoption is complete only when the applied file digest matches the approved plan, supported-host discovery is verified in a new task or equivalent supported check, deviations are empty, and non-mutations are recorded. Profile-only hosts remain unverified until their own host check passes.

@@ -1,0 +1,14 @@
+{
+  "name": "existing-habits-first",
+  "input": {
+    "workItems": [
+      { "id": "product-a", "ownerWorkspace": "/workspaces/a", "repository": "repo-a", "branch": "feat/a", "pr": null, "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "product-b", "ownerWorkspace": "/workspaces/b", "repository": "repo-b", "branch": "feat/b", "pr": null, "releaseIdentity": "b", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "existing-issues-and-adrs",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": { "recordStrategy": "existing-issues-and-adrs", "proposedDurableWrites": [], "mutations": [] }
+}

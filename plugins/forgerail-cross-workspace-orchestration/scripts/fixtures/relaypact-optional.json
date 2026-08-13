@@ -1,0 +1,14 @@
+{
+  "name": "relaypact-optional",
+  "input": {
+    "workItems": [
+      { "id": "product-a", "ownerWorkspace": "/workspaces/a", "repository": "repo-a", "branch": "feat/a", "pr": null, "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "product-b", "ownerWorkspace": "/workspaces/b", "repository": "repo-b", "branch": "feat/b", "pr": null, "releaseIdentity": "b", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "markdown",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": { "relayPactRequired": false, "transportMode": "host-or-manual", "recommended": true }
+}

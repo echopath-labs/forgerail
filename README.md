@@ -12,7 +12,9 @@ It observes a workspace, recommends improvements only when evidence warrants the
 
 GitHub Rulesets, Release Safety, and Thread Closure are separately distributed Capability Packs because they have independent authentication, risk, lifecycle, and release boundaries.
 
-The EchoPath Labs Marketplace candidate includes `forgerail-github-rulesets`, `forgerail-release-safety`, and `forgerail-thread-closure` as separate, explicitly installed Plugins with `ON_USE` policy. They are not installed or activated merely because the main ForgeRail Plugin is selected.
+Cross-Workspace Orchestration is also separately distributed and explicit-use. It applies only when a master task coordinates multiple genuine owner/repository/release boundaries with safe parallel dependency stages; it is not a general multi-agent mode for one repository.
+
+The EchoPath Labs Marketplace candidate includes `forgerail-github-rulesets`, `forgerail-release-safety`, `forgerail-thread-closure`, and `forgerail-cross-workspace-orchestration` as separate, explicitly installed Plugins with `ON_USE` policy. They are not installed or activated merely because the main ForgeRail Plugin is selected.
 
 ## Architecture
 

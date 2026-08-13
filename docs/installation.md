@@ -27,9 +27,14 @@ Install only the packs the project needs. Installation makes a pack available; i
 codex plugin add forgerail-github-rulesets@echopath-labs
 codex plugin add forgerail-release-safety@echopath-labs
 codex plugin add forgerail-thread-closure@echopath-labs
+codex plugin add forgerail-cross-workspace-orchestration@echopath-labs
 ```
 
 The Rulesets and Release Safety packs remain read-first. Ruleset mutations, repository protection changes, publishing, deployment, and lifecycle changes require their own exact approvals.
+
+Install Cross-Workspace Orchestration only when a master task must coordinate multiple genuine owner/repository/release boundaries and dependency evidence exposes safe parallel stages. It is not for an ordinary single repository or monorepo folder split. Installation leaves it `available`; invoke it explicitly, or adopt it through existing project instructions only after review. It does not create tasks or durable records, and remote integration, release, and lifecycle approvals remain independent.
+
+Host task/thread APIs are not portable. Codex, Claude Code, Cursor, and other hosts must provide verified create/inspect/wait/message/resume capabilities through a Host Adapter; otherwise use user-created sessions, stable handoffs, or serial execution. RelayPact is an optional delegation transport and EchoPath is an optional recovery/context source, not runtime dependencies.
 
 ## Optional npm CLI
 

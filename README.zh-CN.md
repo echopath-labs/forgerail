@@ -12,6 +12,8 @@ ForgeRail 是面向 Coding Agent 的工程引航与治理框架。
 
 GitHub Rulesets、Release Safety 与 Thread Closure 由于具有独立身份、权限、风险与生命周期边界，作为单独分发、按需安装和显式触发的 Capability Packs。主插件被安装不代表这些能力包已安装、启用、认证或获批执行。
 
+Cross-Workspace Orchestration 同样单独分发并显式使用。它只适用于主控任务协调多个真实独立 owner/repository/release 边界，且依赖关系允许安全并行的场景；它不是单仓通用的多 Agent 开关。
+
 ForgeRail 默认动态计算有效 Workspace Profile，不会因为被调用就创建 `.forgerail/profile.yaml`、修改 `AGENTS.md` 或安装 OpenSpec。
 
 工作区采用遵循渐进式三级模型：默认 Plugin Only；只有用户确认后才使用轻量绑定；未来只有机器配置或反复冲突等证据充分时，才考虑持久化 `.forgerail/` 治理。宿主 instruction 文件只是 Adapter，不是 ForgeRail Core。alpha.1 支持 Codex；Claude Code 与 Cursor profile 会明确发布，但仍标记为未验证。

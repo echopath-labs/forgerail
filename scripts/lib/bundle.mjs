@@ -6,6 +6,7 @@ const roots = [".codex-plugin", ".github", "adapters", "contracts", "docs", "pac
 const files = ["CHANGELOG.md", "CONTRIBUTING.md", "LICENSE", "NOTICE", "PLUGIN.md", "README.md", "README.zh-CN.md", "SECURITY.md", "package.json"];
 const catalog = "marketplace/.agents/plugins/marketplace.json";
 const externalPluginNames = [
+  "forgerail-cross-workspace-orchestration",
   "forgerail-github-rulesets",
   "forgerail-release-safety",
   "forgerail-thread-closure",

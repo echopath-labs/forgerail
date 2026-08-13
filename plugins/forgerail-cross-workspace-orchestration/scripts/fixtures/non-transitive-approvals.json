@@ -1,0 +1,14 @@
+{
+  "name": "non-transitive-approvals",
+  "input": {
+    "workItems": [
+      { "id": "product-a", "ownerWorkspace": "/workspaces/a", "repository": "repo-a", "branch": "release/a", "pr": "7", "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": ["push", "merge", "archive"], "grantedApprovals": ["remote-integration-approval"] },
+      { "id": "product-b", "ownerWorkspace": "/workspaces/b", "repository": "repo-b", "branch": "feat/b", "pr": null, "releaseIdentity": "b", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "openspec",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": { "missingApprovals": [{ "workItem": "product-a", "operation": "merge", "required": "release-approval" }, { "workItem": "product-a", "operation": "archive", "required": "lifecycle-change-approval" }] }
+}

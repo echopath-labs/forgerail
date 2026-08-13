@@ -17,9 +17,14 @@ GitHub Rulesets、Release Safety 与 Thread Closure 是单独插件，只按项�
 codex plugin add forgerail-github-rulesets@echopath-labs
 codex plugin add forgerail-release-safety@echopath-labs
 codex plugin add forgerail-thread-closure@echopath-labs
+codex plugin add forgerail-cross-workspace-orchestration@echopath-labs
 ```
 
 安装只让能力可用，不等于认证、启用、要求或批准外部副作用。Ruleset、仓库保护、发布、部署和生命周期变更仍需各自的精确审批。
+
+只有当主控任务需要协调多个真正独立的 owner workspace、repository 或 release identity，且依赖证据表明存在安全并行阶段时，才安装 Cross-Workspace Orchestration。普通单仓任务或 monorepo 目录拆分不适用。安装后状态仍是 `available`；必须显式调用，或在审查后沿用项目已有 instructions 采用。它不会自动创建任务或 durable record，远端集成、发布和 lifecycle 审批仍相互独立。
+
+不同宿主不共享同一套 task/thread API。Codex、Claude Code、Cursor 等必须由 Host Adapter 明确声明并验证 create/inspect/wait/message/resume 能力；缺失时降级为用户创建的独立会话、稳定 handoff 或串行执行。RelayPact 只是可选委派 transport，EchoPath 只是可选恢复/上下文来源，均非运行时硬依赖。
 
 安装只代表能力可用，不会修改项目 `AGENTS.md`、创建 `.forgerail/`、安装 OpenSpec 或要求项目启用 Workspace Health。项目采用、能力启用和长期规约变更都需要单独确认。
 

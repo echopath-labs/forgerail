@@ -38,6 +38,12 @@ forgerail adoption-plan --workspace . --host codex --host claude-code --host cur
 
 未知宿主必须先有经过审查的 Host Adapter 才能生成绑定。Host Adapter 是投影边界，不是 ForgeRail Core，也不是第二套规则源。
 
+## 可选跨工作区编排
+
+不要因为安装了 orchestration Pack 就把它写进工作区 binding。只有观察到多个独立 owner/repository/release 边界和一个安全并行依赖波次后才建议采用；普通单仓工作继续使用 ForgeRail Core。
+
+如果项目反复使用该模式，在取得精确 durable-write 确认后，沿用现有 OpenSpec、Spec Kit、ADR、Markdown、issue 或 instruction 习惯记录，不创建新的编排状态目录。创建任务以及每类 durable、远端、发布或 lifecycle 操作仍保留各自授权。
+
 ## 核验与移除
 
 只有 applied digest 与获批 plan 一致、支持宿主在新任务或等价支持检查中完成发现、deviations 为空且非变更项已记录，采用才能 close 为 complete。`profile-only` 宿主在完成自身专项检查前仍保持未验证。

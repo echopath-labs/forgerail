@@ -12,6 +12,7 @@ if (!pluginParent) {
   process.exit(1);
 }
 const entries = [
+  "forgerail-cross-workspace-orchestration/scripts/validate.mjs",
   "forgerail-github-rulesets/scripts/validate.mjs",
   "forgerail-release-safety/scripts/validate.mjs",
   "forgerail-thread-closure/scripts/validate.mjs",

@@ -16,7 +16,8 @@ Rulesets, branch protection, stable releases, other products, and OpenSpec archi
 
 - Canonical source is owned in the EchoPath workspace.
 - Public-only fixes are prohibited. Change canonical source, validate it, generate the deterministic projection, and sign an exact source commit, tree, inventory, manifest digest, and projection receipt.
-- The public branch commit must be an ordinary child of the observed public `main`. Push it by exact SHA refspec without force.
+- The first public candidate must be an ordinary child of the observed public `main`. After remote integration, a source-first replacement on the same release branch must be an ordinary fast-forward successor of the current release head. Push either form by exact SHA refspec without force; keep the PR base and publication comparison baseline bound to the observed `main`.
+- After squash merge, the resulting public `main` tree must equal the final signed projection tree.
 - Open a Draft PR from `release/0.1.0-alpha.1` to the bound `main` SHA. Any head, base, tree, version, license, or check drift stops the gate.
 - Required PR checks are Plugin Contracts on Node.js 22 and 24, including Core/contracts, progressive adoption, external packs, frozen AGW coverage, release-source validation, and disposable consumer lifecycle.
 
