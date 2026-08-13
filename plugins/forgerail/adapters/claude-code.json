@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "id": "claude-code",
+  "displayName": "Claude Code",
+  "status": "profile-only",
+  "instructionDiscovery": "task-start",
+  "skillDiscovery": "agent-skills",
+  "bindingTarget": "CLAUDE.md",
+  "bindingModes": ["managed-block", "thin-reference"],
+  "managedMarker": "forgerail:binding:claude-code:v1",
+  "activationBoundary": "host-specific-verification-required",
+  "verification": {
+    "mode": "profile-only",
+    "expectedSkills": []
+  },
+  "limitations": [
+    "The instruction target is modeled, but ForgeRail alpha.1 does not claim end-to-end plugin discovery or a verified new-session activation receipt for Claude Code.",
+    "Treat generated content as a proposal until verified in the target host."
+  ]
+}

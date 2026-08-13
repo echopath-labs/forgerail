@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/adoption-plan-v1.json",
+  "title": "ForgeRail Adoption Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "planId": { "type": "string", "pattern": "^[a-zA-Z0-9._:-]+$" },
+    "workspace": { "type": "string", "minLength": 1 },
+    "currentLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
+    "proposedLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
+    "strategy": { "enum": ["no-change", "single-host-managed-block", "shared-contract-with-thin-bindings"] },
+    "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "hosts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["adapterId", "status", "bindingTarget", "verificationMode"],
+        "properties": {
+          "adapterId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+          "status": { "enum": ["supported", "profile-only"] },
+          "bindingTarget": { "type": "string", "minLength": 1 },
+          "verificationMode": { "enum": ["new-task-discovery", "profile-only"] }
+        }
+      }
+    },
+    "proposedWrites": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "operation", "baseSha256", "contentSha256", "content", "managedMarker"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "operation": { "enum": ["create", "append-managed-block", "replace-managed-block"] },
+          "baseSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+          "contentSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "content": { "type": "string", "minLength": 1 },
+          "managedMarker": { "type": "string", "pattern": "^forgerail:(binding:[a-z][a-z0-9-]+|adoption-contract):v1$" }
+        }
+      }
+    },
+    "requiredConfirmation": { "const": true },
+    "verification": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "confirmedNonMutations": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "mutations": { "type": "array", "maxItems": 0 },
+    "status": { "const": "candidate" }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "id": "cursor",
+  "displayName": "Cursor",
+  "status": "profile-only",
+  "instructionDiscovery": "rules",
+  "skillDiscovery": "unknown",
+  "bindingTarget": ".cursor/rules/forgerail.mdc",
+  "bindingModes": ["thin-reference"],
+  "managedMarker": "forgerail:binding:cursor:v1",
+  "activationBoundary": "host-specific-verification-required",
+  "verification": { "mode": "profile-only", "expectedSkills": [] },
+  "limitations": ["End-to-end activation has not been verified for alpha.1."]
+}

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, relative, resolve, sep } from "node:path";
 
-const roots = [".codex-plugin", ".github", "contracts", "docs", "packs", "scripts", "skills"];
+const roots = [".codex-plugin", ".github", "adapters", "contracts", "docs", "packs", "scripts", "skills", "templates"];
 const files = ["CHANGELOG.md", "CONTRIBUTING.md", "LICENSE", "NOTICE", "PLUGIN.md", "README.md", "README.zh-CN.md", "SECURITY.md", "package.json"];
 const catalog = "marketplace/.agents/plugins/marketplace.json";
 const externalPluginNames = [

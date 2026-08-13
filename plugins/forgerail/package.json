@@ -9,12 +9,14 @@
   },
   "files": [
     ".codex-plugin/",
+    "adapters/",
     "contracts/",
     "docs/",
     "marketplace/",
     "packs/",
     "scripts/",
     "skills/",
+    "templates/",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "LICENSE",
@@ -28,10 +30,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures",
+    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures && node scripts/forgerail.mjs validate-adoption",
     "test:consumer": "node scripts/disposable-consumer.mjs",
+    "test:release": "node scripts/validate-release.mjs",
     "test:shadow": "node scripts/shadow-comparison.mjs",
-    "diagnose:fixture": "node scripts/forgerail.mjs diagnose --workspace scripts/fixtures/workspaces/markdown-existing"
+    "diagnose:fixture": "node scripts/forgerail.mjs diagnose --workspace scripts/fixtures/workspaces/markdown-existing",
+    "prepublishOnly": "npm test && npm run test:shadow && npm run test:release && npm run test:consumer"
   },
   "repository": {
     "type": "git",

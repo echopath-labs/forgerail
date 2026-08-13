@@ -34,9 +34,13 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Validate ForgeRail Core and contracts
         run: node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures
+      - name: Validate progressive adoption and Host Adapters
+        run: node scripts/forgerail.mjs validate-adoption
       - name: Validate external Capability Packs
         run: node scripts/validate-external-packs.mjs
       - name: Validate frozen AGW behavior coverage
         run: node scripts/shadow-comparison.mjs
+      - name: Validate prerelease source
+        run: node scripts/validate-release.mjs
       - name: Run disposable consumer lifecycle
         run: node scripts/disposable-consumer.mjs

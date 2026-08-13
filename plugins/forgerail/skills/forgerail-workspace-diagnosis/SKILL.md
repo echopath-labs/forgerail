@@ -22,6 +22,8 @@ Default to Analyze First and read-only operation.
 4. Follow existing habits when they are coherent and sufficient.
 5. Recommend a record-system change only for a concrete gap. OpenSpec may be a preferred example, but Spec Kit, Markdown/ADR, issue-based, or custom documented systems remain valid.
 6. Recommend packs as candidates; installation never implies activation.
+7. Report the observed ForgeRail adoption level and Host Adapter status. Default to Plugin Only; recommend Lightweight Adoption only for an explicit durable-adoption need or a concrete recurring gap.
+8. Never create `.forgerail/` state during diagnosis. Treat Claude Code and Cursor profiles as unverified until host-specific discovery evidence exists.
 
 ## Output
 
@@ -34,5 +36,7 @@ Return:
 - at most a few prioritized recommendations;
 - changes requiring explicit approval;
 - whether a full `$workspace-health-review` is warranted.
+
+If the user chooses adoption, hand control back to `$forgerail` for a read-only Adoption Plan, explicit confirmation, bounded write, discovery verification, and Host Binding Receipt.
 
 Read `references/record-strategies.md` when evaluating how the workspace records durable engineering context.

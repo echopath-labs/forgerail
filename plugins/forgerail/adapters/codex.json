@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "id": "codex",
+  "displayName": "Codex",
+  "status": "supported",
+  "instructionDiscovery": "task-start",
+  "skillDiscovery": "agent-plugin-skills",
+  "bindingTarget": "AGENTS.md",
+  "bindingModes": ["managed-block", "thin-reference"],
+  "managedMarker": "forgerail:binding:codex:v1",
+  "activationBoundary": "new-task-required",
+  "verification": {
+    "mode": "new-task-discovery",
+    "expectedSkills": ["forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"]
+  },
+  "limitations": [
+    "A binding is discovered only by a new Codex task started inside the applicable instruction scope.",
+    "Plugin installation and workspace adoption remain separate actions."
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/host-adapter-v1.json",
+  "title": "ForgeRail Host Adapter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "bindingModes", "managedMarker", "activationBoundary", "verification", "limitations"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+    "displayName": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["supported", "profile-only"] },
+    "instructionDiscovery": { "enum": ["task-start", "rules", "explicit-only", "unknown"] },
+    "skillDiscovery": { "enum": ["agent-plugin-skills", "agent-skills", "explicit-only", "unknown"] },
+    "bindingTarget": { "type": "string", "minLength": 1 },
+    "bindingModes": {
+      "type": "array",
+      "items": { "enum": ["managed-block", "thin-reference"] },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "managedMarker": { "type": "string", "pattern": "^forgerail:binding:[a-z][a-z0-9-]+:v1$" },
+    "activationBoundary": { "enum": ["new-task-required", "host-specific-verification-required"] },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "expectedSkills"],
+      "properties": {
+        "mode": { "enum": ["new-task-discovery", "profile-only"] },
+        "expectedSkills": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

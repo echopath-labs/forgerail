@@ -1,0 +1,7 @@
+---
+description: Apply the shared ForgeRail adoption contract to non-trivial AI-assisted engineering work
+alwaysApply: true
+---
+<!-- forgerail:binding:cursor:v1:start -->
+Follow `FORGERAIL.md` for non-trivial AI-assisted engineering work. This Cursor binding is a profile-only adapter in ForgeRail alpha.1 and requires host-specific verification before it can be treated as active.
+<!-- forgerail:binding:cursor:v1:end -->

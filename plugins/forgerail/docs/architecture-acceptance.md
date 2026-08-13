@@ -6,6 +6,8 @@ Accepted on 2026-08-12:
 - GitHub Rulesets, Release Safety, and Thread Closure begin as external Capability Packs.
 - Workspace Profile is computed from existing sources; no `.forgerail/profile.yaml` is created by default.
 - A lightweight npm/npx CLI is approved for deterministic diagnosis, contract validation, installation inspection, and bundle construction; it is not a prerequisite for using the Agent Plugin.
+- Adoption is progressive: Plugin Only by default, explicitly confirmed Lightweight Adoption through Host Adapters, and evidence-gated Persisted Governance deferred beyond alpha.1.
+- Host instruction entries are projections of one portable Adoption Contract. Codex is supported; Claude Code and Cursor remain profile-only until host-specific activation is verified.
 
 ## Measurable Acceptance
 
@@ -20,7 +22,9 @@ The first usable prerelease must prove:
 7. a Return Receipt with unresolved deviations cannot close as complete;
 8. deterministic bundle inventory and digest are reproducible;
 9. disposable install, diagnosis, Launch/Receipt, upgrade, rollback, and uninstall smoke pass before public release;
-10. AGW remains the rollback baseline until shadow comparison and an explicitly approved migration gate complete.
+10. adoption planning is read-only, exposes exact base/content digests, and cannot generate `.forgerail/` state;
+11. a disposable Codex adoption candidate is explicitly applied by the consumer harness, verified through an equivalent supported discovery check, and closed with a valid Host Binding Receipt;
+12. AGW remains the rollback baseline until shadow comparison and an explicitly approved migration gate complete.
 
 ## Representative Shadow Tasks
 
