@@ -1,0 +1,6 @@
+interface:
+  display_name: "ForgeRail Cross-Workspace Orchestration"
+  short_description: "Govern parallel work across independent owners"
+  default_prompt: "Use $forgerail-cross-workspace-orchestration to plan and govern safe parallel work across independent owner workspaces."
+policy:
+  allow_implicit_invocation: false

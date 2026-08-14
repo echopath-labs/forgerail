@@ -1,0 +1,14 @@
+{
+  "name": "same-pr-conflict",
+  "input": {
+    "workItems": [
+      { "id": "owner-a", "ownerWorkspace": "/workspaces/a", "repository": "shared-repo", "branch": "feat/shared", "pr": "42", "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "owner-b", "ownerWorkspace": "/workspaces/b", "repository": "shared-repo", "branch": "feat/shared", "pr": "42", "releaseIdentity": "b", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "issues",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": { "recommended": false, "reason": "writer-conflict", "writerConflicts": [{ "identity": "shared-repo:branch:feat/shared", "workItems": ["owner-a", "owner-b"] }, { "identity": "shared-repo:pr:42", "workItems": ["owner-a", "owner-b"] }] }
+}

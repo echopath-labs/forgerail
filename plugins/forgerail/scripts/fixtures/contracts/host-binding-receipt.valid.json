@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "planId": "adoption:codex-single",
+  "workspace": "fixture",
+  "adoptionLevel": "lightweight-adoption",
+  "contractPath": null,
+  "hosts": [
+    {
+      "adapterId": "codex",
+      "target": "AGENTS.md",
+      "baseSha256": null,
+      "appliedSha256": "0bccefea0979ec3ad7b80555d1da43a793ab710417b9d4541aa2a15be9ad0810",
+      "status": "verified",
+      "verification": ["A new Codex task discovered the binding and expected Skills."]
+    }
+  ],
+  "changedFiles": ["AGENTS.md"],
+  "validationEvidence": ["Applied content digest matched the approved Adoption Plan."],
+  "discoveredSkills": ["forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"],
+  "activationVerification": {
+    "mode": "new-task",
+    "verified": true
+  },
+  "confirmedNonMutations": ["No .forgerail directory was created."],
+  "deviations": [],
+  "closeout": "complete"
+}

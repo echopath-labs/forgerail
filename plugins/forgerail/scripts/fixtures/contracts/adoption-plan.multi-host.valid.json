@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0",
+  "planId": "adoption:multi-host",
+  "workspace": "fixture",
+  "currentLevel": "plugin-only",
+  "proposedLevel": "lightweight-adoption",
+  "strategy": "shared-contract-with-thin-bindings",
+  "evidence": ["Codex and Claude Code were explicitly selected."],
+  "hosts": [
+    { "adapterId": "codex", "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" },
+    { "adapterId": "claude-code", "status": "profile-only", "bindingTarget": "CLAUDE.md", "verificationMode": "profile-only" }
+  ],
+  "proposedWrites": [
+    {
+      "path": "FORGERAIL.md",
+      "operation": "create",
+      "baseSha256": null,
+      "contentSha256": "ebba8da7ae587252193419a647f0d8e6898074899158b4f441df573351c9de7c",
+      "content": "<!-- forgerail:adoption-contract:v1:start -->\nShared contract.\n<!-- forgerail:adoption-contract:v1:end -->\n",
+      "managedMarker": "forgerail:adoption-contract:v1"
+    },
+    {
+      "path": "AGENTS.md",
+      "operation": "create",
+      "baseSha256": null,
+      "contentSha256": "989f89220b826a5f355083497552db142fcf1f19cd299febf22b037494c71645",
+      "content": "<!-- forgerail:binding:codex:v1:start -->\nRead FORGERAIL.md.\n<!-- forgerail:binding:codex:v1:end -->\n",
+      "managedMarker": "forgerail:binding:codex:v1"
+    },
+    {
+      "path": "CLAUDE.md",
+      "operation": "create",
+      "baseSha256": null,
+      "contentSha256": "e72fdc3bd532202c2b9c52095e8e20050d428a150285c3b4f1cfce040d3a481c",
+      "content": "<!-- forgerail:binding:claude-code:v1:start -->\nRead FORGERAIL.md.\n<!-- forgerail:binding:claude-code:v1:end -->\n",
+      "managedMarker": "forgerail:binding:claude-code:v1"
+    }
+  ],
+  "requiredConfirmation": true,
+  "verification": ["Verify Codex in a new task.", "Verify Claude Code before claiming activation."],
+  "confirmedNonMutations": ["No files were written."],
+  "mutations": [],
+  "status": "candidate"
+}

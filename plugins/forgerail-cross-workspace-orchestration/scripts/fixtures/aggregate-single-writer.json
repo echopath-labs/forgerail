@@ -1,0 +1,14 @@
+{
+  "name": "aggregate-single-writer",
+  "input": {
+    "workItems": [
+      { "id": "product-a", "ownerWorkspace": "/workspaces/product-a", "repository": "product-a", "branch": "feat/a", "pr": null, "releaseIdentity": "a", "aggregateWrites": ["portfolio-status"], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "product-b", "ownerWorkspace": "/workspaces/product-b", "repository": "product-b", "branch": "feat/b", "pr": null, "releaseIdentity": "b", "aggregateWrites": ["portfolio-status"], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "existing-adr",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": { "recommended": false, "reason": "writer-conflict", "writerConflicts": [{ "identity": "aggregate:portfolio-status", "workItems": ["product-a", "product-b"] }] }
+}

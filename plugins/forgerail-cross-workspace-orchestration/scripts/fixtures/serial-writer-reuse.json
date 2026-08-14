@@ -1,0 +1,15 @@
+{
+  "name": "serial-writer-reuse",
+  "input": {
+    "workItems": [
+      { "id": "phase-one", "ownerWorkspace": "/workspaces/product-a", "repository": "product-a", "branch": "feat/a", "pr": "12", "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "phase-two", "ownerWorkspace": "/workspaces/product-a", "repository": "product-a", "branch": "feat/a", "pr": "12", "releaseIdentity": "a", "aggregateWrites": [], "dependencies": ["phase-one"], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "product-b", "ownerWorkspace": "/workspaces/product-b", "repository": "product-b", "branch": "feat/b", "pr": null, "releaseIdentity": "b", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "markdown",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": { "writerConflicts": [], "recommended": true, "waves": [["phase-one", "product-b"], ["phase-two"]] }
+}

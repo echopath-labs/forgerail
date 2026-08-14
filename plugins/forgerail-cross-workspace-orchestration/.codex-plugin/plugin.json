@@ -1,0 +1,21 @@
+{
+  "name": "forgerail-cross-workspace-orchestration",
+  "version": "0.1.0-alpha.1",
+  "description": "Govern safe parallel work across independent owner workspaces with single-writer and receipt-review boundaries.",
+  "author": { "name": "EchoPath Labs", "url": "https://github.com/echopath-labs" },
+  "homepage": "https://github.com/echopath-labs/forgerail",
+  "repository": "https://github.com/echopath-labs/forgerail",
+  "license": "Apache-2.0",
+  "keywords": ["agent-orchestration", "multi-repository", "single-writer", "forgerail"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ForgeRail Cross-Workspace Orchestration",
+    "shortDescription": "Govern parallel work across independent owners.",
+    "longDescription": "An optional ForgeRail capability pack for master-task coordination across genuine owner, repository, or release boundaries. It governs dependency waves, single-writer identities, independent approvals, stable handoff review, host fallback, and recovery without becoming an execution runtime.",
+    "developerName": "EchoPath Labs",
+    "category": "Engineering",
+    "capabilities": ["Owner and dependency waves", "Single-writer conflict prevention", "Stable handoff and recovery review"],
+    "defaultPrompt": ["Plan safe parallel work across independent owner workspaces."],
+    "brandColor": "#B45309"
+  }
+}

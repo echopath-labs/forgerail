@@ -1,0 +1,14 @@
+{
+  "name": "two-independent-products",
+  "input": {
+    "workItems": [
+      { "id": "product-a", "ownerWorkspace": "/workspaces/product-a", "repository": "product-a", "branch": "feat/a", "pr": null, "releaseIdentity": "product-a-alpha", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "product-b", "ownerWorkspace": "/workspaces/product-b", "repository": "product-b", "branch": "feat/b", "pr": null, "releaseIdentity": "product-b-alpha", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "markdown",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": { "recommended": true, "reason": "independent-cross-workspace-wave", "waves": [["product-a", "product-b"]] }
+}

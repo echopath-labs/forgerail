@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "id": "cross-workspace-orchestration",
+  "purpose": "Govern safe parallel waves across independent owner workspaces without becoming an execution runtime.",
+  "entry": "skills/forgerail-cross-workspace-orchestration/SKILL.md",
+  "risk": "medium",
+  "states": ["available", "recommended", "enabled", "required", "blocked", "disabled"],
+  "triggers": ["multiple independent owner workspaces", "cross-product dependency waves", "shared aggregate with one writer", "parallel product delivery with stable handoffs"],
+  "inputs": ["owner workspace and repository identities", "dependency graph", "branch PR release and aggregate writer identities", "host coordination capabilities", "independent approval gates", "stable product receipts"],
+  "dependencies": [],
+  "conflicts": [],
+  "approvals": ["task-creation-approval", "durable-record-write-approval", "remote-integration-approval", "release-approval", "lifecycle-change-approval"],
+  "validation": ["ordinary single-repository work does not trigger", "writer identities do not overlap inside a wave", "approval classes remain non-transitive", "master accepts only reviewed stable handoffs", "partial failure preserves accepted independent work", "host capability gaps degrade safely"],
+  "receiptExtensions": ["parent", "tree", "taskStatus", "receiptId", "writerIdentity", "masterReview"]
+}

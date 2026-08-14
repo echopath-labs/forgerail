@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "planId": "adoption:codex-single",
+  "workspace": "fixture",
+  "currentLevel": "plugin-only",
+  "proposedLevel": "lightweight-adoption",
+  "strategy": "single-host-managed-block",
+  "evidence": ["Codex was explicitly selected."],
+  "hosts": [
+    { "adapterId": "codex", "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" }
+  ],
+  "proposedWrites": [
+    {
+      "path": "AGENTS.md",
+      "operation": "create",
+      "baseSha256": null,
+      "contentSha256": "0bccefea0979ec3ad7b80555d1da43a793ab710417b9d4541aa2a15be9ad0810",
+      "content": "<!-- forgerail:binding:codex:v1:start -->\nUse ForgeRail.\n<!-- forgerail:binding:codex:v1:end -->\n",
+      "managedMarker": "forgerail:binding:codex:v1"
+    }
+  ],
+  "requiredConfirmation": true,
+  "verification": ["Start a new Codex task."],
+  "confirmedNonMutations": ["No files were written."],
+  "mutations": [],
+  "status": "candidate"
+}

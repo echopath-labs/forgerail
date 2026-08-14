@@ -21,9 +21,26 @@ export function diagnoseWorkspace(workspace) {
   const recommendations = [];
   const confirmationRequired = [];
 
-  for (const entry of ["AGENTS.md", "CLAUDE.md", ".github/copilot-instructions.md", "README.md"]) {
+  for (const entry of ["AGENTS.md", "CLAUDE.md", ".cursor/rules/forgerail.mdc", ".github/copilot-instructions.md", "README.md"]) {
     if (existsSync(resolve(root, entry))) evidence.push(observed(`instructions:${entry}`, entry, "available"));
   }
+
+  const hostAdapters = [
+    { id: "codex", status: "supported", target: "AGENTS.md", observed: existsSync(resolve(root, "AGENTS.md")) },
+    { id: "claude-code", status: "profile-only", target: "CLAUDE.md", observed: existsSync(resolve(root, "CLAUDE.md")) },
+    { id: "cursor", status: "profile-only", target: ".cursor/rules/forgerail.mdc", observed: existsSync(resolve(root, ".cursor/rules/forgerail.mdc")) },
+  ];
+  const managedBindingObserved = hostAdapters.some((adapter) => {
+    if (!adapter.observed) return false;
+    try { return readFileSync(resolve(root, adapter.target), "utf8").includes(`forgerail:binding:${adapter.id}:v1:start`); } catch { return false; }
+  });
+  const adoptionLevel = existsSync(resolve(root, ".forgerail"))
+    ? "persisted-governance"
+    : existsSync(resolve(root, "FORGERAIL.md")) || managedBindingObserved
+      ? "lightweight-adoption"
+      : "plugin-only";
+  evidence.push(observed("host-adapters", "bounded host instruction paths", hostAdapters));
+  evidence.push(observed("forgerail-adoption-level", "bounded ForgeRail markers", adoptionLevel));
 
   const recordSystems = [];
   if (existsSync(resolve(root, "openspec"))) recordSystems.push({ type: "openspec", source: "openspec/" });
@@ -63,6 +80,14 @@ export function diagnoseWorkspace(workspace) {
     recommendations,
     confirmationRequired,
     mutations: [],
+    adoption: {
+      currentLevel: adoptionLevel,
+      recommendedLevel: adoptionLevel,
+      changeRecommended: false,
+      reason: "ForgeRail keeps the minimum observed adoption level unless the user requests durable adoption or concrete evidence justifies escalation.",
+      planCommandAvailable: "forgerail adoption-plan --workspace . --host codex",
+      persistedGovernanceGeneration: "deferred",
+    },
     fullHealthReviewRecommended: evidence.filter((item) => item.id.startsWith("instructions:")).length > 2,
   };
 }

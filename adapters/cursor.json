@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "id": "cursor",
+  "displayName": "Cursor",
+  "status": "profile-only",
+  "instructionDiscovery": "rules",
+  "skillDiscovery": "unknown",
+  "bindingTarget": ".cursor/rules/forgerail.mdc",
+  "bindingModes": ["thin-reference"],
+  "managedMarker": "forgerail:binding:cursor:v1",
+  "activationBoundary": "host-specific-verification-required",
+  "verification": {
+    "mode": "profile-only",
+    "expectedSkills": []
+  },
+  "limitations": [
+    "The project Rules target is modeled, but ForgeRail alpha.1 does not claim verified Skill discovery or end-to-end activation in Cursor.",
+    "Treat generated content as a proposal until verified in the target host."
+  ]
+}

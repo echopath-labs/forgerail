@@ -1,0 +1,11 @@
+{
+  "workspace": "fixture-workspace",
+  "rules": [],
+  "packs": [
+    {
+      "id": "cross-workspace-orchestration",
+      "state": "available",
+      "reason": "Installed for on-demand use; current task has no authoritative enablement."
+    }
+  ]
+}

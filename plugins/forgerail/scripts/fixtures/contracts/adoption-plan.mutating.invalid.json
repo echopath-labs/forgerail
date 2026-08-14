@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "planId": "adoption:invalid",
+  "workspace": "fixture",
+  "currentLevel": "plugin-only",
+  "proposedLevel": "lightweight-adoption",
+  "strategy": "single-host-managed-block",
+  "evidence": ["Codex was selected."],
+  "hosts": [
+    { "adapterId": "codex", "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" }
+  ],
+  "proposedWrites": [],
+  "requiredConfirmation": true,
+  "verification": ["Start a new task."],
+  "confirmedNonMutations": ["No files should be written."],
+  "mutations": ["AGENTS.md written without confirmation"],
+  "status": "candidate"
+}

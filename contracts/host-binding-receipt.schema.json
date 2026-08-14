@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/host-binding-receipt-v1.json",
+  "title": "ForgeRail Host Binding Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "planId", "workspace", "adoptionLevel", "contractPath", "hosts", "changedFiles", "validationEvidence", "discoveredSkills", "activationVerification", "confirmedNonMutations", "deviations", "closeout"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "planId": { "type": "string", "pattern": "^[a-zA-Z0-9._:-]+$" },
+    "workspace": { "type": "string", "minLength": 1 },
+    "adoptionLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
+    "contractPath": { "type": ["string", "null"] },
+    "hosts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["adapterId", "target", "baseSha256", "appliedSha256", "status", "verification"],
+        "properties": {
+          "adapterId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+          "target": { "type": "string", "minLength": 1 },
+          "baseSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+          "appliedSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "status": { "enum": ["verified", "unverified", "failed"] },
+          "verification": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+        }
+      }
+    },
+    "changedFiles": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "validationEvidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "discoveredSkills": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" }, "uniqueItems": true },
+    "activationVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "verified"],
+      "properties": {
+        "mode": { "enum": ["new-task", "equivalent-supported-discovery", "host-specific"] },
+        "verified": { "type": "boolean" }
+      }
+    },
+    "confirmedNonMutations": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "deviations": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "closeout": { "enum": ["complete", "incomplete", "blocked"] }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "single-repository-not-triggered",
+  "input": {
+    "workItems": [
+      { "id": "package-a", "ownerWorkspace": "/workspaces/mono", "repository": "mono", "branch": "feat/one-task", "pr": null, "releaseIdentity": "mono-release", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "package-b", "ownerWorkspace": "/workspaces/mono", "repository": "mono", "branch": "feat/one-task", "pr": null, "releaseIdentity": "mono-release", "aggregateWrites": [], "dependencies": ["package-a"], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "markdown",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": { "recommended": false, "reason": "independent-owner-boundaries-not-proven" }
+}

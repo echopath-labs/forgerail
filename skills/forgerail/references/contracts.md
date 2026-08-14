@@ -31,3 +31,27 @@ Require:
 - deviations from the Launch Contract.
 
 Compare the receipt with observable state. A mismatch keeps closeout incomplete.
+
+## Adoption Plan
+
+Record:
+
+- current and proposed adoption level;
+- explicitly selected Host Adapters and their support status;
+- exact target paths, operations, base SHA-256 digests, candidate content, and content digests;
+- required user confirmation and activation verification;
+- confirmed non-mutations.
+
+Planning is read-only. Do not expose an apply command or generate `.forgerail/` state in alpha.1.
+
+## Host Binding Receipt
+
+After an explicitly approved write, record:
+
+- the plan identity and adopted level;
+- shared contract path when present;
+- each host target, base and applied digests, support check, and verification status;
+- changed files, discovered Skills, and activation verification mode;
+- non-mutations and deviations.
+
+A complete receipt requires every included host to be verified, activation discovery to pass, and deviations to be empty. A `profile-only` host normally keeps closeout incomplete until its host-specific check exists.

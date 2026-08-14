@@ -93,6 +93,6 @@ const result = {
   unresolved: scenarios.filter((item) => !item.passed).map((item) => item.id),
   behaviorCoverageReady: scenarios.every((item) => item.passed),
   migrationReady: false,
-  migrationBlockers: ["remote integration and CI are not complete", "release approval is not granted", "AGW lifecycle change is not approved"],
+  migrationBlockers: ["usable ForgeRail prerelease is not published", "real compatibility-period canaries are incomplete", "AGW lifecycle change is not approved"],
 };
 console.log(JSON.stringify(result, null, 2));

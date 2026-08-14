@@ -51,6 +51,18 @@
         "authentication": "ON_USE"
       },
       "category": "Engineering"
+    },
+    {
+      "name": "forgerail-cross-workspace-orchestration",
+      "source": {
+        "source": "local",
+        "path": "./plugins/forgerail-cross-workspace-orchestration"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Engineering"
     }
   ]
 }

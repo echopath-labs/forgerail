@@ -1,0 +1,14 @@
+{
+  "name": "no-thread-api-host",
+  "input": {
+    "workItems": [
+      { "id": "product-a", "ownerWorkspace": "/workspaces/a", "repository": "repo-a", "branch": "feat/a", "pr": null, "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "product-b", "ownerWorkspace": "/workspaces/b", "repository": "repo-b", "branch": "feat/b", "pr": null, "releaseIdentity": "b", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": false, "inspect": false, "wait": false, "message": false, "resume": false },
+    "recordStrategy": "markdown",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": { "hostMode": "manual-handoff-or-serial", "missingHostCapabilities": ["create", "inspect", "wait", "message", "resume"] }
+}

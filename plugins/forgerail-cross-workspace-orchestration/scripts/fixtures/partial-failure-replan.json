@@ -1,0 +1,16 @@
+{
+  "name": "partial-failure-replan",
+  "input": {
+    "workItems": [
+      { "id": "accepted-a", "ownerWorkspace": "/workspaces/a", "repository": "repo-a", "branch": "feat/a", "pr": null, "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "accepted", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "failed-b", "ownerWorkspace": "/workspaces/b", "repository": "repo-b", "branch": "feat/b", "pr": null, "releaseIdentity": "b", "aggregateWrites": [], "dependencies": [], "status": "failed", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "dependent-c", "ownerWorkspace": "/workspaces/c", "repository": "repo-c", "branch": "feat/c", "pr": null, "releaseIdentity": "c", "aggregateWrites": [], "dependencies": ["failed-b"], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "independent-d", "ownerWorkspace": "/workspaces/d", "repository": "repo-d", "branch": "feat/d", "pr": null, "releaseIdentity": "d", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "spec-kit",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": ["failed-b"], "acceptedWorkItems": ["accepted-a"] }
+  },
+  "expected": { "paused": ["dependent-c", "failed-b"], "preservedAccepted": ["accepted-a"], "waves": [["independent-d"]] }
+}
