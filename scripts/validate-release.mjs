@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const expectedPackageName = "@echopath-labs/forgerail";
 const expectedVersion = "0.1.0-alpha.1";
 const expectedTag = `v${expectedVersion}`;
 const expectedDate = "2026-08-13";
@@ -37,6 +38,8 @@ function findExisting(candidates) {
 
 const packageJson = json("package.json");
 const packageLock = json("package-lock.json");
+record("package-name", packageJson.name === expectedPackageName, packageJson.name);
+record("package-lock-name", packageLock.name === expectedPackageName && packageLock.packages?.[""]?.name === expectedPackageName, packageLock.name);
 record("package-version", packageJson.version === expectedVersion, packageJson.version);
 record("package-lock-version", packageLock.version === expectedVersion && packageLock.packages?.[""]?.version === expectedVersion, packageLock.version);
 record("package-license", packageJson.license === "Apache-2.0", packageJson.license);
@@ -102,7 +105,7 @@ for (const phrase of [
   "codex plugin add forgerail@echopath-labs",
   "codex plugin add forgerail-cross-workspace-orchestration@echopath-labs",
   "codex plugin add forgerail-github-rulesets@echopath-labs",
-  `forgerail@${expectedVersion}`,
+  `${expectedPackageName}@${expectedVersion}`,
   "new Codex task",
   "adoption-plan --workspace . --host codex",
   "Host Binding Receipt",

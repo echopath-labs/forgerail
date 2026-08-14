@@ -1,5 +1,5 @@
 {
-  "name": "forgerail",
+  "name": "@echopath-labs/forgerail",
   "version": "0.1.0-alpha.1",
   "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
   "license": "Apache-2.0",

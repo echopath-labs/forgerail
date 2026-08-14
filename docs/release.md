@@ -1,6 +1,6 @@
 # ForgeRail 0.1.0-alpha.1 Release Runbook
 
-This is the project-owned runbook for the first usable ForgeRail prerelease. It governs `forgerail@0.1.0-alpha.1`, the Git tag `v0.1.0-alpha.1`, and the matching EchoPath Labs Marketplace snapshot. It does not authorize any operation by itself.
+This is the project-owned runbook for the first usable ForgeRail prerelease. It governs `@echopath-labs/forgerail@0.1.0-alpha.1`, the Git tag `v0.1.0-alpha.1`, and the matching EchoPath Labs Marketplace snapshot. The unscoped `forgerail@0.0.0-reserved.0` remains a reservation and is outside the product release path. This document does not authorize any operation by itself.
 
 ## Independent Gates
 
@@ -28,10 +28,10 @@ Only after a new exact `release_approval`:
 1. Confirm the PR remains Open, Draft, mergeable, based on the approved `main`, and at the approved head with all required checks successful.
 2. Mark only that PR Ready and squash-merge it with an exact-head guard. Confirm merged `main` has the signed candidate tree.
 3. From a clean checkout of the merged `main`, run Node.js 22 and 24 validation: `npm test`, `npm run test:shadow`, `npm run test:release`, `npm run test:consumer`, `npm pack --dry-run --json`, and `npm audit`.
-4. Verify npm identity and package ownership without printing credentials. Confirm `forgerail@0.1.0-alpha.1` is absent and record the current `latest`, `next`, and `reserved` dist-tags.
-5. Publish exactly `forgerail@0.1.0-alpha.1` with public access and the `next` tag. Keep provenance disabled unless a separately validated trusted-publishing path replaces credential publication.
+4. Verify npm identity and `@echopath-labs` organization package permission without printing credentials. Confirm `@echopath-labs/forgerail@0.1.0-alpha.1` is absent and record the scoped package's current `latest` and `next` dist-tags. Separately confirm unscoped `forgerail` still contains only `0.0.0-reserved.0` with unchanged reservation tags.
+5. Publish exactly `@echopath-labs/forgerail@0.1.0-alpha.1` with public access and the `next` tag. Keep provenance disabled unless a separately validated trusted-publishing path replaces credential publication. Do not publish product code to unscoped `forgerail`.
 6. Verify registry version, shasum, integrity, license, repository, binary shim, and exact isolated install. Run `forgerail validate` and one bounded read-only diagnosis.
-7. Only after exact-version smoke succeeds, move `latest` to `0.1.0-alpha.1`. Verify exact, `next`, and `latest` isolated installs. Preserve the `reserved` dist-tag as historical reservation evidence.
+7. Only after exact-version smoke succeeds, move the scoped package's `latest` to `0.1.0-alpha.1`. Verify exact, scoped `next`, and scoped `latest` isolated installs. Leave every unscoped `forgerail` version and dist-tag unchanged.
 8. Create annotated `v0.1.0-alpha.1` on the exact merged `main` commit and push it without moving any existing tag.
 9. Publish a GitHub prerelease titled `ForgeRail v0.1.0-alpha.1` using the versioned CHANGELOG section. ForgeRail has no standalone binary release assets in this version.
 10. Register the exact tag as a disposable Codex Marketplace, install the main Plugin, start a new Codex task, and verify `$forgerail`, `$forgerail-workspace-diagnosis`, and `$workspace-health-review`. Generate a single-host Codex Adoption Plan, prove planning leaves the workspace unchanged, explicitly approve and apply only its managed block in a disposable project, start another new task or perform the supported equivalent discovery check, and validate a Host Binding Receipt. Confirm no `.forgerail/` state appears. Install and discover each external Capability Pack separately without authenticating or executing it.
@@ -41,7 +41,7 @@ Only after a new exact `release_approval`:
 
 - Before npm publication, stop without remote release mutation when any identity, tree, check, credential, package, or consumer result differs.
 - Do not unpublish or overwrite an immutable npm version. Do not move a published Git tag. Shipped defects require a forward fix and a new version.
-- If exact publication succeeds but consumer smoke fails, an explicitly approved rollback may restore mutable `latest` and `next` to the last verified usable version. For the first prerelease, the recovery value is `0.0.0-reserved.0`. Preserve `reserved=0.0.0-reserved.0`.
+- If exact scoped publication succeeds but consumer smoke fails, a separately approved rollback may remove or move mutable scoped `latest`/`next` to the last verified scoped version. The first scoped prerelease has no earlier scoped runtime version, so the immutable alpha.1 stays published while mutable tags are handled explicitly; never point scoped tags at the unscoped reservation.
 - A PR or merge defect is recovered with an ordinary reviewed revert or forward commit; no force push or history rewrite.
 - AGW remains available during the real compatibility-period canary. This release does not authorize an AGW lifecycle change.
 

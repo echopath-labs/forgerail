@@ -13,4 +13,5 @@ No shipping changes yet.
 - Publish the EchoPath Labs Marketplace catalog with the main Plugin plus separately installed GitHub Rulesets, Release Safety, and Thread Closure Capability Pack Plugins.
 - Add Cross-Workspace Orchestration as a separately installed, explicit-use Capability Pack for genuine independent owner boundaries; keep it out of the main Plugin's default Skill set.
 - Add Node.js 22 and 24 Plugin contract CI, frozen AGW behavior coverage, installation guidance, and a project-owned prerelease runbook.
+- Publish the optional CLI under the official `@echopath-labs/forgerail` organization scope while preserving the `forgerail` binary shim and leaving the unscoped reservation package unchanged.
 - Adopt Apache-2.0 for ForgeRail and every Capability Pack included in this release candidate.

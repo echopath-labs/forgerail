@@ -40,9 +40,10 @@ node scripts/forgerail.mjs diagnose --workspace scripts/fixtures/workspaces/mark
 node scripts/forgerail.mjs adoption-plan --workspace scripts/fixtures/workspaces/markdown-existing --host codex
 ```
 
-An npm installation exposes the same deterministic CLI through the `forgerail` binary shim:
+The optional official npm package is `@echopath-labs/forgerail`; it exposes the same deterministic CLI through the short `forgerail` binary shim. The unscoped `forgerail` package remains a reservation and is not the product install path.
 
 ```bash
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.1
 forgerail validate
 forgerail diagnose --workspace .
 forgerail adoption-plan --workspace . --host codex

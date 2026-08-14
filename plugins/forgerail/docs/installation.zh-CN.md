@@ -45,15 +45,15 @@ alpha.1 只有 Codex Host Adapter 是 `supported`；Claude Code 与 Cursor 以 `
 
 完整模型、支持矩阵、验证与移除语义见[渐进式采用](adoption.zh-CN.md)。
 
-Agent Plugin 不依赖 npm CLI。registry 发布后，可用精确版本执行离线校验和只读诊断：
+Agent Plugin 不依赖 npm CLI。官方包名为 `@echopath-labs/forgerail`；未作用域 `forgerail` 只保留名称占位，不是安装或回滚来源。registry 发布后，可用精确 scoped 版本执行离线校验和只读诊断：
 
 ```bash
-npx --yes forgerail@0.1.0-alpha.1 validate
-npx --yes forgerail@0.1.0-alpha.1 diagnose --workspace .
-npm install --global forgerail@0.1.0-alpha.1
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.1 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.1 diagnose --workspace .
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.1
 ```
 
-升级时注册新的精确 Marketplace tag，重新安装已选择的插件，再启动新的 Codex 任务验证 Skill 发现与只读诊断。回滚时重新注册最近已验证 tag，或退回冻结的 AGW 版本；卸载插件及可选 CLI 时不得删除项目记录、Agent instructions 或 Git 历史。
+升级时注册新的精确 Marketplace tag，重新安装已选择的插件，再启动新的 Codex 任务验证 Skill 发现与只读诊断；npm CLI 只能在精确 `@echopath-labs/forgerail` 版本之间升级。回滚时重新注册最近已验证 tag，或退回冻结的 AGW 版本；卸载可选 CLI 使用 `npm uninstall --global @echopath-labs/forgerail`，不得删除项目记录、Agent instructions 或 Git 历史。
 
 npm 发布、移动 `latest`、推送公共候选、tag、GitHub Release 和 AGW 生命周期变更都属于独立审批门。
 
