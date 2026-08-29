@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedPackageName = "@echopath-labs/forgerail";
-const expectedVersion = "0.1.0-alpha.1";
+const expectedVersion = "0.1.0-alpha.2";
 const expectedTag = `v${expectedVersion}`;
-const expectedDate = "2026-08-13";
+const expectedDate = "2026-08-30";
 const expectedPlugins = [
   "forgerail",
   "forgerail-cross-workspace-orchestration",
@@ -47,7 +47,7 @@ record("package-lock-license", packageLock.packages?.[""]?.license === "Apache-2
 record("npm-next-tag", packageJson.publishConfig?.tag === "next", packageJson.publishConfig?.tag ?? null);
 record(
   "prepublish-gate",
-  ["npm test", "npm run test:shadow", "npm run test:release", "npm run test:consumer"].every((command) => packageJson.scripts?.prepublishOnly?.includes(command)),
+  ["npm test", "npm run test:shadow", "npm run test:release", "npm run test:consumer", "npm run test:directory"].every((command) => packageJson.scripts?.prepublishOnly?.includes(command)),
   packageJson.scripts?.prepublishOnly ?? null,
 );
 
@@ -101,7 +101,7 @@ for (const name of expectedPlugins) {
 
 const installation = `${read("docs/installation.md")}\n${read("docs/installation.zh-CN.md")}`;
 for (const phrase of [
-  `codex plugin marketplace add echopath-labs/forgerail --ref ${expectedTag}`,
+  "codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.1",
   "codex plugin add forgerail@echopath-labs",
   "codex plugin add forgerail-cross-workspace-orchestration@echopath-labs",
   "codex plugin add forgerail-github-rulesets@echopath-labs",
@@ -136,8 +136,8 @@ record("package-adapters", packageJson.files?.includes("adapters/"), packageJson
 record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
 record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-const releaseEnglish = read("docs/release.md");
-const releaseChinese = read("docs/release.zh-CN.md");
+const releaseEnglish = read("docs/release-alpha2.md");
+const releaseChinese = read("docs/release-alpha2.zh-CN.md");
 const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
 for (const phrase of [
   "remote_integration_approval",
@@ -146,7 +146,7 @@ for (const phrase of [
   expectedVersion,
   expectedTag,
   "Node.js 22 and 24",
-  "release/0.1.0-alpha.1",
+  "codex/forgerail-alpha2-scoped",
   "Do not unpublish",
   "AGW",
   "Host Binding Receipt",
@@ -156,17 +156,17 @@ for (const phrase of [
 }
 for (const [id, document, phrases] of [
   ["english", releaseEnglish, [
-    "The first public candidate must be an ordinary child of the observed public `main`.",
-    "an ordinary fast-forward successor of the current release head",
-    "the PR base and publication comparison baseline bound to the observed `main`",
-    "the resulting public `main` tree must equal the final signed projection tree",
+    "The public candidate is an ordinary child of the observed remote `main`.",
+    "an ordinary source-first successor commit",
+    "The Draft PR base and publication comparison baseline remain bound to the observed remote `main`",
+    "The merged public `main` tree must equal the final signed projection tree",
     "Install and discover each external Capability Pack separately",
   ]],
   ["chinese", releaseChinese, [
-    "首个公共候选必须是已观测 `main` 的普通子 commit。",
-    "当前 release head 的普通 fast-forward successor",
-    "PR base 与 publication comparison baseline 继续绑定已观测 `main`",
-    "公共 `main` tree 必须等于最终签名 projection tree",
+    "公共候选是已观测远端 `main` 的普通子 commit。",
+    "普通的 source-first successor commit",
+    "Draft PR base 与 publication comparison baseline 继续绑定已观测远端 `main`",
+    "合并后的公共 `main` tree 必须等于最终签名 projection tree",
     "每个外部 Capability Pack 分别安装与发现",
   ]],
 ]) {

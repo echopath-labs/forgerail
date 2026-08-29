@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "matrixId": "architecture-convergence-audit",
+  "risk": "medium",
+  "analyzeFirst": true,
+  "defaultMutation": "read-only",
+  "createsState": false,
+  "requiresAuthentication": false,
+  "cases": [
+    { "caseId": "diagnosis-routes-source-discovery", "signal": "nearest instructions and commands are unknown", "evidenceCompleteness": "complete", "expectedOwner": "diagnosis", "expectedFinding": "route", "expectedAction": "discover-sources" },
+    { "caseId": "health-routes-stale-worktrees", "signal": "worktrees are stale and unclaimed", "evidenceCompleteness": "complete", "expectedOwner": "health", "expectedFinding": "route", "expectedAction": "assess-recurring-health" },
+    { "caseId": "core-routes-authority", "signal": "exact operation authority is unresolved", "evidenceCompleteness": "complete", "expectedOwner": "core", "expectedFinding": "route", "expectedAction": "evaluate-deterministic-control" },
+    { "caseId": "thin-seam-retained", "signal": "thin interface owns authorization substitution", "evidenceCompleteness": "complete", "expectedOwner": "existing-component", "expectedFinding": "independent-invariant", "expectedAction": "retain" },
+    { "caseId": "large-cohesive-slice-retained", "signal": "large slice owns one independently useful invariant", "evidenceCompleteness": "complete", "expectedOwner": "existing-component", "expectedFinding": "cohesive-slice", "expectedAction": "retain" },
+    { "caseId": "second-identity-fence", "signal": "two components normalize and persist the same canonical identity", "evidenceCompleteness": "complete", "expectedOwner": "canonical-identity-owner", "expectedFinding": "confirmed-redundancy", "expectedAction": "consolidate" },
+    { "caseId": "parallel-state-machine", "signal": "two state machines own the same durable transition", "evidenceCompleteness": "complete", "expectedOwner": "durable-state-owner", "expectedFinding": "confirmed-redundancy", "expectedAction": "delete-duplicate" },
+    { "caseId": "duplicate-parser", "signal": "two parsers interpret the same authoritative format", "evidenceCompleteness": "complete", "expectedOwner": "format-owner", "expectedFinding": "confirmed-redundancy", "expectedAction": "reuse-parser" },
+    { "caseId": "speculative-compatibility", "signal": "compatibility layer has no current or committed consumer", "evidenceCompleteness": "complete", "expectedOwner": "none", "expectedFinding": "retention-burden-failed", "expectedAction": "defer-or-delete" },
+    { "caseId": "recovery-multiplication", "signal": "two resume paths reconstruct the same state", "evidenceCompleteness": "complete", "expectedOwner": "recovery-owner", "expectedFinding": "confirmed-redundancy", "expectedAction": "consolidate" },
+    { "caseId": "implementation-shaped-tests", "signal": "tests only preserve an obsolete duplicate abstraction", "evidenceCompleteness": "complete", "expectedOwner": "behavior-owner", "expectedFinding": "obsolete-coverage", "expectedAction": "delete-tests-preserve-invariants" },
+    { "caseId": "incomplete-evidence", "signal": "callers and durable fact owner are not verified", "evidenceCompleteness": "incomplete", "expectedOwner": "unverified", "expectedFinding": "inferred-redundancy", "expectedAction": "verify-before-deletion" },
+    { "caseId": "existing-profile-objects", "signal": "project facts are required for the audit", "evidenceCompleteness": "complete", "expectedOwner": "governance-source-profile-envelope", "expectedFinding": "reuse-existing-state", "expectedAction": "read-existing-objects" },
+    { "caseId": "issue-without-authorization", "signal": "local audit recommends a tracking issue", "evidenceCompleteness": "complete", "expectedOwner": "host-provider-boundary", "expectedFinding": "external-write-not-authorized", "expectedAction": "return-template-only" }
+  ]
+}

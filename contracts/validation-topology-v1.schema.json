@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/validation-topology-v1.json",
+  "title": "ForgeRail Validation Topology v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "topologyId", "topologyRevisionId", "workspaceIdentityId", "profileId", "profileRevisionId", "subjectId", "coverageMode", "changedSurfaces", "validationRequirements", "declaredAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "topologyId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "topologyRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "profileId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "profileRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "coverageMode": { "enum": ["required", "advisory", "undeclared"] },
+    "changedSurfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["surfaceId", "locator", "ownerIds", "consumerIds", "validationRequirementIds", "sourceIdentityIds"],
+        "properties": {
+          "surfaceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "locator": { "type": "string", "minLength": 1 },
+          "ownerIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "consumerIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "validationRequirementIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+          "sourceIdentityIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "minItems": 1, "uniqueItems": true }
+        }
+      }
+    },
+    "validationRequirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requirementId", "entrypointId", "prerequisiteDependencyEdgeIds", "acceptedTrustClasses", "expectedResults", "evidenceLocators", "selected"],
+        "properties": {
+          "requirementId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "entrypointId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "prerequisiteDependencyEdgeIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+          "acceptedTrustClasses": { "type": "array", "items": { "$ref": "#/$defs/trustClass" }, "minItems": 1, "uniqueItems": true },
+          "expectedResults": { "type": "array", "items": { "enum": ["passed", "not_applicable"] }, "minItems": 1, "uniqueItems": true },
+          "evidenceLocators": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+          "selected": { "type": "boolean" }
+        }
+      }
+    },
+    "declaredAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "trustClass": { "enum": ["self-reported", "local-observed", "provider-attested", "trusted-runner", "protected-environment"] }
+  }
+}

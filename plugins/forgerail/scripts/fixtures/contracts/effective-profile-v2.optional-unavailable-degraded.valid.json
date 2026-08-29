@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "2.0",
+  "profileId": "profile:demo",
+  "revisionId": "profile-revision:optional-unavailable",
+  "workspaceIdentityId": "workspace:demo",
+  "computed": true,
+  "computedAt": "2026-08-18T00:00:00Z",
+  "completeness": "degraded",
+  "sourceIds": ["source:agents"],
+  "workspaceRelationshipIds": [],
+  "ruleClaims": [],
+  "dependencyEdges": [
+    {
+      "schemaVersion": "1.0",
+      "edgeId": "edge:optional-history",
+      "workspaceIdentityId": "workspace:demo",
+      "declaringSourceId": "source:agents",
+      "target": {
+        "kind": "source",
+        "locator": "provider:governance-history",
+        "identity": null
+      },
+      "requiredness": "optional",
+      "applicabilityScope": ["historical-context"],
+      "provenanceStatus": "provider-declared",
+      "observationStatus": "unavailable",
+      "affectedClaimIds": [],
+      "observedAt": "2026-08-18T00:00:00Z",
+      "limitedReason": "Optional history provider is unavailable."
+    }
+  ],
+  "applicablePackIds": [],
+  "conflicts": [],
+  "explanationId": "explanation:optional-unavailable",
+  "limitedReasons": ["Optional history context is unavailable."]
+}

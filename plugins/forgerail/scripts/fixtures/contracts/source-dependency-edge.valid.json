@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "edgeId": "edge:skill",
+  "workspaceIdentityId": "workspace:demo",
+  "declaringSourceId": "source:agents",
+  "target": {
+    "kind": "skill",
+    "locator": ".codex/skills/review/SKILL.md",
+    "identity": "skill:review"
+  },
+  "requiredness": "required",
+  "applicabilityScope": ["code-change"],
+  "provenanceStatus": "structured",
+  "observationStatus": "available",
+  "affectedClaimIds": ["claim:review"],
+  "observedAt": "2026-08-18T00:00:00Z",
+  "limitedReason": null
+}

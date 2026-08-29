@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "sourceId": "source:agents",
+  "workspaceIdentityId": "workspace:demo",
+  "sourceKind": "instructions",
+  "locator": "AGENTS.md",
+  "ownerId": "owner:demo",
+  "precedenceClass": "workspace-instructions",
+  "applicabilityScope": ["workspace"],
+  "workspaceRelationshipIds": [],
+  "observationStatus": "observed",
+  "ruleClaimIds": ["claim:review"],
+  "dependencyEdgeIds": ["edge:skill"],
+  "observedAt": "2026-08-18T00:00:00Z",
+  "limitedReason": null
+}

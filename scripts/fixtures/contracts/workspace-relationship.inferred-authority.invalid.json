@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "relationshipId": "relationship:physical-parent",
+  "sourceWorkspaceIdentityId": "workspace:outer",
+  "targetWorkspaceIdentityId": "workspace:inner",
+  "relationshipType": "governance-scope",
+  "governanceApplicability": "scoped",
+  "applicabilityScope": ["all"],
+  "declaredBySourceId": "source:filesystem-observation",
+  "provenanceStatus": "inferred",
+  "authorityTransfer": true,
+  "observedAt": "2026-08-18T00:00:00Z"
+}

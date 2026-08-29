@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "matrixId": "task-4-diagnosis-health-separation",
+  "analyzeFirst": true,
+  "mutationsAllowed": false,
+  "cases": [
+    { "caseId": "nested-owner-boundary", "question": "what-exists", "observations": ["independent child repository", "nearest agent entry"], "expectedOwner": "diagnosis", "expectedOutput": "bounded-source-inventory" },
+    { "caseId": "nearest-governance-sources", "question": "what-exists", "observations": ["agent entry", "skills", "ownership source", "specification source", "native command entry"], "expectedOwner": "diagnosis", "expectedOutput": "source-locators-with-provenance" },
+    { "caseId": "dependency-unavailable", "question": "what-exists", "observations": ["required executable unavailable"], "expectedOwner": "diagnosis", "expectedOutput": "unavailable-with-limited-reason" },
+    { "caseId": "baseline-debt", "question": "what-exists", "observations": ["failure predates selected change"], "expectedOwner": "diagnosis", "expectedOutput": "baseline-debt-separated-from-diff" },
+    { "caseId": "stale-unclaimed-worktree", "question": "is-governance-healthy", "observations": ["worktree has no current owner", "recovery entry is stale"], "expectedOwner": "health", "expectedOutput": "recurring-stale-worktree-signal" },
+    { "caseId": "specification-adr-residue", "question": "is-governance-healthy", "observations": ["completed specification remains active", "architecture link points to superseded record"], "expectedOwner": "health", "expectedOutput": "lifecycle-and-recovery-drift" },
+    { "caseId": "ci-generated-drift", "question": "is-governance-healthy", "observations": ["declared CI topology differs from provider observation", "generated artifact differs from source"], "expectedOwner": "health", "expectedOutput": "drift-without-provider-pass" },
+    { "caseId": "compatibility-test-abstraction-bloat", "question": "is-governance-healthy", "observations": ["multiple compatibility paths", "implementation-shaped tests", "unclear current consumer"], "expectedOwner": "health", "expectedOutput": "maintenance-debt-signal" },
+    { "caseId": "runner-qualification-stale", "question": "is-governance-healthy", "observations": ["runner configuration changed after qualification"], "expectedOwner": "health", "expectedOutput": "qualification-freshness-risk" },
+    { "caseId": "exact-authority-and-receipt", "question": "can-transition-proceed", "observations": ["exact subject", "authority requirement", "validation topology", "receipt identity"], "expectedOwner": "core", "expectedOutput": "deterministic-control-result" },
+    { "caseId": "duplicate-capability-owner", "question": "what-minimal-implementation-remains", "observations": ["two state machines claim the same durable fact"], "expectedOwner": "architecture-convergence", "expectedOutput": "owner-map-and-deletion-first-plan" }
+  ]
+}

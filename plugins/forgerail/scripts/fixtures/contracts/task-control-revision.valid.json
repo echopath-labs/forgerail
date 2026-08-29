@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0",
+  "revisionId": "control-revision:task-2.6-1",
+  "predecessorRevisionId": null,
+  "taskId": "task:2.6",
+  "workspaceIdentityId": "workspace:echopath",
+  "profileId": "profile:forgerail",
+  "profileRevisionId": "profile-revision:forgerail-2.5",
+  "envelopeId": "envelope:task-2.6",
+  "envelopeRevisionId": "envelope-revision:task-2.6-1",
+  "subjectId": "subject:task-2.6",
+  "entryMode": {
+    "schemaVersion": "1.0",
+    "mode": "new",
+    "sourceEvidenceIds": [],
+    "observedAt": "2026-08-18T08:00:00Z"
+  },
+  "phaseSliceCorrelation": {
+    "schemaVersion": "1.0",
+    "correlationId": "correlation:task-2.6",
+    "taskId": "task:2.6",
+    "parentTaskId": "task:forgerail-control-system",
+    "phaseId": "phase:contracts",
+    "sliceId": "slice:task-2.6",
+    "executionAttemptId": "attempt:task-2.6-1",
+    "ownerWorkspaceIdentityId": "workspace:echopath",
+    "requiredSliceIds": ["slice:task-2.6"],
+    "aggregateClosureClaim": false
+  },
+  "state": "closed",
+  "operationGrantIds": ["grant:task-2.6-write"],
+  "gateResultIds": ["gate-result:task-2.6-validation"],
+  "evidenceIdentityIds": ["evidence:task-2.6-tests"],
+  "deviationEvidenceIds": [],
+  "returnReceiptId": "receipt:task-2.6",
+  "observedAt": "2026-08-18T08:30:00Z"
+}

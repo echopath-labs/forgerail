@@ -11,7 +11,7 @@
   "activationBoundary": "new-task-required",
   "verification": {
     "mode": "new-task-discovery",
-    "expectedSkills": ["forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"]
+    "expectedSkills": ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"]
   },
   "limitations": [
     "A binding is discovered only by a new Codex task started inside the applicable instruction scope.",

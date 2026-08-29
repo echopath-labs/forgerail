@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/rule-claim-v1.json",
+  "title": "ForgeRail Rule Claim v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "claimId", "workspaceIdentityId", "sourceId", "ruleKey", "normalizedValue", "precedenceClass", "applicabilityScope", "observationPoint", "status", "enforcement", "dependencyEdgeIds", "observedAt", "limitedReason"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "claimId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "sourceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "ruleKey": { "type": "string", "pattern": "^[a-z][a-z0-9.-]+$" },
+    "normalizedValue": {},
+    "precedenceClass": { "type": "string", "minLength": 1 },
+    "applicabilityScope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "observationPoint": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["observed", "inferred", "confirmed", "default", "requires-confirmation"] },
+    "enforcement": { "enum": ["enforceable", "advisory", "unresolved"] },
+    "dependencyEdgeIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "limitedReason": { "type": ["string", "null"], "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "enum": ["inferred", "requires-confirmation"] } }, "required": ["status"] },
+      "then": { "properties": { "enforcement": { "enum": ["advisory", "unresolved"] } } }
+    },
+    {
+      "if": { "properties": { "enforcement": { "const": "unresolved" } }, "required": ["enforcement"] },
+      "then": { "properties": { "limitedReason": { "type": "string", "minLength": 1 } } }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/source-dependency-edge-v1.json",
+  "title": "ForgeRail Source Dependency Edge v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "edgeId", "workspaceIdentityId", "declaringSourceId", "target", "requiredness", "applicabilityScope", "provenanceStatus", "observationStatus", "affectedClaimIds", "observedAt", "limitedReason"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "edgeId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "declaringSourceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator", "identity"],
+      "properties": {
+        "kind": { "enum": ["skill", "pack", "command", "script", "record-entry", "source", "schema", "other"] },
+        "locator": { "type": "string", "minLength": 1 },
+        "identity": { "type": ["string", "null"], "minLength": 1 }
+      }
+    },
+    "requiredness": { "enum": ["required", "optional"] },
+    "applicabilityScope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "provenanceStatus": { "enum": ["structured", "provider-declared", "confirmed", "inferred", "requires-confirmation"] },
+    "observationStatus": { "enum": ["available", "unavailable", "ambiguous", "unverified"] },
+    "affectedClaimIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "limitedReason": { "type": ["string", "null"], "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "observationStatus": { "enum": ["unavailable", "ambiguous", "unverified"] } }, "required": ["observationStatus"] },
+      "then": { "properties": { "limitedReason": { "type": "string", "minLength": 1 } } }
+    }
+  ]
+}

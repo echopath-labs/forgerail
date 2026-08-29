@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "topologyId": "topology:forgerail-contracts",
+  "topologyRevisionId": "topology-revision:1",
+  "workspaceIdentityId": "workspace:forgerail",
+  "profileId": "profile:forgerail",
+  "profileRevisionId": "profile-revision:1",
+  "subjectId": "subject:commit-a",
+  "coverageMode": "required",
+  "changedSurfaces": [
+    {
+      "surfaceId": "surface:contracts",
+      "locator": "plugins/forgerail/contracts",
+      "ownerIds": ["owner:forgerail"],
+      "consumerIds": ["consumer:cli"],
+      "validationRequirementIds": ["validation:missing"],
+      "sourceIdentityIds": ["source:openspec-topology"]
+    }
+  ],
+  "validationRequirements": [
+    {
+      "requirementId": "validation:contract-fixtures",
+      "entrypointId": "entrypoint:npm-test",
+      "prerequisiteDependencyEdgeIds": [],
+      "acceptedTrustClasses": ["local-observed"],
+      "expectedResults": ["passed"],
+      "evidenceLocators": ["npm test"],
+      "selected": true
+    }
+  ],
+  "declaredAt": "2026-08-18T15:30:00Z"
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/validation-result-v1.json",
+  "title": "ForgeRail Validation Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "resultId", "topologyId", "topologyRevisionId", "requirementId", "workspaceIdentityId", "envelopeRevisionId", "controlRevisionId", "subjectId", "executionContextIdentityId", "status", "expectedResult", "trustClass", "evidenceIdentityIds", "waiver", "observedAt", "limitedReason"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "resultId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "topologyId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "topologyRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "requirementId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "envelopeRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "controlRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "executionContextIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "status": { "enum": ["passed", "failed", "blocked", "unavailable", "not_applicable", "not_selected", "waived"] },
+    "expectedResult": { "enum": ["passed", "not_applicable"] },
+    "trustClass": { "enum": ["self-reported", "local-observed", "provider-attested", "trusted-runner", "protected-environment"] },
+    "evidenceIdentityIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "waiver": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authorityEvidenceId", "requirementId", "subjectId", "scope", "expiresAt"],
+          "properties": {
+            "authorityEvidenceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+            "requirementId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+            "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+            "scope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+            "expiresAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "limitedReason": { "anyOf": [{ "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" }, { "type": "null" }] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "passed" } }, "required": ["status"] },
+      "then": { "properties": { "evidenceIdentityIds": { "minItems": 1 }, "waiver": { "const": null }, "limitedReason": { "const": null } } }
+    },
+    {
+      "if": { "properties": { "status": { "const": "waived" } }, "required": ["status"] },
+      "then": { "properties": { "waiver": { "type": "object" }, "evidenceIdentityIds": { "minItems": 1 }, "limitedReason": { "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" } } }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["failed", "blocked", "unavailable", "not_applicable", "not_selected"] } }, "required": ["status"] },
+      "then": { "properties": { "waiver": { "const": null }, "limitedReason": { "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" } } }
+    }
+  ]
+}

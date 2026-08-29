@@ -12,6 +12,21 @@ Review the smallest useful evidence for:
 - release or production rules mixed into generic workflow guidance;
 - hidden durable mutation without human approval.
 
+Also report these as recurring Health signals when bounded evidence exists:
+
+- stale or unclaimed worktrees and worktrees whose recovery owner is unknown;
+- active specification records that conflict with delivered behavior or remain active after completion;
+- stale governance links, superseded ADR references, and generated artifacts that drift from their declared source;
+- declared CI topology that differs from provider-observed topology, while keeping unavailable provider evidence unavailable;
+- compatibility, test, or abstraction growth whose current consumer and recovery value are unclear;
+- runner qualification evidence made stale by a relevant configuration or trust-boundary change.
+
+Health observes recurring drift, debt, orphaning, and recovery cost. It does not
+discover the workspace from scratch, mint authority, evaluate a protected
+transition, or decide that an implementation layer is redundant. Route those
+questions to Workspace Diagnosis, ForgeRail Core, or an explicitly invoked
+architecture convergence audit respectively.
+
 Prefer categorical status. Recommendations are:
 
 - `P0`: blocks high-risk work or safe recovery;

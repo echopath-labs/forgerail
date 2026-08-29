@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "2.0",
+  "profileId": "profile:demo",
+  "revisionId": "profile-revision:demo-1",
+  "workspaceIdentityId": "workspace:demo",
+  "computed": true,
+  "computedAt": "2026-08-18T00:00:00Z",
+  "completeness": "complete",
+  "sourceIds": ["source:agents"],
+  "workspaceRelationshipIds": [],
+  "ruleClaims": [
+    {
+      "schemaVersion": "1.0",
+      "claimId": "claim:review",
+      "workspaceIdentityId": "workspace:demo",
+      "sourceId": "source:agents",
+      "ruleKey": "review.required",
+      "normalizedValue": true,
+      "precedenceClass": "workspace-instructions",
+      "applicabilityScope": ["code-change"],
+      "observationPoint": "AGENTS.md#review",
+      "status": "confirmed",
+      "enforcement": "enforceable",
+      "dependencyEdgeIds": ["edge:skill"],
+      "observedAt": "2026-08-18T00:00:00Z",
+      "limitedReason": null
+    }
+  ],
+  "dependencyEdges": [
+    {
+      "schemaVersion": "1.0",
+      "edgeId": "edge:skill",
+      "workspaceIdentityId": "workspace:demo",
+      "declaringSourceId": "source:agents",
+      "target": {
+        "kind": "skill",
+        "locator": ".codex/skills/review/SKILL.md",
+        "identity": "skill:review"
+      },
+      "requiredness": "required",
+      "applicabilityScope": ["code-change"],
+      "provenanceStatus": "structured",
+      "observationStatus": "available",
+      "affectedClaimIds": ["claim:review"],
+      "observedAt": "2026-08-18T00:00:00Z",
+      "limitedReason": null
+    }
+  ],
+  "applicablePackIds": [],
+  "conflicts": [],
+  "explanationId": "explanation:demo-1",
+  "limitedReasons": []
+}

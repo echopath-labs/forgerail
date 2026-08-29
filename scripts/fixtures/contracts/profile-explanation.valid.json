@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "explanationId": "explanation:demo-1",
+  "profileId": "profile:demo",
+  "profileRevisionId": "profile-revision:demo-1",
+  "workspaceIdentityId": "workspace:demo",
+  "generatedAt": "2026-08-18T00:00:00Z",
+  "completeness": "complete",
+  "sourceSummaries": [
+    {
+      "sourceId": "source:agents",
+      "status": "observed",
+      "claimIds": ["claim:review"],
+      "limitedReason": null
+    }
+  ],
+  "claimDecisions": [
+    {
+      "claimId": "claim:review",
+      "sourceId": "source:agents",
+      "disposition": "active",
+      "reasonCode": "highest-applicable-precedence",
+      "dependencyEdgeIds": ["edge:skill"]
+    }
+  ],
+  "conflicts": [],
+  "confirmationNeeds": [],
+  "limitedReasons": []
+}

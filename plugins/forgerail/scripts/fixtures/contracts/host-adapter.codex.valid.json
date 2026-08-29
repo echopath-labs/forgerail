@@ -11,7 +11,7 @@
   "activationBoundary": "new-task-required",
   "verification": {
     "mode": "new-task-discovery",
-    "expectedSkills": ["forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"]
+    "expectedSkills": ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"]
   },
   "limitations": ["A new task is required after adoption."]
 }

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/operation-authority-requirement-v1.json",
+  "title": "ForgeRail Operation Authority Requirement v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "requirementId", "workspaceIdentityId", "operation", "target", "subjectId", "scope", "eligibleIssuerSourceIds", "acceptedIssuerEvidenceKinds", "freshness", "declaredAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "requirementId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "operation": { "type": "string", "minLength": 1 },
+    "target": { "$ref": "#/$defs/target" },
+    "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "scope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "eligibleIssuerSourceIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "minItems": 1, "uniqueItems": true },
+    "acceptedIssuerEvidenceKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxAgeSeconds", "expiresRequired"],
+      "properties": {
+        "maxAgeSeconds": { "type": "integer", "minimum": 1 },
+        "expiresRequired": { "type": "boolean" }
+      }
+    },
+    "declaredAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator", "identity", "ref", "environment"],
+      "properties": {
+        "kind": { "enum": ["file", "directory", "repository", "ref", "artifact", "environment", "profile-source", "other"] },
+        "locator": { "type": "string", "minLength": 1 },
+        "identity": { "type": ["string", "null"] },
+        "ref": { "type": ["string", "null"] },
+        "environment": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

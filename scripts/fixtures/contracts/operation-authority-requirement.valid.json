@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "requirementId": "authority-requirement:task-2.6-write",
+  "workspaceIdentityId": "workspace:echopath",
+  "operation": "workspace.write",
+  "target": {
+    "kind": "directory",
+    "locator": "plugins/forgerail/contracts",
+    "identity": "target:forgerail-contracts",
+    "ref": "feat/forgerail-product-architecture",
+    "environment": null
+  },
+  "subjectId": "subject:task-2.6",
+  "scope": ["plugins/forgerail/contracts/**"],
+  "eligibleIssuerSourceIds": ["source:user-approval"],
+  "acceptedIssuerEvidenceKinds": ["explicit-current-user-instruction"],
+  "freshness": {
+    "maxAgeSeconds": 86400,
+    "expiresRequired": true
+  },
+  "declaredAt": "2026-08-18T08:00:00Z"
+}

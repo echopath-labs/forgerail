@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/review-authority-requirement-v1.json",
+  "title": "ForgeRail Review Authority Requirement v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "requirementId", "workspaceIdentityId", "operation", "authorityClass", "subjectId", "scope", "authoritySourceIds", "acceptedEvidenceKinds", "quorum", "actorConstraints", "ownerCoverage", "freshness", "substitutionPolicy", "waiverPolicy", "declaredAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "requirementId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "operation": { "type": "string", "minLength": 1 },
+    "authorityClass": { "$ref": "#/$defs/authorityClass" },
+    "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "scope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "authoritySourceIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "minItems": 1, "uniqueItems": true },
+    "acceptedEvidenceKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "quorum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimumCount", "distinctActors"],
+      "properties": {
+        "minimumCount": { "type": "integer", "minimum": 1 },
+        "distinctActors": { "type": "boolean" }
+      }
+    },
+    "actorConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eligibleActorSourceIds", "excludedRelations"],
+      "properties": {
+        "eligibleActorSourceIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+        "excludedRelations": { "type": "array", "items": { "enum": ["subject-author", "executor", "evidence-author"] }, "uniqueItems": true }
+      }
+    },
+    "ownerCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "surfaceIds"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "surfaceIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxAgeSeconds", "expiresRequired"],
+      "properties": {
+        "maxAgeSeconds": { "type": "integer", "minimum": 1 },
+        "expiresRequired": { "type": "boolean" }
+      }
+    },
+    "substitutionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "equivalenceEdges"],
+      "properties": {
+        "mode": { "enum": ["none", "bounded-equivalence"] },
+        "equivalenceEdges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["edgeId", "fromAuthorityClass", "toRequirementId", "sourceId", "direction", "transitive"],
+            "properties": {
+              "edgeId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+              "fromAuthorityClass": { "$ref": "#/$defs/authorityClass" },
+              "toRequirementId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+              "sourceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+              "direction": { "const": "one-way" },
+              "transitive": { "const": false }
+            }
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "waiverPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "requiredAuthorityClass"],
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "requiredAuthorityClass": { "anyOf": [{ "$ref": "#/$defs/authorityClass" }, { "type": "null" }] }
+      }
+    },
+    "declaredAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "authorityClass": {
+      "enum": ["agent_review", "automated_validation", "peer_review", "ownership_approval", "security_approval", "release_approval", "environment_approval"]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "ownerCoverage": { "properties": { "required": { "const": true } }, "required": ["required"] } }, "required": ["ownerCoverage"] },
+      "then": { "properties": { "ownerCoverage": { "properties": { "surfaceIds": { "minItems": 1 } } } } }
+    },
+    {
+      "if": { "properties": { "substitutionPolicy": { "properties": { "mode": { "const": "none" } }, "required": ["mode"] } }, "required": ["substitutionPolicy"] },
+      "then": { "properties": { "substitutionPolicy": { "properties": { "equivalenceEdges": { "maxItems": 0 } } } } }
+    },
+    {
+      "if": { "properties": { "substitutionPolicy": { "properties": { "mode": { "const": "bounded-equivalence" } }, "required": ["mode"] } }, "required": ["substitutionPolicy"] },
+      "then": { "properties": { "substitutionPolicy": { "properties": { "equivalenceEdges": { "minItems": 1 } } } } }
+    },
+    {
+      "if": { "properties": { "waiverPolicy": { "properties": { "allowed": { "const": false } }, "required": ["allowed"] } }, "required": ["waiverPolicy"] },
+      "then": { "properties": { "waiverPolicy": { "properties": { "requiredAuthorityClass": { "const": null } } } } }
+    },
+    {
+      "if": { "properties": { "waiverPolicy": { "properties": { "allowed": { "const": true } }, "required": ["allowed"] } }, "required": ["waiverPolicy"] },
+      "then": { "properties": { "waiverPolicy": { "properties": { "requiredAuthorityClass": { "$ref": "#/$defs/authorityClass" } } } } }
+    }
+  ]
+}

@@ -16,7 +16,7 @@
   ],
   "changedFiles": ["AGENTS.md"],
   "validationEvidence": ["Applied content digest matched the approved Adoption Plan."],
-  "discoveredSkills": ["forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"],
+  "discoveredSkills": ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"],
   "activationVerification": {
     "mode": "new-task",
     "verified": true

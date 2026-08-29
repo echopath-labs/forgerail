@@ -1,6 +1,6 @@
 {
   "name": "@echopath-labs/forgerail",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
   "license": "Apache-2.0",
   "type": "module",
@@ -9,9 +9,11 @@
   },
   "files": [
     ".codex-plugin/",
+    "assets/",
     "adapters/",
     "contracts/",
     "docs/",
+    "directory/",
     "marketplace/",
     "packs/",
     "scripts/",
@@ -22,9 +24,11 @@
     "LICENSE",
     "NOTICE",
     "PLUGIN.md",
+    "PRIVACY.md",
     "README.md",
     "README.zh-CN.md",
-    "SECURITY.md"
+    "SECURITY.md",
+    "TERMS.md"
   ],
   "engines": {
     "node": ">=22"
@@ -34,8 +38,10 @@
     "test:consumer": "node scripts/disposable-consumer.mjs",
     "test:release": "node scripts/validate-release.mjs",
     "test:shadow": "node scripts/shadow-comparison.mjs",
+    "test:directory": "node scripts/validate-universal-directory.mjs",
+    "build:directory-candidate": "node scripts/build-universal-directory-candidate.mjs",
     "diagnose:fixture": "node scripts/forgerail.mjs diagnose --workspace scripts/fixtures/workspaces/markdown-existing",
-    "prepublishOnly": "npm test && npm run test:shadow && npm run test:release && npm run test:consumer"
+    "prepublishOnly": "npm test && npm run test:shadow && npm run test:release && npm run test:consumer && npm run test:directory"
   },
   "repository": {
     "type": "git",

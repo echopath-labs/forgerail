@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/profile-explanation-v1.json",
+  "title": "ForgeRail Profile Explanation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "explanationId", "profileId", "profileRevisionId", "workspaceIdentityId", "generatedAt", "completeness", "sourceSummaries", "claimDecisions", "conflicts", "confirmationNeeds", "limitedReasons"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "explanationId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "profileId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "profileRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "completeness": { "enum": ["complete", "degraded", "unresolved"] },
+    "sourceSummaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceId", "status", "claimIds", "limitedReason"],
+        "properties": {
+          "sourceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "status": { "enum": ["observed", "unavailable", "ambiguous", "unverified"] },
+          "claimIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+          "limitedReason": { "type": ["string", "null"], "minLength": 1 }
+        }
+      }
+    },
+    "claimDecisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["claimId", "sourceId", "disposition", "reasonCode", "dependencyEdgeIds"],
+        "properties": {
+          "claimId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "sourceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "disposition": { "enum": ["active", "shadowed", "unresolved", "excluded"] },
+          "reasonCode": { "type": "string", "minLength": 1 },
+          "dependencyEdgeIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["conflictId", "claimIds", "limitedReason", "confirmationRequired"],
+        "properties": {
+          "conflictId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "claimIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "minItems": 2, "uniqueItems": true },
+          "limitedReason": { "type": "string", "minLength": 1 },
+          "confirmationRequired": { "type": "boolean" }
+        }
+      }
+    },
+    "confirmationNeeds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["needId", "claimIds", "reasonCode", "prompt"],
+        "properties": {
+          "needId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "claimIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "minItems": 1, "uniqueItems": true },
+          "reasonCode": { "type": "string", "minLength": 1 },
+          "prompt": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "limitedReasons": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "completeness": { "const": "complete" } }, "required": ["completeness"] },
+      "then": {
+        "properties": {
+          "conflicts": { "maxItems": 0 },
+          "confirmationNeeds": { "maxItems": 0 },
+          "limitedReasons": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "completeness": { "enum": ["degraded", "unresolved"] } }, "required": ["completeness"] },
+      "then": { "properties": { "limitedReasons": { "minItems": 1 } } }
+    }
+  ]
+}

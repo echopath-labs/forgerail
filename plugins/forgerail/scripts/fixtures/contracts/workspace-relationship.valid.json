@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "relationshipId": "relationship:coordination-to-demo",
+  "sourceWorkspaceIdentityId": "workspace:coordination",
+  "targetWorkspaceIdentityId": "workspace:demo",
+  "relationshipType": "governance-scope",
+  "governanceApplicability": "scoped",
+  "applicabilityScope": ["release-coordination"],
+  "declaredBySourceId": "source:coordination-plan",
+  "provenanceStatus": "provider-declared",
+  "authorityTransfer": false,
+  "observedAt": "2026-08-18T00:00:00Z"
+}

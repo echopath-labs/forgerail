@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0",
+  "id": "architecture-convergence-audit",
+  "purpose": "Trace capability ownership and return the smallest evidence-backed implementation boundary without changing the workspace.",
+  "entry": "skills/architecture-convergence-audit/SKILL.md",
+  "risk": "medium",
+  "states": ["available", "recommended", "enabled", "required", "blocked", "disabled"],
+  "triggers": [
+    "explicit architecture convergence request",
+    "mature capability appears rebuilt in a new context",
+    "duplicate identity state recovery parser or schema ownership signal"
+  ],
+  "inputs": [
+    "requested outcomes and non-goals",
+    "reproducible baseline and freshness",
+    "governance source inventory",
+    "effective profile and task envelope",
+    "implementation callers persistence lifecycle and validation evidence"
+  ],
+  "dependencies": [],
+  "conflicts": [],
+  "approvals": [],
+  "validation": [
+    "analysis remains read-only and labels inference",
+    "ownership map traces durable facts and current consumers",
+    "deletion recommendations preserve required invariants and failure coverage",
+    "no profile task ledger receipt state or external tracker is created"
+  ],
+  "receiptExtensions": ["convergenceStatus", "ownershipMap", "remainingBoundary"]
+}

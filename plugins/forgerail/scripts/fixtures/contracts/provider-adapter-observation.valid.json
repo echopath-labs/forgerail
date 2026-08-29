@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.0",
+  "observationId": "provider-observation:github-task",
+  "adapterId": "github-provider",
+  "adapterVersion": "1.0.0",
+  "providerId": "github",
+  "workspaceIdentityId": "workspace:forgerail",
+  "sourceIdentityId": "source:github-repository",
+  "scopeKind": "subject",
+  "taskId": "task:2.7",
+  "subjectId": "subject:commit-a",
+  "controlRevisionId": "control-revision:1",
+  "identity": {
+    "state": "unauthenticated",
+    "actorId": null,
+    "evidenceIdentityIds": ["evidence:github-auth-probe"],
+    "limitedReason": {
+      "schemaVersion": "1.0",
+      "reasonId": "reason:github-unauthenticated",
+      "code": "unauthenticated-provider",
+      "impact": "unavailable",
+      "summary": "Current provider identity could not be authenticated.",
+      "evidenceIdentityIds": ["evidence:github-auth-probe"],
+      "locators": ["provider://github/auth"],
+      "observedAt": "2026-08-18T15:30:00Z",
+      "sanitized": true
+    }
+  },
+  "authorizationClaim": false,
+  "capabilities": [
+    {
+      "capability": "source-observation",
+      "state": "supported",
+      "requiresIdentity": false,
+      "sideEffectKinds": [],
+      "approvalRequirementIds": [],
+      "evidenceIdentityIds": ["evidence:github-local-config"],
+      "limitedReason": null
+    },
+    {
+      "capability": "authority-observation",
+      "state": "unavailable",
+      "requiresIdentity": true,
+      "sideEffectKinds": [],
+      "approvalRequirementIds": [],
+      "evidenceIdentityIds": ["evidence:github-auth-probe"],
+      "limitedReason": {
+        "schemaVersion": "1.0",
+        "reasonId": "reason:github-authority-unavailable",
+        "code": "unauthenticated-provider",
+        "impact": "unavailable",
+        "summary": "Platform authority evidence is unavailable without authenticated identity.",
+        "evidenceIdentityIds": ["evidence:github-auth-probe"],
+        "locators": ["provider://github/authority"],
+        "observedAt": "2026-08-18T15:30:00Z",
+        "sanitized": true
+      }
+    }
+  ],
+  "observedAt": "2026-08-18T15:30:00Z",
+  "sanitized": true
+}

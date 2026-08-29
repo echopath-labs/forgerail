@@ -1,6 +1,6 @@
 {
   "name": "forgerail-release-safety",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Project-runbook-first release governance pack for ForgeRail.",
   "author": { "name": "EchoPath Labs", "url": "https://github.com/echopath-labs" },
   "homepage": "https://github.com/echopath-labs/forgerail",

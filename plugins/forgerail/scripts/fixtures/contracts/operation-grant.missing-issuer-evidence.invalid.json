@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0",
+  "grantId": "grant:task-2.6-write",
+  "grantDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "authorityRequirementId": "authority-requirement:task-2.6-write",
+  "workspaceIdentityId": "workspace:echopath",
+  "envelopeId": "envelope:task-2.6",
+  "envelopeRevisionId": "envelope-revision:task-2.6-1",
+  "executorId": "host:codex",
+  "operation": "workspace.write",
+  "target": {
+    "kind": "directory",
+    "locator": "plugins/forgerail",
+    "identity": "target:forgerail-private-source",
+    "ref": "feat/forgerail-product-architecture",
+    "environment": null
+  },
+  "subjectId": "subject:task-2.6",
+  "candidateId": null,
+  "scope": ["plugins/forgerail/**"],
+  "issuerId": "user:workspace-owner",
+  "issuerEvidenceId": "",
+  "issuedAt": "2026-08-18T08:00:00Z",
+  "notBefore": "2026-08-18T08:00:00Z",
+  "expiresAt": "2026-08-19T08:00:00Z",
+  "status": "current",
+  "invalidatedAt": null,
+  "invalidationEvidenceId": null,
+  "supersededByGrantId": null,
+  "retroactiveEffect": {
+    "applies": false,
+    "scope": []
+  }
+}

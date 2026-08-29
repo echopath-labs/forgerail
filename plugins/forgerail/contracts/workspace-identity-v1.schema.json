@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/workspace-identity-v1.json",
+  "title": "ForgeRail Workspace Identity v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "workspaceIdentityId", "canonicalRootLocator", "boundaryClaims", "observedAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "canonicalRootLocator": { "type": "string", "minLength": 1 },
+    "boundaryClaims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["providerId", "kind", "identity", "observedAt"],
+        "properties": {
+          "providerId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+          "kind": { "enum": ["repository", "vcs-root", "worktree", "explicit-workspace", "provider-project"] },
+          "identity": { "type": "string", "minLength": 1 },
+          "observedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "observedAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -2,6 +2,8 @@
 
 ForgeRail is an engineering guidance and governance framework for Coding Agents.
 
+This canonical source is preparing `0.1.0-alpha.2` / `v0.1.0-alpha.2`. The candidate is not yet remotely integrated, released, or listed in the Universal Plugins Directory; the currently installable public version remains alpha.1.
+
 It observes a workspace, recommends improvements only when evidence warrants them, composes applicable rules, launches the host Agent with explicit scope and approval boundaries, and verifies observable results. It does not replace the Agent or force a new specification system onto the project.
 
 ## First Alpha Shape
@@ -9,6 +11,12 @@ It observes a workspace, recommends improvements only when evidence warrants the
 - `$forgerail`: task-level guidance and guardrails.
 - `$forgerail-workspace-diagnosis`: bounded read-only diagnosis that follows existing workspace habits first.
 - `$workspace-health-review`: independently invokable workspace governance health pack.
+- `$architecture-convergence-audit`: independently invoked, medium-risk, read-only capability-owner and minimal-boundary audit.
+
+The Architecture Convergence Pack is a post-alpha source candidate. It remains
+available rather than automatically enabled, does not require ForgeRail Core to
+run first, and creates no Profile, task ledger, Receipt, `.forgerail/` state, or
+external issue.
 
 GitHub Rulesets, Release Safety, and Thread Closure are separately distributed Capability Packs because they have independent authentication, risk, lifecycle, and release boundaries.
 
@@ -26,6 +34,8 @@ ForgeRail composes four layers:
 4. a temporary Task Envelope.
 
 The Profile is computed by default. ForgeRail does not create `.forgerail/profile.yaml`, edit `AGENTS.md`, or install OpenSpec merely because it was invoked.
+
+The Control System migration now includes versioned Workspace/Profile, Task Control, Review Authority, Validation Topology, Execution Context, Adapter Observation, and Cross-Workspace Pack composition contracts while preserving the alpha v1 contracts. See [Control Profile Contracts](docs/control-profile-contracts.md), [Control Task Contracts](docs/control-task-contracts.md), [Control Authority And Validation Contracts](docs/control-authority-validation-contracts.md), [Cross-Workspace Pack Composition Contract](docs/cross-workspace-pack-composition-contract.md), and the pre-evaluator [Control System Fixture Matrix](docs/control-system-fixture-matrix.md).
 
 Workspace adoption is progressive: Plugin Only by default; user-confirmed lightweight bindings when durable guidance is valuable; persisted `.forgerail/` governance only for future evidence-backed machine configuration or repeated conflicts. Host-specific instruction files are adapters, not ForgeRail Core. Codex is supported for alpha.1; Claude Code and Cursor profiles are explicit but unverified.
 
@@ -51,7 +61,7 @@ forgerail adoption-plan --workspace . --host codex
 
 ## Install The Prerelease
 
-After `v0.1.0-alpha.1` is published, register the exact ForgeRail Marketplace snapshot and install the main Plugin:
+The intended future default is the Universal Plugins Directory UI, but ForgeRail is not listed there yet. Until a separate submission, review, and publication complete, install the released exact ForgeRail Marketplace snapshot:
 
 ```bash
 codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.1
@@ -60,6 +70,8 @@ codex plugin add forgerail@echopath-labs
 
 Start a new Codex task after installation. Install high-risk Capability Packs separately and only when the project needs them. See [Installation And Adoption](docs/installation.md) and [Progressive Adoption](docs/adoption.md) for exact commands, adoption levels, Host Adapter status, upgrade, rollback, and uninstall boundaries.
 
+The Agent Plugin does not require Node.js or `package.json` in the target project. npm/npx remains optional maintainer and validation tooling.
+
 ## Status
 
-The public bootstrap and Node.js 22/24 contract CI are complete. `0.1.0-alpha.1` remains a signed release candidate until its ordinary branch/PR CI and independent release approval complete; the commands above become a supported install path only after the tag exists.
+The immutable public alpha.1 remains the current install source. Alpha.2 is a local source-first candidate containing Architecture Convergence, the reviewed Utopia capability harvest, Directory readiness, and ForgeRail-specific Privacy and Terms. Its proposed version and tag do not authorize public projection application, remote integration, release, or Directory submission/publication.

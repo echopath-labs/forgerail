@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "authorityEvidenceId": "authority-evidence:owner-review-revoked",
+  "evidenceIdentityId": "evidence:provider-review-revoked",
+  "requirementId": "review:req-ownership",
+  "workspaceIdentityId": "workspace:forgerail",
+  "operation": "merge",
+  "authorityClass": "ownership_approval",
+  "subjectId": "subject:commit-a",
+  "actorId": "actor:owner-a",
+  "actorRelations": ["surface-owner"],
+  "scope": ["plugins/forgerail/contracts"],
+  "coveredSurfaceIds": ["surface:contracts"],
+  "lifecycle": "revoked",
+  "observedAt": "2026-08-19T16:45:00Z",
+  "effectiveAt": "2026-08-19T16:00:00Z",
+  "expiresAt": "2026-08-19T17:00:00Z",
+  "invalidatedAt": "2026-08-19T16:40:00Z",
+  "invalidationEvidenceIdentityId": "evidence:provider-review-revocation",
+  "supersededByAuthorityEvidenceId": null,
+  "limitedReason": {
+    "schemaVersion": "1.0",
+    "reasonId": "reason:revoked-owner-review",
+    "code": "revoked-evidence",
+    "impact": "blocked",
+    "summary": "The provider reports that the ownership approval was revoked.",
+    "evidenceIdentityIds": ["evidence:provider-review-revocation"],
+    "locators": ["provider-review:owner-review-revoked"],
+    "observedAt": "2026-08-19T16:45:00Z",
+    "sanitized": true
+  }
+}

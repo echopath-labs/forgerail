@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "authorityEvidenceId": "authority-evidence:owner-review-a",
+  "evidenceIdentityId": "evidence:provider-review-a",
+  "requirementId": "review:req-ownership",
+  "workspaceIdentityId": "workspace:forgerail",
+  "operation": "merge",
+  "authorityClass": "ownership_approval",
+  "subjectId": "subject:commit-a",
+  "actorId": "actor:owner-a",
+  "actorRelations": ["surface-owner", "independent-reviewer"],
+  "scope": ["plugins/forgerail/contracts"],
+  "coveredSurfaceIds": ["surface:contracts"],
+  "lifecycle": "current",
+  "observedAt": "2026-08-18T15:30:00Z",
+  "effectiveAt": "2026-08-18T15:20:00Z",
+  "expiresAt": "2026-08-18T16:20:00Z",
+  "invalidatedAt": null,
+  "invalidationEvidenceIdentityId": null,
+  "supersededByAuthorityEvidenceId": null,
+  "limitedReason": null
+}

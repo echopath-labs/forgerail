@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "executionContextIdentityId": "execution-context:npm-test",
+  "workspaceIdentityId": "workspace:forgerail",
+  "subjectId": "subject:commit-a",
+  "entrypoint": {
+    "entrypointId": "entrypoint:npm-test",
+    "kind": "local-command",
+    "locator": "plugins/forgerail/package.json#scripts.test",
+    "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "invocationRoot": "/workspace/plugins/forgerail",
+  "executor": { "executorId": "executor:codex", "kind": "host-agent" },
+  "runner": { "runnerId": "runner:local-node", "trustClass": "local-observed" },
+  "toolIdentities": ["node:24.15.0"],
+  "providerIdentities": [],
+  "dependencies": [
+    {
+      "dependencyId": "execution-dependency:node",
+      "kind": "toolchain",
+      "locator": "toolchain://node/24.15.0",
+      "boundary": "allowlisted-external",
+      "declared": true,
+      "availability": "available",
+      "evidenceIdentityId": "evidence:node-version",
+      "limitedReason": null
+    }
+  ],
+  "observedAt": "2026-08-18T15:30:00Z",
+  "sanitized": true
+}

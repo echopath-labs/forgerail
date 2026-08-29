@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 256" role="img" aria-labelledby="title">
+  <title id="title">ForgeRail logo candidate</title>
+  <rect width="960" height="256" rx="40" fill="#1C1917"/>
+  <path d="M64 48h120v36h-84v30h68v34h-68v60H64V48Z" fill="#F5F5F4"/>
+  <path d="M168 114h36v94h-36z" fill="#D97706"/>
+  <text x="244" y="164" fill="#F5F5F4" font-family="ui-sans-serif, system-ui, sans-serif" font-size="88" font-weight="700" letter-spacing="-2">ForgeRail</text>
+</svg>

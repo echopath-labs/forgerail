@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "lineageId": "rollback-lineage:task-2.6",
+  "workspaceIdentityId": "workspace:echopath",
+  "forwardEnvelope": {
+    "envelopeId": "envelope:task-2.6",
+    "revisionId": "envelope-revision:task-2.6-1",
+    "subjectId": "subject:task-2.6-forward"
+  },
+  "rollbackEnvelope": {
+    "envelopeId": "envelope:task-2.6-rollback",
+    "revisionId": "envelope-revision:task-2.6-rollback-1",
+    "subjectId": "subject:task-2.6-rollback"
+  },
+  "forwardOperationGrantIds": ["grant:task-2.6-forward"],
+  "rollbackOperationGrantIds": ["grant:task-2.6-rollback"],
+  "rollbackOperationIds": ["operation:task-2.6-revert"],
+  "state": "authorized",
+  "validationGateResultIds": [],
+  "rollbackReceiptId": null,
+  "declaredByEvidenceId": "evidence:task-2.6-rollback-candidate",
+  "reason": "Restore the exact pre-task 2.6 contract baseline.",
+  "createdAt": "2026-08-18T08:30:00Z"
+}

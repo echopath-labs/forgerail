@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/task-envelope-v2.json",
+  "title": "ForgeRail Task Envelope v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "envelopeId", "revisionId", "taskId", "workspaceIdentityId", "profileId", "profileRevisionId", "subject", "intent", "nonGoals", "entryMode", "phaseSliceCorrelation", "operations", "prohibitedOperations", "requiredGateIds", "returnContract", "createdAt"],
+  "properties": {
+    "schemaVersion": { "const": "2.0" },
+    "envelopeId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "revisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "taskId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "profileId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "profileRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "subject": { "$ref": "#/$defs/subject" },
+    "intent": { "type": "string", "minLength": 1 },
+    "nonGoals": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "entryMode": { "$ref": "https://forgerail.dev/schemas/entry-mode-v1.json" },
+    "phaseSliceCorrelation": { "$ref": "https://forgerail.dev/schemas/phase-slice-correlation-v1.json" },
+    "operations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["operationId", "operation", "target", "scope", "authorityRequirementId"],
+        "properties": {
+          "operationId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "operation": { "type": "string", "minLength": 1 },
+          "target": { "$ref": "#/$defs/target" },
+          "scope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+          "authorityRequirementId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }
+        }
+      },
+      "uniqueItems": true
+    },
+    "prohibitedOperations": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "requiredGateIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "returnContract": { "const": "return-receipt-v2" },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subjectId", "kind", "digest", "locator"],
+      "properties": {
+        "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+        "kind": { "enum": ["commit", "tree", "diff", "artifact", "candidate", "workspace-state", "other"] },
+        "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "locator": { "type": ["string", "null"] }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator", "identity", "ref", "environment"],
+      "properties": {
+        "kind": { "enum": ["file", "directory", "repository", "ref", "artifact", "environment", "profile-source", "other"] },
+        "locator": { "type": "string", "minLength": 1 },
+        "identity": { "type": ["string", "null"] },
+        "ref": { "type": ["string", "null"] },
+        "environment": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

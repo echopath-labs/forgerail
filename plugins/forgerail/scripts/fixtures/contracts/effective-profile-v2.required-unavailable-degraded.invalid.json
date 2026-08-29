@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "2.0",
+  "profileId": "profile:demo",
+  "revisionId": "profile-revision:required-unavailable",
+  "workspaceIdentityId": "workspace:demo",
+  "computed": true,
+  "computedAt": "2026-08-18T00:00:00Z",
+  "completeness": "degraded",
+  "sourceIds": ["source:agents"],
+  "workspaceRelationshipIds": [],
+  "ruleClaims": [],
+  "dependencyEdges": [
+    {
+      "schemaVersion": "1.0",
+      "edgeId": "edge:required-skill",
+      "workspaceIdentityId": "workspace:demo",
+      "declaringSourceId": "source:agents",
+      "target": {
+        "kind": "skill",
+        "locator": ".codex/skills/review/SKILL.md",
+        "identity": null
+      },
+      "requiredness": "required",
+      "applicabilityScope": ["code-change"],
+      "provenanceStatus": "structured",
+      "observationStatus": "unavailable",
+      "affectedClaimIds": [],
+      "observedAt": "2026-08-18T00:00:00Z",
+      "limitedReason": "Required Skill is unavailable."
+    }
+  ],
+  "applicablePackIds": [],
+  "conflicts": [],
+  "explanationId": "explanation:required-unavailable",
+  "limitedReasons": ["Required dependency is unavailable."]
+}

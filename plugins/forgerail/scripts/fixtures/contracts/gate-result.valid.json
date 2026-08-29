@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "gateResultId": "gate-result:task-2.6-validation",
+  "gateId": "gate:task-2.6-validation",
+  "gateKind": "validation",
+  "workspaceIdentityId": "workspace:echopath",
+  "envelopeRevisionId": "envelope-revision:task-2.6-1",
+  "controlRevisionId": "control-revision:task-2.6-1",
+  "subjectId": "subject:task-2.6",
+  "disposition": "satisfied",
+  "evidenceIdentityIds": ["evidence:task-2.6-tests"],
+  "evaluatedAt": "2026-08-18T08:30:00Z",
+  "limitedReason": null
+}

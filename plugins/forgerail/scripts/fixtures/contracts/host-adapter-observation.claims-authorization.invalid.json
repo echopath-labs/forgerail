@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "observationId": "host-observation:codex-task",
+  "adapterId": "codex",
+  "adapterVersion": "0.1.0-alpha.1",
+  "hostIdentityId": "host:codex-desktop",
+  "workspaceIdentityId": "workspace:forgerail",
+  "scopeKind": "subject",
+  "taskId": "task:2.7",
+  "subjectId": "subject:commit-a",
+  "controlRevisionId": "control-revision:1",
+  "authorizationClaim": true,
+  "capabilities": [
+    {
+      "capability": "mutation",
+      "state": "supported",
+      "evidenceIdentityIds": ["evidence:host-can-write"],
+      "limitedReason": null
+    }
+  ],
+  "observedAt": "2026-08-18T15:30:00Z",
+  "sanitized": true
+}
