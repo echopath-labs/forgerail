@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "id": "workspace-health-review",
+  "purpose": "Audit workspace governance and recovery health without executing implementation work.",
+  "risk": "low",
+  "states": ["available", "recommended", "enabled", "required", "blocked", "disabled"],
+  "triggers": ["explicit workspace health request"],
+  "inputs": ["workspace boundary evidence", "recovery entries"],
+  "dependencies": [],
+  "conflicts": [],
+  "approvals": ["durable-write-approval"],
+  "validation": ["no mutation occurs in Analyze First mode"],
+  "receiptExtensions": ["healthStatus", "recoveryRisks"]
+}

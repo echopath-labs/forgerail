@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/effective-profile-v2.json",
+  "title": "ForgeRail Effective Profile v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profileId", "revisionId", "workspaceIdentityId", "computed", "computedAt", "completeness", "sourceIds", "workspaceRelationshipIds", "ruleClaims", "dependencyEdges", "applicablePackIds", "conflicts", "explanationId", "limitedReasons"],
+  "properties": {
+    "schemaVersion": { "const": "2.0" },
+    "profileId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "revisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "computed": { "const": true },
+    "computedAt": { "type": "string", "format": "date-time" },
+    "completeness": { "enum": ["complete", "degraded", "unresolved"] },
+    "sourceIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "workspaceRelationshipIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "ruleClaims": { "type": "array", "items": { "$ref": "https://forgerail.dev/schemas/rule-claim-v1.json" } },
+    "dependencyEdges": { "type": "array", "items": { "$ref": "https://forgerail.dev/schemas/source-dependency-edge-v1.json" } },
+    "applicablePackIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" }, "uniqueItems": true },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["conflictId", "claimIds", "status", "limitedReason"],
+        "properties": {
+          "conflictId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "claimIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "minItems": 2, "uniqueItems": true },
+          "status": { "const": "unresolved" },
+          "limitedReason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "explanationId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "limitedReasons": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "completeness": { "const": "complete" } }, "required": ["completeness"] },
+      "then": {
+        "properties": {
+          "conflicts": { "maxItems": 0 },
+          "limitedReasons": { "maxItems": 0 },
+          "ruleClaims": {
+            "not": {
+              "contains": {
+                "type": "object",
+                "properties": { "enforcement": { "const": "unresolved" } },
+                "required": ["enforcement"]
+              }
+            }
+          },
+          "dependencyEdges": {
+            "not": {
+              "contains": {
+                "type": "object",
+                "properties": { "observationStatus": { "enum": ["unavailable", "ambiguous", "unverified"] } },
+                "required": ["observationStatus"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "completeness": { "enum": ["degraded", "unresolved"] } }, "required": ["completeness"] },
+      "then": { "properties": { "limitedReasons": { "minItems": 1 } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "ruleClaims": {
+            "contains": {
+              "type": "object",
+              "properties": { "enforcement": { "const": "unresolved" } },
+              "required": ["enforcement"]
+            }
+          }
+        },
+        "required": ["ruleClaims"]
+      },
+      "then": { "properties": { "completeness": { "const": "unresolved" } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "dependencyEdges": {
+            "contains": {
+              "type": "object",
+              "allOf": [
+                {
+                  "properties": { "requiredness": { "const": "required" } },
+                  "required": ["requiredness"]
+                },
+                {
+                  "properties": { "observationStatus": { "enum": ["unavailable", "ambiguous", "unverified"] } },
+                  "required": ["observationStatus"]
+                }
+              ]
+            }
+          }
+        },
+        "required": ["dependencyEdges"]
+      },
+      "then": { "properties": { "completeness": { "const": "unresolved" } } }
+    },
+    {
+      "if": { "properties": { "conflicts": { "minItems": 1 } }, "required": ["conflicts"] },
+      "then": { "properties": { "completeness": { "const": "unresolved" } } }
+    }
+  ]
+}

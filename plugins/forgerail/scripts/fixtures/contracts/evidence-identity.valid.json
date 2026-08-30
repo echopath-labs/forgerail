@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "evidenceId": "evidence:task-2.6-tests",
+  "workspaceIdentityId": "workspace:echopath",
+  "scopeKind": "subject",
+  "taskId": "task:2.6",
+  "subjectId": "subject:task-2.6",
+  "envelopeRevisionId": "envelope-revision:task-2.6-1",
+  "controlRevisionId": "control-revision:task-2.6-1",
+  "source": {
+    "kind": "test",
+    "providerId": null,
+    "locator": "npm test",
+    "providerEvidenceId": null
+  },
+  "contentDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "observedAt": "2026-08-18T08:30:00Z",
+  "availability": "available",
+  "sanitized": true,
+  "limitedReason": null
+}

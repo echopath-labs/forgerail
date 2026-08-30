@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "sourceId": "source:platform-policy",
+  "workspaceIdentityId": "workspace:demo",
+  "sourceKind": "platform-policy",
+  "locator": "provider:repository-policy",
+  "ownerId": null,
+  "precedenceClass": "platform-enforced",
+  "applicabilityScope": ["protected-branch"],
+  "workspaceRelationshipIds": [],
+  "observationStatus": "unavailable",
+  "ruleClaimIds": [],
+  "dependencyEdgeIds": [],
+  "observedAt": "2026-08-18T00:00:00Z",
+  "limitedReason": null
+}

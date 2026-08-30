@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "1.0",
+  "observationId": "host-observation:codex-task",
+  "adapterId": "codex",
+  "adapterVersion": "0.1.0-alpha.1",
+  "hostIdentityId": "host:codex-desktop",
+  "workspaceIdentityId": "workspace:forgerail",
+  "scopeKind": "subject",
+  "taskId": "task:2.7",
+  "subjectId": "subject:commit-a",
+  "controlRevisionId": "control-revision:1",
+  "authorizationClaim": false,
+  "capabilities": [
+    {
+      "capability": "execution-context",
+      "state": "supported",
+      "evidenceIdentityIds": ["evidence:execution-context"],
+      "limitedReason": null
+    },
+    {
+      "capability": "mutation",
+      "state": "profile-only",
+      "evidenceIdentityIds": [],
+      "limitedReason": {
+        "schemaVersion": "1.0",
+        "reasonId": "reason:host-mutation-needs-grant",
+        "code": "unsupported-capability",
+        "impact": "unverified",
+        "summary": "Host mutation capability does not claim current operation authorization.",
+        "evidenceIdentityIds": [],
+        "locators": ["host://codex/mutation"],
+        "observedAt": "2026-08-18T15:30:00Z",
+        "sanitized": true
+      }
+    }
+  ],
+  "observedAt": "2026-08-18T15:30:00Z",
+  "sanitized": true
+}

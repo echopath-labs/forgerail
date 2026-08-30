@@ -128,7 +128,7 @@ const result = {
   adoptionPlan: adoptionPlan.strategy === "single-host-managed-block" && adoptionPlan.requiredConfirmation && adoptionPlan.mutations.length === 0 && proposed.path === "AGENTS.md",
   targetUnchangedByPlanner: after === afterPlan,
   explicitApprovedWrite: approvedDigest === sha256(approvedContent) && approvedContent.includes("forgerail:binding:codex:v1:start"),
-  equivalentNewTaskDiscovery: bindingReceipt.activationVerification.verified && discoveredSkills.length === 3,
+  equivalentNewTaskDiscovery: bindingReceipt.activationVerification.verified && discoveredSkills.length === 4,
   bindingReceipt: receiptValidation.valid,
   noPersistedGovernance: !existsSync(resolve(target, ".forgerail")),
   launch: launch.valid && launch.launch.executionOwner === "host-agent",

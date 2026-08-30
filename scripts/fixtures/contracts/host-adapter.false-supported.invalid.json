@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "id": "claude-code",
+  "displayName": "Claude Code",
+  "status": "supported",
+  "instructionDiscovery": "task-start",
+  "skillDiscovery": "agent-skills",
+  "bindingTarget": "CLAUDE.md",
+  "bindingModes": ["managed-block", "thin-reference"],
+  "managedMarker": "forgerail:binding:claude-code:v1",
+  "activationBoundary": "host-specific-verification-required",
+  "verification": { "mode": "profile-only", "expectedSkills": [] },
+  "limitations": ["End-to-end activation has not been verified for alpha.1."]
+}

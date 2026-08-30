@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0",
+  "reasonId": "reason:unbounded",
+  "code": "arbitrary-secret-bearing-reason",
+  "impact": "unavailable",
+  "summary": "Unbounded reason codes are not an interoperable control contract.",
+  "evidenceIdentityIds": [],
+  "locators": [],
+  "observedAt": "2026-08-18T15:30:00Z",
+  "sanitized": false
+}

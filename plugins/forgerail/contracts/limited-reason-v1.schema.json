@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/limited-reason-v1.json",
+  "title": "ForgeRail Limited Reason v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "reasonId", "code", "impact", "summary", "evidenceIdentityIds", "locators", "observedAt", "sanitized"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "reasonId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "code": {
+      "enum": [
+        "missing-required-evidence",
+        "unavailable-provider",
+        "unauthenticated-provider",
+        "unverified-adapter",
+        "stale-evidence",
+        "revoked-evidence",
+        "dismissed-evidence",
+        "expired-evidence",
+        "superseded-evidence",
+        "wrong-subject",
+        "wrong-trust",
+        "unclassified-surface",
+        "missing-result",
+        "unexpected-result",
+        "dangling-dependency",
+        "blocked-prerequisite",
+        "boundary-crossing-dependency",
+        "redacted-sensitive-detail",
+        "unsupported-capability",
+        "other"
+      ]
+    },
+    "impact": { "enum": ["degraded", "blocked", "unavailable", "unresolved", "unverified"] },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "evidenceIdentityIds": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+      "uniqueItems": true
+    },
+    "locators": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "sanitized": { "const": true }
+  }
+}

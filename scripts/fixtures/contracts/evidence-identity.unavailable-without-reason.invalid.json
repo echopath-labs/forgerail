@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "evidenceId": "evidence:remote-policy",
+  "workspaceIdentityId": "workspace:echopath",
+  "scopeKind": "subject",
+  "taskId": "task:2.6",
+  "subjectId": "subject:task-2.6",
+  "envelopeRevisionId": "envelope-revision:task-2.6-1",
+  "controlRevisionId": "control-revision:task-2.6-1",
+  "source": {
+    "kind": "provider",
+    "providerId": "github",
+    "locator": "repository-policy",
+    "providerEvidenceId": null
+  },
+  "contentDigest": null,
+  "observedAt": "2026-08-18T08:30:00Z",
+  "availability": "unavailable",
+  "sanitized": true,
+  "limitedReason": null
+}

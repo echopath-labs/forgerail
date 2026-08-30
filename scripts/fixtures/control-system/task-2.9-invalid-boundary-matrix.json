@@ -1,0 +1,203 @@
+{
+  "schemaVersion": "1.0",
+  "matrixId": "task-2.9-invalid-boundaries",
+  "evaluatorImplemented": false,
+  "cases": [
+    {
+      "caseId": "missing-identity",
+      "validationLayer": "schema",
+      "contractFixtures": [
+        {
+          "type": "task-envelope-v2",
+          "path": "contracts/task-envelope-v2.missing-workspace-identity.invalid.json",
+          "expectedSchemaValid": false
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "missing-identity",
+      "observations": {
+        "requiredIdentity": "workspaceIdentityId",
+        "observedIdentity": null
+      }
+    },
+    {
+      "caseId": "stale-base-digest",
+      "validationLayer": "cross-contract",
+      "contractFixtures": [
+        {
+          "type": "profile-candidate",
+          "path": "contracts/profile-change-candidate.valid.json",
+          "expectedSchemaValid": true
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "stale-base-digest",
+      "observations": {
+        "candidateBaseDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "observedTargetDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "caseId": "forged-grant",
+      "validationLayer": "cross-contract",
+      "contractFixtures": [
+        {
+          "type": "operation-grant",
+          "path": "contracts/operation-grant.valid.json",
+          "expectedSchemaValid": true
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "forged-grant",
+      "observations": {
+        "declaredGrantDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "expectedGrantDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "caseId": "ineligible-issuer",
+      "validationLayer": "cross-contract",
+      "contractFixtures": [
+        {
+          "type": "operation-authority-requirement",
+          "path": "contracts/operation-authority-requirement.valid.json",
+          "expectedSchemaValid": true
+        },
+        {
+          "type": "operation-grant",
+          "path": "contracts/operation-grant.valid.json",
+          "expectedSchemaValid": true
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "ineligible-issuer",
+      "observations": {
+        "eligibleIssuerSourceIds": ["source:user-approval"],
+        "observedIssuerSourceId": "source:self-described-caller"
+      }
+    },
+    {
+      "caseId": "duplicate-actor",
+      "validationLayer": "cross-contract",
+      "contractFixtures": [
+        {
+          "type": "review-authority-requirement",
+          "path": "contracts/review-authority-requirement.valid.json",
+          "expectedSchemaValid": true
+        },
+        {
+          "type": "authority-evidence",
+          "path": "contracts/authority-evidence.valid.json",
+          "expectedSchemaValid": true
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "duplicate-actor",
+      "observations": {
+        "minimumDistinctActors": 2,
+        "observedActorIds": ["actor:owner-a", "actor:owner-a"]
+      }
+    },
+    {
+      "caseId": "revoked-approval",
+      "validationLayer": "cross-contract",
+      "contractFixtures": [
+        {
+          "type": "review-authority-requirement",
+          "path": "contracts/review-authority-requirement.valid.json",
+          "expectedSchemaValid": true
+        },
+        {
+          "type": "authority-evidence",
+          "path": "contracts/authority-evidence.revoked.valid.json",
+          "expectedSchemaValid": true
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "revoked-approval",
+      "observations": {
+        "requiredLifecycle": "current",
+        "observedLifecycle": "revoked"
+      }
+    },
+    {
+      "caseId": "wrong-trust",
+      "validationLayer": "cross-contract",
+      "contractFixtures": [
+        {
+          "type": "validation-topology",
+          "path": "contracts/validation-topology.protected-environment.valid.json",
+          "expectedSchemaValid": true
+        },
+        {
+          "type": "validation-result",
+          "path": "contracts/validation-result.valid.json",
+          "expectedSchemaValid": true
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "wrong-trust",
+      "observations": {
+        "acceptedTrustClasses": ["protected-environment"],
+        "observedTrustClass": "local-observed"
+      }
+    },
+    {
+      "caseId": "dangling-dependency",
+      "validationLayer": "cross-contract",
+      "contractFixtures": [
+        {
+          "type": "validation-topology",
+          "path": "contracts/validation-topology.valid.json",
+          "expectedSchemaValid": true
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "dangling-dependency",
+      "observations": {
+        "declaredDependencyEdgeIds": ["dependency:validate-fixtures"],
+        "availableDependencyEdgeIds": []
+      }
+    },
+    {
+      "caseId": "changed-subject",
+      "validationLayer": "cross-contract",
+      "contractFixtures": [
+        {
+          "type": "task-envelope-v2",
+          "path": "contracts/task-envelope-v2.valid.json",
+          "expectedSchemaValid": true
+        },
+        {
+          "type": "return-receipt-v2",
+          "path": "contracts/return-receipt-v2.changed-subject.valid.json",
+          "expectedSchemaValid": true
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "changed-subject",
+      "observations": {
+        "envelopeSubjectId": "subject:task-2.6",
+        "receiptSubjectId": "subject:task-2.6-rewritten"
+      }
+    },
+    {
+      "caseId": "cross-workspace-authority-collapse",
+      "validationLayer": "schema",
+      "contractFixtures": [
+        {
+          "type": "cross-workspace-pack-composition",
+          "path": "contracts/cross-workspace-pack-composition.authority-collapse.invalid.json",
+          "expectedSchemaValid": false
+        }
+      ],
+      "expectedDisposition": "rejected",
+      "expectedReason": "cross-workspace-authority-collapse",
+      "observations": {
+        "authorityTransfer": true,
+        "operationGrantTransfer": true,
+        "receiptSubstitution": true
+      }
+    }
+  ]
+}

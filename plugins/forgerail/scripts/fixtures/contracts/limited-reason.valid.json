@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0",
+  "reasonId": "reason:provider-unavailable",
+  "code": "unavailable-provider",
+  "impact": "unavailable",
+  "summary": "The provider could not be observed from the current execution context.",
+  "evidenceIdentityIds": ["evidence:provider-probe"],
+  "locators": ["provider://github/authority"],
+  "observedAt": "2026-08-18T15:30:00Z",
+  "sanitized": true
+}

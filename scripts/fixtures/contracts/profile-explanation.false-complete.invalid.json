@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "explanationId": "explanation:demo-2",
+  "profileId": "profile:demo",
+  "profileRevisionId": "profile-revision:demo-2",
+  "workspaceIdentityId": "workspace:demo",
+  "generatedAt": "2026-08-18T00:00:00Z",
+  "completeness": "complete",
+  "sourceSummaries": [
+    {
+      "sourceId": "source:agents",
+      "status": "unavailable",
+      "claimIds": ["claim:review"],
+      "limitedReason": "Source cannot be read."
+    }
+  ],
+  "claimDecisions": [
+    {
+      "claimId": "claim:review",
+      "sourceId": "source:agents",
+      "disposition": "unresolved",
+      "reasonCode": "required-source-unavailable",
+      "dependencyEdgeIds": ["edge:skill"]
+    }
+  ],
+  "conflicts": [],
+  "confirmationNeeds": [
+    {
+      "needId": "confirmation:review",
+      "claimIds": ["claim:review"],
+      "reasonCode": "required-source-unavailable",
+      "prompt": "Confirm the governing review source."
+    }
+  ],
+  "limitedReasons": []
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "workspace": "fixture-workspace",
+  "computed": true,
+  "rules": [
+    {
+      "id": "git.primary-branch",
+      "value": "main",
+      "source": "repository metadata",
+      "precedence": 1,
+      "status": "observed"
+    },
+    {
+      "id": "git.primary-branch",
+      "value": "develop",
+      "source": "inferred prose",
+      "precedence": 5,
+      "status": "inferred"
+    }
+  ],
+  "packs": [],
+  "conflicts": []
+}

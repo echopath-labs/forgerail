@@ -4,6 +4,14 @@
 
 No shipping changes yet.
 
+## 0.1.0-alpha.2 - 2026-08-30
+
+- Add the built-in, independently invoked `architecture-convergence-audit` Pack with Analyze First, read-only behavior, evidence-backed ownership maps, retention burden, deletion-first slices, and no external-write or persisted-state authority.
+- Add private capability-harvest shadows plus sanitized Diagnosis and Health separation fixtures without changing existing Core nouns or creating a second Health Pack.
+- Prepare a Skills-only Universal Plugins Directory candidate with root-confined visual assets, five positive and three negative evaluations, deterministic validation, and no project Node.js or `.forgerail/` requirement.
+- Add ForgeRail-specific Privacy and Terms documents, GitHub Issues support, a confirmed Productivity category, and an all-platform-supported-regions intent while keeping publisher, permission, portal-format, submission, and publication gates explicit.
+- Preserve exact-tag Marketplace installation as the currently available route and keep the scoped npm CLI optional; alpha.2 remains a local source-first candidate until separately approved remote integration and release complete.
+
 ## 0.1.0-alpha.1 - 2026-08-13
 
 - Establish the first ForgeRail Agent Plugin with Core, Workspace Diagnosis, and Workspace Health Review entrypoints.

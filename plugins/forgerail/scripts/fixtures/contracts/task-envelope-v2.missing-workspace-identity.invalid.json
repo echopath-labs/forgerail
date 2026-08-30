@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "2.0",
+  "envelopeId": "envelope:task-2.9",
+  "revisionId": "envelope-revision:task-2.9-1",
+  "taskId": "task:2.9",
+  "profileId": "profile:forgerail",
+  "profileRevisionId": "profile-revision:forgerail-2.8",
+  "subject": {
+    "subjectId": "subject:task-2.9",
+    "kind": "workspace-state",
+    "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "locator": "plugins/forgerail"
+  },
+  "intent": "Exercise the missing Workspace Identity boundary.",
+  "nonGoals": ["No evaluator implementation"],
+  "entryMode": {
+    "schemaVersion": "1.0",
+    "mode": "new",
+    "sourceEvidenceIds": [],
+    "observedAt": "2026-08-19T16:45:00Z"
+  },
+  "phaseSliceCorrelation": {
+    "schemaVersion": "1.0",
+    "correlationId": "correlation:task-2.9",
+    "taskId": "task:2.9",
+    "parentTaskId": "task:forgerail-control-system",
+    "phaseId": "phase:fixtures",
+    "sliceId": "slice:task-2.9",
+    "executionAttemptId": "attempt:task-2.9-1",
+    "ownerWorkspaceIdentityId": "workspace:echopath",
+    "requiredSliceIds": ["slice:task-2.9"],
+    "aggregateClosureClaim": false
+  },
+  "operations": [],
+  "prohibitedOperations": ["git.push", "package.publish"],
+  "requiredGateIds": ["gate:task-2.9-validation"],
+  "returnContract": "return-receipt-v2",
+  "createdAt": "2026-08-19T16:45:00Z"
+}

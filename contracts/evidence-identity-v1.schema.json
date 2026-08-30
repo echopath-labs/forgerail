@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/evidence-identity-v1.json",
+  "title": "ForgeRail Evidence Identity v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "evidenceId", "workspaceIdentityId", "scopeKind", "taskId", "subjectId", "envelopeRevisionId", "controlRevisionId", "source", "contentDigest", "observedAt", "availability", "sanitized", "limitedReason"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "evidenceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "scopeKind": { "enum": ["workspace", "task", "subject"] },
+    "taskId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "subjectId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "envelopeRevisionId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "controlRevisionId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "providerId", "locator", "providerEvidenceId"],
+      "properties": {
+        "kind": { "enum": ["file", "git", "test", "log", "provider", "external-receipt", "agent-claim", "other"] },
+        "providerId": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]+$" },
+        "locator": { "type": "string", "minLength": 1 },
+        "providerEvidenceId": { "type": ["string", "null"] }
+      }
+    },
+    "contentDigest": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "availability": { "enum": ["available", "unavailable", "unverified"] },
+    "sanitized": { "const": true },
+    "limitedReason": { "type": ["string", "null"], "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "scopeKind": { "enum": ["task", "subject"] } }, "required": ["scopeKind"] },
+      "then": { "properties": { "taskId": { "type": "string" }, "envelopeRevisionId": { "type": "string" }, "controlRevisionId": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "scopeKind": { "const": "subject" } }, "required": ["scopeKind"] },
+      "then": { "properties": { "subjectId": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "availability": { "enum": ["unavailable", "unverified"] } }, "required": ["availability"] },
+      "then": { "properties": { "limitedReason": { "type": "string", "minLength": 1 } } }
+    }
+  ]
+}

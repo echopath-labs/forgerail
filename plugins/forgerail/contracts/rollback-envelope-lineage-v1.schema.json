@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/rollback-envelope-lineage-v1.json",
+  "title": "ForgeRail Rollback Envelope Lineage v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "lineageId", "workspaceIdentityId", "forwardEnvelope", "rollbackEnvelope", "forwardOperationGrantIds", "rollbackOperationGrantIds", "rollbackOperationIds", "state", "validationGateResultIds", "rollbackReceiptId", "declaredByEvidenceId", "reason", "createdAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "lineageId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "forwardEnvelope": { "$ref": "#/$defs/envelopeReference" },
+    "rollbackEnvelope": { "$ref": "#/$defs/envelopeReference" },
+    "forwardOperationGrantIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "rollbackOperationGrantIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "rollbackOperationIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "minItems": 1, "uniqueItems": true },
+    "state": { "enum": ["awaiting_authorization", "authorized", "executed", "verified", "blocked"] },
+    "validationGateResultIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "rollbackReceiptId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "declaredByEvidenceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "reason": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "envelopeReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["envelopeId", "revisionId", "subjectId"],
+      "properties": {
+        "envelopeId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+        "revisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+        "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "enum": ["authorized", "executed", "verified"] } }, "required": ["state"] },
+      "then": { "properties": { "rollbackOperationGrantIds": { "minItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "verified" } }, "required": ["state"] },
+      "then": { "properties": { "validationGateResultIds": { "minItems": 1 }, "rollbackReceiptId": { "type": "string" } } }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/gate-result-v1.json",
+  "title": "ForgeRail Gate Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "gateResultId", "gateId", "gateKind", "workspaceIdentityId", "envelopeRevisionId", "controlRevisionId", "subjectId", "disposition", "evidenceIdentityIds", "evaluatedAt", "limitedReason"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "gateResultId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "gateId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "gateKind": { "enum": ["operation-authorization", "review-authority", "validation", "governance-dependency", "receipt-verification"] },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "envelopeRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "controlRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "disposition": { "enum": ["satisfied", "unsatisfied", "blocked", "deviation_requires_review"] },
+    "evidenceIdentityIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "evaluatedAt": { "type": "string", "format": "date-time" },
+    "limitedReason": { "type": ["string", "null"], "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "disposition": { "const": "satisfied" } }, "required": ["disposition"] },
+      "then": { "properties": { "evidenceIdentityIds": { "minItems": 1 }, "limitedReason": { "const": null } } }
+    },
+    {
+      "if": { "properties": { "disposition": { "enum": ["unsatisfied", "blocked", "deviation_requires_review"] } }, "required": ["disposition"] },
+      "then": { "properties": { "limitedReason": { "type": "string", "minLength": 1 } } }
+    }
+  ]
+}

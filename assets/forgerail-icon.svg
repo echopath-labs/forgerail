@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">ForgeRail icon candidate</title>
+  <rect width="256" height="256" rx="48" fill="#1C1917"/>
+  <path d="M68 48h120v36H104v30h68v34h-68v60H68V48Z" fill="#F5F5F4"/>
+  <path d="M172 114h36v94h-36z" fill="#D97706"/>
+</svg>

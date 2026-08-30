@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "claimId": "claim:inferred-release",
+  "workspaceIdentityId": "workspace:demo",
+  "sourceId": "source:readme",
+  "ruleKey": "release.approval",
+  "normalizedValue": "two-reviewers",
+  "precedenceClass": "documentation",
+  "applicabilityScope": ["release"],
+  "observationPoint": "README.md#release",
+  "status": "inferred",
+  "enforcement": "enforceable",
+  "dependencyEdgeIds": [],
+  "observedAt": "2026-08-18T00:00:00Z",
+  "limitedReason": null
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/phase-slice-correlation-v1.json",
+  "title": "ForgeRail Phase Slice Correlation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "correlationId", "taskId", "parentTaskId", "phaseId", "sliceId", "executionAttemptId", "ownerWorkspaceIdentityId", "requiredSliceIds", "aggregateClosureClaim"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "correlationId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "taskId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "parentTaskId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "phaseId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "sliceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "executionAttemptId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "ownerWorkspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "requiredSliceIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "minItems": 1, "uniqueItems": true },
+    "aggregateClosureClaim": { "const": false }
+  }
+}

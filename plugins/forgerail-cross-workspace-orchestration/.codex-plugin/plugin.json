@@ -1,6 +1,6 @@
 {
   "name": "forgerail-cross-workspace-orchestration",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Govern safe parallel work across independent owner workspaces with single-writer and receipt-review boundaries.",
   "author": { "name": "EchoPath Labs", "url": "https://github.com/echopath-labs" },
   "homepage": "https://github.com/echopath-labs/forgerail",

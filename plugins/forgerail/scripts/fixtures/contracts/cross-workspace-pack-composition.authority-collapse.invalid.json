@@ -1,0 +1,156 @@
+{
+  "schemaVersion": "1.0",
+  "compositionId": "composition:authority-collapse",
+  "packId": "forgerail-cross-workspace-orchestration",
+  "packVersion": "0.1.0-alpha.1",
+  "coreCompatibility": {
+    "workspaceIdentityVersions": ["1.0"],
+    "taskEnvelopeVersions": ["2.0"],
+    "returnReceiptVersions": ["2.0"],
+    "phaseSliceCorrelationVersions": ["1.0"],
+    "status": "compatible",
+    "evidenceIdentityIds": ["evidence:core-contract-compatibility"]
+  },
+  "kernelInvariants": {
+    "stateModelRedefined": false,
+    "operationGrantMinting": false,
+    "authoritySubstitution": true,
+    "waiverBroadening": false,
+    "freshnessBroadening": false,
+    "receiptVerificationBypass": false,
+    "transportAsAcceptance": false
+  },
+  "workspaceSet": {
+    "workspaceSetId": "workspace-set:authority-collapse",
+    "ownerWorkspaceIdentityIds": ["workspace:product-a", "workspace:product-b"],
+    "coordinatorWorkspaceIdentityId": "workspace:aggregate",
+    "aggregateWriterId": "writer:master",
+    "relationshipIds": ["relationship:aggregate-product-a", "relationship:aggregate-product-b"],
+    "observedAt": "2026-08-19T16:45:00Z"
+  },
+  "nodes": [
+    {
+      "nodeId": "node:product-a",
+      "workspaceIdentityId": "workspace:product-a",
+      "workspaceIdentitySchemaVersion": "1.0",
+      "writerIdentityId": "writer:product-a",
+      "coreEnvelope": {
+        "contract": "task-envelope-v2",
+        "schemaVersion": "2.0",
+        "envelopeId": "envelope:product-a",
+        "envelopeRevisionId": "envelope-revision:product-a-1",
+        "workspaceIdentityId": "workspace:product-a",
+        "subjectId": "subject:product-a-commit"
+      },
+      "phaseSlice": {
+        "contract": "phase-slice-correlation-v1",
+        "schemaVersion": "1.0",
+        "correlationId": "correlation:product-a",
+        "phaseId": "phase:delivery",
+        "sliceId": "slice:product-a",
+        "executionAttemptId": "attempt:product-a-1"
+      },
+      "coreReceipt": {
+        "contract": "return-receipt-v2",
+        "schemaVersion": "2.0",
+        "receiptId": "receipt:product-a-1",
+        "workspaceIdentityId": "workspace:product-a",
+        "envelopeId": "envelope:product-a",
+        "envelopeRevisionId": "envelope-revision:product-a-1",
+        "controlRevisionId": "control-revision:product-a-1",
+        "subjectId": "subject:product-a-commit",
+        "verificationStatus": "verified",
+        "verificationGateResultId": "gate-result:product-a-receipt",
+        "transportStatus": "delivered",
+        "coordinatorAcceptance": "accepted",
+        "coordinatorAcceptanceEvidenceIdentityIds": ["evidence:product-a-acceptance"],
+        "observedAt": "2026-08-19T16:45:00Z"
+      },
+      "state": "accepted"
+    },
+    {
+      "nodeId": "node:product-b",
+      "workspaceIdentityId": "workspace:product-b",
+      "workspaceIdentitySchemaVersion": "1.0",
+      "writerIdentityId": "writer:product-b",
+      "coreEnvelope": {
+        "contract": "task-envelope-v2",
+        "schemaVersion": "2.0",
+        "envelopeId": "envelope:product-b",
+        "envelopeRevisionId": "envelope-revision:product-b-1",
+        "workspaceIdentityId": "workspace:product-b",
+        "subjectId": "subject:product-b-candidate"
+      },
+      "phaseSlice": {
+        "contract": "phase-slice-correlation-v1",
+        "schemaVersion": "1.0",
+        "correlationId": "correlation:product-b",
+        "phaseId": "phase:delivery",
+        "sliceId": "slice:product-b",
+        "executionAttemptId": "attempt:product-b-1"
+      },
+      "coreReceipt": null,
+      "state": "pending"
+    }
+  ],
+  "dependencyEdges": [
+    {
+      "edgeId": "edge:authority-collapse",
+      "predecessorNodeId": "node:product-a",
+      "successorNodeId": "node:product-b",
+      "kind": "acceptance",
+      "required": true,
+      "unlockCondition": "core-receipt-verified-and-coordinator-accepted",
+      "authorityTransfer": true,
+      "operationGrantTransfer": true,
+      "receiptSubstitution": true
+    }
+  ],
+  "phases": [
+    {
+      "phaseId": "phase:delivery",
+      "requiredNodeIds": ["node:product-a", "node:product-b"],
+      "acceptedNodeIds": ["node:product-a"],
+      "pendingNodeIds": ["node:product-b"],
+      "failedNodeIds": [],
+      "blockedNodeIds": [],
+      "staleNodeIds": [],
+      "state": "open",
+      "aggregateClosureClaim": false
+    }
+  ],
+  "workspaceReceiptBundle": {
+    "bundleId": "bundle:authority-collapse",
+    "bundleRevisionId": "bundle-revision:authority-collapse-1",
+    "predecessorBundleRevisionId": null,
+    "bundleDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "compositionId": "composition:authority-collapse",
+    "workspaceSetId": "workspace-set:authority-collapse",
+    "phaseIds": ["phase:delivery"],
+    "nodeReceipts": [
+      {
+        "nodeId": "node:product-a",
+        "receiptId": "receipt:product-a-1",
+        "verificationStatus": "verified",
+        "coordinatorAcceptance": "accepted"
+      }
+    ],
+    "dependencyStatus": [
+      {
+        "edgeId": "edge:authority-collapse",
+        "status": "unlocked",
+        "evidenceIdentityIds": ["evidence:product-a-acceptance"]
+      }
+    ],
+    "pendingNodeIds": ["node:product-b"],
+    "failedNodeIds": [],
+    "blockedNodeIds": [],
+    "staleNodeIds": [],
+    "deviationEvidenceIdentityIds": [],
+    "nextEligibleNodeIds": ["node:product-b"],
+    "state": "assembling",
+    "observedAt": "2026-08-19T16:45:00Z",
+    "immutable": true
+  },
+  "declaredAt": "2026-08-19T16:45:00Z"
+}

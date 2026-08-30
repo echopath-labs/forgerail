@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/task-control-revision-v1.json",
+  "title": "ForgeRail Task Control Revision v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "revisionId", "predecessorRevisionId", "taskId", "workspaceIdentityId", "profileId", "profileRevisionId", "envelopeId", "envelopeRevisionId", "subjectId", "entryMode", "phaseSliceCorrelation", "state", "operationGrantIds", "gateResultIds", "evidenceIdentityIds", "deviationEvidenceIds", "returnReceiptId", "observedAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "revisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "predecessorRevisionId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "taskId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "profileId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "profileRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "envelopeId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "envelopeRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "entryMode": { "$ref": "https://forgerail.dev/schemas/entry-mode-v1.json" },
+    "phaseSliceCorrelation": { "$ref": "https://forgerail.dev/schemas/phase-slice-correlation-v1.json" },
+    "state": { "enum": ["observed", "profile_resolved", "awaiting_authorization", "ready_for_execution", "execution_finished", "verification_pending", "deviation_requires_review", "blocked", "closed"] },
+    "operationGrantIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "gateResultIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "evidenceIdentityIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "deviationEvidenceIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "returnReceiptId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "observedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "const": "closed" } }, "required": ["state"] },
+      "then": { "properties": { "returnReceiptId": { "type": "string" }, "deviationEvidenceIds": { "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "deviation_requires_review" } }, "required": ["state"] },
+      "then": { "properties": { "deviationEvidenceIds": { "minItems": 1 } } }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "topologyId": "topology:protected-release",
+  "topologyRevisionId": "topology-revision:protected-release-1",
+  "workspaceIdentityId": "workspace:forgerail",
+  "profileId": "profile:forgerail",
+  "profileRevisionId": "profile-revision:1",
+  "subjectId": "subject:commit-a",
+  "coverageMode": "required",
+  "changedSurfaces": [
+    {
+      "surfaceId": "surface:release",
+      "locator": "release:forgerail",
+      "ownerIds": ["owner:forgerail"],
+      "consumerIds": ["consumer:registry"],
+      "validationRequirementIds": ["validation:protected-release"],
+      "sourceIdentityIds": ["source:release-policy"]
+    }
+  ],
+  "validationRequirements": [
+    {
+      "requirementId": "validation:protected-release",
+      "entrypointId": "entrypoint:protected-release",
+      "prerequisiteDependencyEdgeIds": [],
+      "acceptedTrustClasses": ["protected-environment"],
+      "expectedResults": ["passed"],
+      "evidenceLocators": ["provider:protected-release"],
+      "selected": true
+    }
+  ],
+  "declaredAt": "2026-08-19T16:45:00Z"
+}

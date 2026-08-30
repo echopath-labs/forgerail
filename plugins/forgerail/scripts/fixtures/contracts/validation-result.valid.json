@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "resultId": "validation-result:contract-fixtures",
+  "topologyId": "topology:forgerail-contracts",
+  "topologyRevisionId": "topology-revision:1",
+  "requirementId": "validation:contract-fixtures",
+  "workspaceIdentityId": "workspace:forgerail",
+  "envelopeRevisionId": "envelope-revision:1",
+  "controlRevisionId": "control-revision:1",
+  "subjectId": "subject:commit-a",
+  "executionContextIdentityId": "execution-context:npm-test",
+  "status": "passed",
+  "expectedResult": "passed",
+  "trustClass": "local-observed",
+  "evidenceIdentityIds": ["evidence:npm-test"],
+  "waiver": null,
+  "observedAt": "2026-08-18T15:30:00Z",
+  "limitedReason": null
+}

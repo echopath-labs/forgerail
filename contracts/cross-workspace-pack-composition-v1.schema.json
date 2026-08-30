@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/cross-workspace-pack-composition-v1.json",
+  "title": "ForgeRail Cross-Workspace Pack Composition v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "compositionId", "packId", "packVersion", "coreCompatibility", "kernelInvariants", "workspaceSet", "nodes", "dependencyEdges", "phases", "workspaceReceiptBundle", "declaredAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "compositionId": { "$ref": "#/$defs/id" },
+    "packId": { "const": "forgerail-cross-workspace-orchestration" },
+    "packVersion": { "type": "string", "minLength": 1 },
+    "coreCompatibility": { "$ref": "#/$defs/coreCompatibility" },
+    "kernelInvariants": { "$ref": "#/$defs/kernelInvariants" },
+    "workspaceSet": { "$ref": "#/$defs/workspaceSet" },
+    "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" }, "minItems": 2 },
+    "dependencyEdges": { "type": "array", "items": { "$ref": "#/$defs/dependencyEdge" } },
+    "phases": { "type": "array", "items": { "$ref": "#/$defs/phaseAggregation" }, "minItems": 1 },
+    "workspaceReceiptBundle": { "$ref": "#/$defs/workspaceReceiptBundle" },
+    "declaredAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "ids": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+    "coreCompatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspaceIdentityVersions", "taskEnvelopeVersions", "returnReceiptVersions", "phaseSliceCorrelationVersions", "status", "evidenceIdentityIds"],
+      "properties": {
+        "workspaceIdentityVersions": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+        "taskEnvelopeVersions": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+        "returnReceiptVersions": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+        "phaseSliceCorrelationVersions": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+        "status": { "enum": ["compatible", "incompatible", "unverified"] },
+        "evidenceIdentityIds": { "$ref": "#/$defs/ids" }
+      }
+    },
+    "kernelInvariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stateModelRedefined", "operationGrantMinting", "authoritySubstitution", "waiverBroadening", "freshnessBroadening", "receiptVerificationBypass", "transportAsAcceptance"],
+      "properties": {
+        "stateModelRedefined": { "const": false },
+        "operationGrantMinting": { "const": false },
+        "authoritySubstitution": { "const": false },
+        "waiverBroadening": { "const": false },
+        "freshnessBroadening": { "const": false },
+        "receiptVerificationBypass": { "const": false },
+        "transportAsAcceptance": { "const": false }
+      }
+    },
+    "workspaceSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspaceSetId", "ownerWorkspaceIdentityIds", "coordinatorWorkspaceIdentityId", "aggregateWriterId", "relationshipIds", "observedAt"],
+      "properties": {
+        "workspaceSetId": { "$ref": "#/$defs/id" },
+        "ownerWorkspaceIdentityIds": { "type": "array", "items": { "$ref": "#/$defs/id" }, "minItems": 2, "uniqueItems": true },
+        "coordinatorWorkspaceIdentityId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+        "aggregateWriterId": { "$ref": "#/$defs/id" },
+        "relationshipIds": { "$ref": "#/$defs/ids" },
+        "observedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "coreEnvelopeReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "schemaVersion", "envelopeId", "envelopeRevisionId", "workspaceIdentityId", "subjectId"],
+      "properties": {
+        "contract": { "const": "task-envelope-v2" },
+        "schemaVersion": { "type": "string", "minLength": 1 },
+        "envelopeId": { "$ref": "#/$defs/id" },
+        "envelopeRevisionId": { "$ref": "#/$defs/id" },
+        "workspaceIdentityId": { "$ref": "#/$defs/id" },
+        "subjectId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "phaseSliceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "schemaVersion", "correlationId", "phaseId", "sliceId", "executionAttemptId"],
+      "properties": {
+        "contract": { "const": "phase-slice-correlation-v1" },
+        "schemaVersion": { "type": "string", "minLength": 1 },
+        "correlationId": { "$ref": "#/$defs/id" },
+        "phaseId": { "$ref": "#/$defs/id" },
+        "sliceId": { "$ref": "#/$defs/id" },
+        "executionAttemptId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "coreReceiptReference": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contract", "schemaVersion", "receiptId", "workspaceIdentityId", "envelopeId", "envelopeRevisionId", "controlRevisionId", "subjectId", "verificationStatus", "verificationGateResultId", "transportStatus", "coordinatorAcceptance", "coordinatorAcceptanceEvidenceIdentityIds", "observedAt"],
+          "properties": {
+            "contract": { "const": "return-receipt-v2" },
+            "schemaVersion": { "type": "string", "minLength": 1 },
+            "receiptId": { "$ref": "#/$defs/id" },
+            "workspaceIdentityId": { "$ref": "#/$defs/id" },
+            "envelopeId": { "$ref": "#/$defs/id" },
+            "envelopeRevisionId": { "$ref": "#/$defs/id" },
+            "controlRevisionId": { "$ref": "#/$defs/id" },
+            "subjectId": { "$ref": "#/$defs/id" },
+            "verificationStatus": { "enum": ["pending", "verified", "rejected", "stale"] },
+            "verificationGateResultId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+            "transportStatus": { "enum": ["not_delivered", "delivered", "failed"] },
+            "coordinatorAcceptance": { "enum": ["pending", "accepted", "rejected", "stale"] },
+            "coordinatorAcceptanceEvidenceIdentityIds": { "$ref": "#/$defs/ids" },
+            "observedAt": { "type": "string", "format": "date-time" }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "verificationStatus": { "const": "verified" } }, "required": ["verificationStatus"] },
+              "then": { "properties": { "verificationGateResultId": { "$ref": "#/$defs/id" } } }
+            },
+            {
+              "if": { "properties": { "coordinatorAcceptance": { "const": "accepted" } }, "required": ["coordinatorAcceptance"] },
+              "then": { "properties": { "verificationStatus": { "const": "verified" }, "coordinatorAcceptanceEvidenceIdentityIds": { "minItems": 1 } } }
+            }
+          ]
+        },
+        { "type": "null" }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeId", "workspaceIdentityId", "workspaceIdentitySchemaVersion", "writerIdentityId", "coreEnvelope", "phaseSlice", "coreReceipt", "state"],
+      "properties": {
+        "nodeId": { "$ref": "#/$defs/id" },
+        "workspaceIdentityId": { "$ref": "#/$defs/id" },
+        "workspaceIdentitySchemaVersion": { "type": "string", "minLength": 1 },
+        "writerIdentityId": { "$ref": "#/$defs/id" },
+        "coreEnvelope": { "$ref": "#/$defs/coreEnvelopeReference" },
+        "phaseSlice": { "$ref": "#/$defs/phaseSliceReference" },
+        "coreReceipt": { "$ref": "#/$defs/coreReceiptReference" },
+        "state": { "enum": ["pending", "ready", "executing", "receipt_pending", "verification_pending", "acceptance_pending", "accepted", "blocked", "failed", "stale"] }
+      }
+    },
+    "dependencyEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edgeId", "predecessorNodeId", "successorNodeId", "kind", "required", "unlockCondition", "authorityTransfer", "operationGrantTransfer", "receiptSubstitution"],
+      "properties": {
+        "edgeId": { "$ref": "#/$defs/id" },
+        "predecessorNodeId": { "$ref": "#/$defs/id" },
+        "successorNodeId": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["delivery", "validation", "acceptance", "rollback"] },
+        "required": { "type": "boolean" },
+        "unlockCondition": { "const": "core-receipt-verified-and-coordinator-accepted" },
+        "authorityTransfer": { "const": false },
+        "operationGrantTransfer": { "const": false },
+        "receiptSubstitution": { "const": false }
+      }
+    },
+    "phaseAggregation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phaseId", "requiredNodeIds", "acceptedNodeIds", "pendingNodeIds", "failedNodeIds", "blockedNodeIds", "staleNodeIds", "state", "aggregateClosureClaim"],
+      "properties": {
+        "phaseId": { "$ref": "#/$defs/id" },
+        "requiredNodeIds": { "type": "array", "items": { "$ref": "#/$defs/id" }, "minItems": 1, "uniqueItems": true },
+        "acceptedNodeIds": { "$ref": "#/$defs/ids" },
+        "pendingNodeIds": { "$ref": "#/$defs/ids" },
+        "failedNodeIds": { "$ref": "#/$defs/ids" },
+        "blockedNodeIds": { "$ref": "#/$defs/ids" },
+        "staleNodeIds": { "$ref": "#/$defs/ids" },
+        "state": { "enum": ["open", "blocked", "closed", "stale"] },
+        "aggregateClosureClaim": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "const": "closed" } }, "required": ["state"] },
+          "then": { "properties": { "pendingNodeIds": { "maxItems": 0 }, "failedNodeIds": { "maxItems": 0 }, "blockedNodeIds": { "maxItems": 0 }, "staleNodeIds": { "maxItems": 0 }, "aggregateClosureClaim": { "const": true } } }
+        },
+        {
+          "if": { "properties": { "state": { "enum": ["open", "blocked", "stale"] } }, "required": ["state"] },
+          "then": { "properties": { "aggregateClosureClaim": { "const": false } } }
+        }
+      ]
+    },
+    "workspaceReceiptBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bundleId", "bundleRevisionId", "predecessorBundleRevisionId", "bundleDigest", "compositionId", "workspaceSetId", "phaseIds", "nodeReceipts", "dependencyStatus", "pendingNodeIds", "failedNodeIds", "blockedNodeIds", "staleNodeIds", "deviationEvidenceIdentityIds", "nextEligibleNodeIds", "state", "observedAt", "immutable"],
+      "properties": {
+        "bundleId": { "$ref": "#/$defs/id" },
+        "bundleRevisionId": { "$ref": "#/$defs/id" },
+        "predecessorBundleRevisionId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+        "bundleDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "compositionId": { "$ref": "#/$defs/id" },
+        "workspaceSetId": { "$ref": "#/$defs/id" },
+        "phaseIds": { "type": "array", "items": { "$ref": "#/$defs/id" }, "minItems": 1, "uniqueItems": true },
+        "nodeReceipts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nodeId", "receiptId", "verificationStatus", "coordinatorAcceptance"],
+            "properties": {
+              "nodeId": { "$ref": "#/$defs/id" },
+              "receiptId": { "$ref": "#/$defs/id" },
+              "verificationStatus": { "const": "verified" },
+              "coordinatorAcceptance": { "const": "accepted" }
+            }
+          }
+        },
+        "dependencyStatus": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["edgeId", "status", "evidenceIdentityIds"],
+            "properties": {
+              "edgeId": { "$ref": "#/$defs/id" },
+              "status": { "enum": ["locked", "unlocked", "blocked", "stale"] },
+              "evidenceIdentityIds": { "$ref": "#/$defs/ids" }
+            }
+          }
+        },
+        "pendingNodeIds": { "$ref": "#/$defs/ids" },
+        "failedNodeIds": { "$ref": "#/$defs/ids" },
+        "blockedNodeIds": { "$ref": "#/$defs/ids" },
+        "staleNodeIds": { "$ref": "#/$defs/ids" },
+        "deviationEvidenceIdentityIds": { "$ref": "#/$defs/ids" },
+        "nextEligibleNodeIds": { "$ref": "#/$defs/ids" },
+        "state": { "enum": ["assembling", "review_required", "accepted", "blocked", "stale"] },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "immutable": { "const": true }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "const": "accepted" } }, "required": ["state"] },
+          "then": { "properties": { "pendingNodeIds": { "maxItems": 0 }, "failedNodeIds": { "maxItems": 0 }, "blockedNodeIds": { "maxItems": 0 }, "staleNodeIds": { "maxItems": 0 }, "deviationEvidenceIdentityIds": { "maxItems": 0 } } }
+        }
+      ]
+    }
+  }
+}

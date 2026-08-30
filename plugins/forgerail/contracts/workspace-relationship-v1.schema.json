@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/workspace-relationship-v1.json",
+  "title": "ForgeRail Workspace Relationship v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "relationshipId", "sourceWorkspaceIdentityId", "targetWorkspaceIdentityId", "relationshipType", "governanceApplicability", "applicabilityScope", "declaredBySourceId", "provenanceStatus", "authorityTransfer", "observedAt"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "relationshipId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "sourceWorkspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "targetWorkspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "relationshipType": { "enum": ["governance-scope", "coordination", "dependency", "ownership-reference"] },
+    "governanceApplicability": { "enum": ["none", "scoped"] },
+    "applicabilityScope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "declaredBySourceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "provenanceStatus": { "enum": ["provider-declared", "confirmed", "inferred", "requires-confirmation"] },
+    "authorityTransfer": { "const": false },
+    "observedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "provenanceStatus": { "enum": ["inferred", "requires-confirmation"] } }, "required": ["provenanceStatus"] },
+      "then": { "properties": { "governanceApplicability": { "const": "none" } } }
+    },
+    {
+      "if": { "properties": { "governanceApplicability": { "const": "scoped" } }, "required": ["governanceApplicability"] },
+      "then": { "properties": { "applicabilityScope": { "minItems": 1 } } }
+    }
+  ]
+}

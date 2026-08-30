@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/operation-grant-v1.json",
+  "title": "ForgeRail Operation Grant v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "grantId", "grantDigest", "authorityRequirementId", "workspaceIdentityId", "envelopeId", "envelopeRevisionId", "executorId", "operation", "target", "subjectId", "candidateId", "scope", "issuerId", "issuerEvidenceId", "issuedAt", "notBefore", "expiresAt", "status", "invalidatedAt", "invalidationEvidenceId", "supersededByGrantId", "retroactiveEffect"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "grantId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "grantDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "authorityRequirementId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "envelopeId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "envelopeRevisionId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "executorId": { "type": "string", "minLength": 1 },
+    "operation": { "type": "string", "minLength": 1 },
+    "target": { "$ref": "#/$defs/target" },
+    "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "candidateId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "scope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "issuerId": { "type": "string", "minLength": 1 },
+    "issuerEvidenceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "notBefore": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["current", "expired", "revoked", "stale", "superseded"] },
+    "invalidatedAt": { "type": ["string", "null"], "format": "date-time" },
+    "invalidationEvidenceId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "supersededByGrantId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "retroactiveEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applies", "scope"],
+      "properties": {
+        "applies": { "type": "boolean" },
+        "scope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      }
+    }
+  },
+  "$defs": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator", "identity", "ref", "environment"],
+      "properties": {
+        "kind": { "enum": ["file", "directory", "repository", "ref", "artifact", "environment", "profile-source", "other"] },
+        "locator": { "type": "string", "minLength": 1 },
+        "identity": { "type": ["string", "null"] },
+        "ref": { "type": ["string", "null"] },
+        "environment": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "current" } }, "required": ["status"] },
+      "then": {
+        "properties": {
+          "invalidatedAt": { "const": null },
+          "invalidationEvidenceId": { "const": null },
+          "supersededByGrantId": { "const": null }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "superseded" } }, "required": ["status"] },
+      "then": { "properties": { "supersededByGrantId": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["expired", "revoked", "stale", "superseded"] } }, "required": ["status"] },
+      "then": { "properties": { "invalidatedAt": { "type": "string", "format": "date-time" } } }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["revoked", "stale", "superseded"] } }, "required": ["status"] },
+      "then": { "properties": { "invalidationEvidenceId": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "retroactiveEffect": { "properties": { "applies": { "const": true } }, "required": ["applies"] } }, "required": ["retroactiveEffect"] },
+      "then": { "properties": { "retroactiveEffect": { "properties": { "scope": { "minItems": 1 } } } } }
+    }
+  ]
+}

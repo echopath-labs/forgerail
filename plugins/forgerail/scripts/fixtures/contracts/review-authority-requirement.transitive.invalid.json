@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "requirementId": "review:req-ownership",
+  "workspaceIdentityId": "workspace:forgerail",
+  "operation": "merge",
+  "authorityClass": "ownership_approval",
+  "subjectId": "subject:commit-a",
+  "scope": ["plugins/forgerail/contracts"],
+  "authoritySourceIds": ["source:codeowners"],
+  "acceptedEvidenceKinds": ["provider-review"],
+  "quorum": { "minimumCount": 2, "distinctActors": true },
+  "actorConstraints": {
+    "eligibleActorSourceIds": ["source:codeowners"],
+    "excludedRelations": ["subject-author", "executor"]
+  },
+  "ownerCoverage": { "required": true, "surfaceIds": ["surface:contracts"] },
+  "freshness": { "maxAgeSeconds": 3600, "expiresRequired": true },
+  "substitutionPolicy": {
+    "mode": "bounded-equivalence",
+    "equivalenceEdges": [
+      {
+        "edgeId": "equivalence:agent-to-owner",
+        "fromAuthorityClass": "agent_review",
+        "toRequirementId": "review:req-ownership",
+        "sourceId": "source:project-policy",
+        "direction": "one-way",
+        "transitive": true
+      }
+    ]
+  },
+  "waiverPolicy": { "allowed": false, "requiredAuthorityClass": null },
+  "declaredAt": "2026-08-18T15:30:00Z"
+}

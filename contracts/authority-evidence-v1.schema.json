@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/authority-evidence-v1.json",
+  "title": "ForgeRail Authority Evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "authorityEvidenceId", "evidenceIdentityId", "requirementId", "workspaceIdentityId", "operation", "authorityClass", "subjectId", "actorId", "actorRelations", "scope", "coveredSurfaceIds", "lifecycle", "observedAt", "effectiveAt", "expiresAt", "invalidatedAt", "invalidationEvidenceIdentityId", "supersededByAuthorityEvidenceId", "limitedReason"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "authorityEvidenceId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "evidenceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "requirementId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "operation": { "type": "string", "minLength": 1 },
+    "authorityClass": { "enum": ["agent_review", "automated_validation", "peer_review", "ownership_approval", "security_approval", "release_approval", "environment_approval"] },
+    "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "actorId": { "type": "string", "minLength": 1 },
+    "actorRelations": { "type": "array", "items": { "enum": ["subject-author", "executor", "evidence-author", "surface-owner", "independent-reviewer"] }, "uniqueItems": true },
+    "scope": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "coveredSurfaceIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+    "lifecycle": { "enum": ["current", "stale", "revoked", "dismissed", "expired", "superseded"] },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "effectiveAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+    "invalidatedAt": { "type": ["string", "null"], "format": "date-time" },
+    "invalidationEvidenceIdentityId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "supersededByAuthorityEvidenceId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "limitedReason": { "anyOf": [{ "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" }, { "type": "null" }] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "lifecycle": { "const": "current" } }, "required": ["lifecycle"] },
+      "then": { "properties": { "invalidatedAt": { "const": null }, "invalidationEvidenceIdentityId": { "const": null }, "supersededByAuthorityEvidenceId": { "const": null }, "limitedReason": { "const": null } } }
+    },
+    {
+      "if": { "properties": { "lifecycle": { "enum": ["stale", "revoked", "dismissed", "expired", "superseded"] } }, "required": ["lifecycle"] },
+      "then": { "properties": { "invalidatedAt": { "type": "string" }, "limitedReason": { "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" } } }
+    },
+    {
+      "if": { "properties": { "lifecycle": { "enum": ["stale", "revoked", "dismissed", "superseded"] } }, "required": ["lifecycle"] },
+      "then": { "properties": { "invalidationEvidenceIdentityId": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "lifecycle": { "const": "superseded" } }, "required": ["lifecycle"] },
+      "then": { "properties": { "supersededByAuthorityEvidenceId": { "type": "string" } } }
+    }
+  ]
+}

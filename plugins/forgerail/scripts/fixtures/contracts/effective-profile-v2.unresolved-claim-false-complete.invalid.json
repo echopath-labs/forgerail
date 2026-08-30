@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "2.0",
+  "profileId": "profile:demo",
+  "revisionId": "profile-revision:unresolved-claim",
+  "workspaceIdentityId": "workspace:demo",
+  "computed": true,
+  "computedAt": "2026-08-18T00:00:00Z",
+  "completeness": "complete",
+  "sourceIds": ["source:agents"],
+  "workspaceRelationshipIds": [],
+  "ruleClaims": [
+    {
+      "schemaVersion": "1.0",
+      "claimId": "claim:review",
+      "workspaceIdentityId": "workspace:demo",
+      "sourceId": "source:agents",
+      "ruleKey": "review.required",
+      "normalizedValue": true,
+      "precedenceClass": "workspace-instructions",
+      "applicabilityScope": ["code-change"],
+      "observationPoint": "AGENTS.md#review",
+      "status": "confirmed",
+      "enforcement": "unresolved",
+      "dependencyEdgeIds": [],
+      "observedAt": "2026-08-18T00:00:00Z",
+      "limitedReason": "The claim cannot be resolved from current sources."
+    }
+  ],
+  "dependencyEdges": [],
+  "applicablePackIds": [],
+  "conflicts": [],
+  "explanationId": "explanation:unresolved-claim",
+  "limitedReasons": []
+}

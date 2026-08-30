@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "1.0",
+  "candidateType": "openai-universal-plugin-directory",
+  "submissionType": "skills_only",
+  "status": "local_alpha2_source_candidate",
+  "approval": { "type": "submission_approval", "status": "not_granted" },
+  "officialBaseline": {
+    "observedAt": "2026-08-30",
+    "sources": [
+      "https://developers.openai.com/plugins/build/plugins",
+      "https://developers.openai.com/plugins/deploy/submission"
+    ]
+  },
+  "plugin": {
+    "id": "forgerail",
+    "version": "0.1.0-alpha.2",
+    "manifest": ".codex-plugin/plugin.json",
+    "skills": [
+      "forgerail",
+      "forgerail-workspace-diagnosis",
+      "workspace-health-review",
+      "architecture-convergence-audit"
+    ],
+    "mcpServers": [],
+    "authentication": "none",
+    "coreRequirements": {
+      "projectPackageJson": false,
+      "projectNodeModules": false,
+      "npmCli": "optional"
+    }
+  },
+  "listing": {
+    "name": { "state": "observed", "value": "ForgeRail" },
+    "shortDescription": { "state": "candidate", "value": "Engineering guidance and guardrails for coding agents." },
+    "longDescription": { "state": "candidate", "value": "ForgeRail helps coding agents diagnose a workspace, select explicit governance boundaries, review workspace health, and find duplicated architecture ownership. Its Skills are available without adding Node.js, package.json, or persistent ForgeRail state to the project." },
+    "category": { "state": "confirmed_by_user", "value": "Productivity" },
+    "websiteUrl": { "state": "observed", "value": "https://github.com/echopath-labs/forgerail" },
+    "supportUrl": { "state": "confirmed_by_user", "value": "https://github.com/echopath-labs/forgerail/issues" },
+    "privacyPolicyUrl": { "state": "confirmed_by_user", "value": "https://github.com/echopath-labs/forgerail/blob/main/PRIVACY.md" },
+    "termsOfServiceUrl": { "state": "confirmed_by_user", "value": "https://github.com/echopath-labs/forgerail/blob/main/TERMS.md" },
+    "composerIcon": { "state": "candidate", "value": "./assets/forgerail-icon.svg" },
+    "logo": { "state": "candidate", "value": "./assets/forgerail-logo.svg" },
+    "starterPrompts": [
+      "Use ForgeRail to govern this engineering task.",
+      "Diagnose this workspace before recommending governance changes.",
+      "Review this workspace for governance and recovery risks.",
+      "Audit this architecture for duplicated capability ownership."
+    ]
+  },
+  "availability": {
+    "intent": { "state": "confirmed_by_user", "value": "all_platform_supported_regions" },
+    "portalEnumeration": { "state": "pending_confirmation", "values": [] }
+  },
+  "publisher": {
+    "displayName": { "state": "candidate", "value": "EchoPath Labs" },
+    "verifiedDeveloperOrBusinessIdentity": { "state": "pending_confirmation" },
+    "appsManagementWrite": { "state": "pending_confirmation" }
+  },
+  "releaseNotes": {
+    "state": "candidate",
+    "path": "./directory/release-notes-alpha2.md",
+    "value": "ForgeRail alpha.2 adds an independently invoked read-only architecture convergence audit and prepares a Skills-only Directory candidate with public Privacy and Terms, deterministic evaluations, and no project-local Node.js or persistent ForgeRail state requirement."
+  },
+  "evaluationFile": "./directory/evaluations.json",
+  "unresolvedGates": [
+    "publisher_verified_identity",
+    "apps_management_write_permission",
+    "portal_region_enumeration",
+    "portal_asset_format_acceptance",
+    "exact_submission_public_source_confirmation"
+  ],
+  "confirmedNonMutations": [
+    "no_universal_directory_draft_or_submission",
+    "no_public_projection",
+    "no_remote_git_or_release_mutation",
+    "no_npm_mutation",
+    "no_project_package_json_requirement",
+    "no_implicit_forgerail_state"
+  ]
+}

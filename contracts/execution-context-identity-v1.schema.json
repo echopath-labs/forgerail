@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/execution-context-identity-v1.json",
+  "title": "ForgeRail Execution Context Identity v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "executionContextIdentityId", "workspaceIdentityId", "subjectId", "entrypoint", "invocationRoot", "executor", "runner", "toolIdentities", "providerIdentities", "dependencies", "observedAt", "sanitized"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "executionContextIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "subjectId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "entrypoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entrypointId", "kind", "locator", "digest"],
+      "properties": {
+        "entrypointId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+        "kind": { "enum": ["documented", "local-command", "hook", "ci", "nightly", "protected-environment", "other"] },
+        "locator": { "type": "string", "minLength": 1 },
+        "digest": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "invocationRoot": { "type": "string", "minLength": 1 },
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executorId", "kind"],
+      "properties": {
+        "executorId": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["host-agent", "human", "local-process", "provider-runner", "other"] }
+      }
+    },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runnerId", "trustClass"],
+      "properties": {
+        "runnerId": { "type": "string", "minLength": 1 },
+        "trustClass": { "enum": ["self-reported", "local-observed", "provider-attested", "trusted-runner", "protected-environment"] }
+      }
+    },
+    "toolIdentities": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "providerIdentities": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["dependencyId", "kind", "locator", "boundary", "declared", "availability", "evidenceIdentityId", "limitedReason"],
+        "properties": {
+          "dependencyId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "kind": { "enum": ["environment-file", "configuration", "credential", "toolchain", "network-service", "provider-state", "other"] },
+          "locator": { "type": "string", "minLength": 1 },
+          "boundary": { "enum": ["workspace-contained", "allowlisted-external", "undeclared-external", "unavailable-external"] },
+          "declared": { "type": "boolean" },
+          "availability": { "enum": ["available", "unavailable", "unverified"] },
+          "evidenceIdentityId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+          "limitedReason": { "anyOf": [{ "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" }, { "type": "null" }] }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "availability": { "enum": ["unavailable", "unverified"] } }, "required": ["availability"] },
+            "then": { "properties": { "limitedReason": { "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" } } }
+          },
+          {
+            "if": { "properties": { "boundary": { "enum": ["undeclared-external", "unavailable-external"] } }, "required": ["boundary"] },
+            "then": { "properties": { "limitedReason": { "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" } } }
+          }
+        ]
+      }
+    },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "sanitized": { "const": true }
+  }
+}

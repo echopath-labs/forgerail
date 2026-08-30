@@ -1,10 +1,11 @@
 # ForgeRail Agent Plugin
 
-The Plugin exposes three separately addressable Skills:
+The current private source exposes four separately addressable Skills:
 
 - `forgerail` is the small task-governance Core.
 - `forgerail-workspace-diagnosis` is a read-only, existing-habits-first diagnosis entry.
 - `workspace-health-review` is the first built-in Capability Pack and keeps its established identity.
+- `architecture-convergence-audit` is an independently invoked, medium-risk, read-only Pack for capability-owner duplication and minimal retained boundaries.
 
 Availability is not activation. Installing this Plugin does not make every Skill or pack mandatory in every workspace.
 

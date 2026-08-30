@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "claimId": "claim:review",
+  "workspaceIdentityId": "workspace:demo",
+  "sourceId": "source:agents",
+  "ruleKey": "review.required",
+  "normalizedValue": true,
+  "precedenceClass": "workspace-instructions",
+  "applicabilityScope": ["code-change"],
+  "observationPoint": "AGENTS.md#review",
+  "status": "confirmed",
+  "enforcement": "enforceable",
+  "dependencyEdgeIds": ["edge:skill"],
+  "observedAt": "2026-08-18T00:00:00Z",
+  "limitedReason": null
+}

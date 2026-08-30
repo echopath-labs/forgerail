@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "workspaceIdentityId": "workspace:demo",
+  "canonicalRootLocator": ".",
+  "boundaryClaims": [
+    {
+      "providerId": "git",
+      "kind": "repository",
+      "identity": "repository:demo",
+      "observedAt": "2026-08-18T00:00:00Z"
+    }
+  ],
+  "observedAt": "2026-08-18T00:00:00Z"
+}

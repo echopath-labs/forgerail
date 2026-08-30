@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/host-adapter-observation-v1.json",
+  "title": "ForgeRail Host Adapter Observation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "observationId", "adapterId", "adapterVersion", "hostIdentityId", "workspaceIdentityId", "scopeKind", "taskId", "subjectId", "controlRevisionId", "authorizationClaim", "capabilities", "observedAt", "sanitized"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "observationId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "adapterId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+    "adapterVersion": { "type": "string", "minLength": 1 },
+    "hostIdentityId": { "type": "string", "minLength": 1 },
+    "workspaceIdentityId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "scopeKind": { "enum": ["workspace", "task", "subject"] },
+    "taskId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "subjectId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "controlRevisionId": { "type": ["string", "null"], "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+    "authorizationClaim": { "const": false },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/capabilityObservation" }
+    },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "sanitized": { "const": true }
+  },
+  "$defs": {
+    "capabilityObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "state", "evidenceIdentityIds", "limitedReason"],
+      "properties": {
+        "capability": { "enum": ["instruction-discovery", "workspace-boundary-discovery", "skill-or-plugin-discovery", "binding", "activation", "mutation", "execution-context", "verification"] },
+        "state": { "enum": ["supported", "profile-only", "degraded", "blocked", "unavailable", "unknown"] },
+        "evidenceIdentityIds": { "type": "array", "items": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" }, "uniqueItems": true },
+        "limitedReason": { "anyOf": [{ "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" }, { "type": "null" }] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "const": "supported" } }, "required": ["state"] },
+          "then": { "properties": { "evidenceIdentityIds": { "minItems": 1 }, "limitedReason": { "const": null } } }
+        },
+        {
+          "if": { "properties": { "state": { "enum": ["profile-only", "degraded", "blocked", "unavailable", "unknown"] } }, "required": ["state"] },
+          "then": { "properties": { "limitedReason": { "$ref": "https://forgerail.dev/schemas/limited-reason-v1.json" } } }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "scopeKind": { "enum": ["task", "subject"] } }, "required": ["scopeKind"] },
+      "then": { "properties": { "taskId": { "type": "string" }, "controlRevisionId": { "type": "string" } } }
+    },
+    {
+      "if": { "properties": { "scopeKind": { "const": "subject" } }, "required": ["scopeKind"] },
+      "then": { "properties": { "subjectId": { "type": "string" } } }
+    }
+  ]
+}

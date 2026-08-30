@@ -1,0 +1,7 @@
+interface:
+  display_name: "Architecture Convergence Audit"
+  short_description: "Trace capability owners and minimize duplicate architecture."
+  brand_color: "#B45309"
+  default_prompt: "Use $architecture-convergence-audit to identify existing owners and the smallest remaining implementation without changing the workspace."
+policy:
+  allow_implicit_invocation: true

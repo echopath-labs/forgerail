@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "2.0",
+  "envelopeId": "envelope:task-2.6",
+  "revisionId": "envelope-revision:task-2.6-1",
+  "taskId": "task:2.6",
+  "workspaceIdentityId": "workspace:echopath",
+  "profileId": "profile:forgerail",
+  "profileRevisionId": "profile-revision:forgerail-2.5",
+  "subject": {
+    "subjectId": "subject:task-2.6",
+    "kind": "workspace-state",
+    "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "locator": "plugins/forgerail"
+  },
+  "intent": "Define the bounded task 2.6 control contracts.",
+  "nonGoals": ["No evaluator implementation", "No public projection"],
+  "entryMode": {
+    "schemaVersion": "1.0",
+    "mode": "new",
+    "sourceEvidenceIds": [],
+    "observedAt": "2026-08-18T08:00:00Z"
+  },
+  "phaseSliceCorrelation": {
+    "schemaVersion": "1.0",
+    "correlationId": "correlation:task-2.6",
+    "taskId": "task:2.6",
+    "parentTaskId": "task:forgerail-control-system",
+    "phaseId": "phase:contracts",
+    "sliceId": "slice:task-2.6",
+    "executionAttemptId": "attempt:task-2.6-1",
+    "ownerWorkspaceIdentityId": "workspace:echopath",
+    "requiredSliceIds": ["slice:task-2.6"],
+    "aggregateClosureClaim": false
+  },
+  "operations": [
+    {
+      "operationId": "operation:task-2.6-write",
+      "operation": "workspace.write",
+      "target": {
+        "kind": "directory",
+        "locator": "plugins/forgerail",
+        "identity": "target:forgerail-private-source",
+        "ref": "feat/forgerail-product-architecture",
+        "environment": null
+      },
+      "scope": ["plugins/forgerail/**"],
+      "authorityRequirementId": "authority-requirement:task-2.6-write"
+    }
+  ],
+  "prohibitedOperations": ["git.push", "package.publish", "projection.write"],
+  "requiredGateIds": ["gate:task-2.6-validation"],
+  "returnContract": "return-receipt-v2",
+  "createdAt": "2026-08-18T08:00:00Z"
+}
