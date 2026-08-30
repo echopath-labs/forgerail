@@ -38,17 +38,17 @@ Host task/thread APIs are not portable. Codex, Claude Code, Cursor, and other ho
 
 ## Optional npm CLI
 
-The npm package is not required by the Agent Plugin. After registry publication, use an exact prerelease when validating or diagnosing a workspace:
+The npm package is not required by the Agent Plugin. The official package is organization-scoped as `@echopath-labs/forgerail`; the unscoped `forgerail` package remains a reservation and is not an install or rollback source. After registry publication, use an exact scoped prerelease when validating or diagnosing a workspace:
 
 ```bash
-npx --yes forgerail@0.1.0-alpha.1 validate
-npx --yes forgerail@0.1.0-alpha.1 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.1 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.1 diagnose --workspace .
 ```
 
 For a persistent CLI shim:
 
 ```bash
-npm install --global forgerail@0.1.0-alpha.1
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.1
 forgerail validate
 ```
 
@@ -75,11 +75,11 @@ See [Progressive Adoption](adoption.md) for the full model, support matrix, veri
 
 ## Upgrade And Reinstall
 
-Register the new exact Marketplace tag, reinstall the selected Plugin names from `echopath-labs`, then start a new Codex task. Repeat Skill discovery and a bounded read-only diagnosis smoke. Upgrade from one exact npm version to another. Reinstall must preserve project files and Profile sources.
+Register the new exact Marketplace tag, reinstall the selected Plugin names from `echopath-labs`, then start a new Codex task. Repeat Skill discovery and a bounded read-only diagnosis smoke. Upgrade only between exact `@echopath-labs/forgerail` versions. Reinstall must preserve project files and Profile sources.
 
 ## Rollback And Uninstall
 
-Re-register the last validated Marketplace tag and reinstall the selected Plugin names, or return to the frozen AGW version. Remove ForgeRail Plugins with the Codex plugin command surface and remove the optional CLI with `npm uninstall --global forgerail`; do not delete project records, Agent instructions, or Git history. AGW remains the compatibility rollback until the migration gate is separately approved.
+Re-register the last validated Marketplace tag and reinstall the selected Plugin names, or return to the frozen AGW version. Remove ForgeRail Plugins with the Codex plugin command surface and remove the optional CLI with `npm uninstall --global @echopath-labs/forgerail`; do not delete project records, Agent instructions, or Git history. AGW remains the compatibility rollback until the migration gate is separately approved.
 
 ## Release Boundary
 

@@ -13,6 +13,8 @@ const cache = resolve(base, "npm-cache");
 const consumer = resolve(base, "consumer");
 const target = resolve(base, "target-workspace");
 const priorSource = resolve(base, "prior-source");
+const packageName = "@echopath-labs/forgerail";
+const installedPackageRoot = resolve(consumer, "node_modules", "@echopath-labs", "forgerail");
 mkdirSync(consumer, { recursive: true });
 mkdirSync(resolve(target, "docs/adr"), { recursive: true });
 writeFileSync(resolve(consumer, "package.json"), `${JSON.stringify({ name: "forgerail-disposable-consumer", private: true }, null, 2)}\n`);
@@ -63,7 +65,7 @@ function renderApprovedWrite(write) {
 const priorPack = JSON.parse(run("npm", ["pack", priorSource, "--json"], base))[0];
 const priorTarball = resolve(base, priorPack.filename);
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", priorTarball]);
-const priorInstalled = JSON.parse(readFileSync(resolve(consumer, "node_modules/forgerail/package.json"), "utf8")).version === "0.1.0-alpha.0";
+const priorInstalled = JSON.parse(readFileSync(resolve(installedPackageRoot, "package.json"), "utf8")).version === "0.1.0-alpha.0";
 const pack = JSON.parse(run("npm", ["pack", root, "--json"], base))[0];
 const tarball = resolve(base, pack.filename);
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball]);
@@ -105,15 +107,16 @@ const receiptPath = resolve(base, "host-binding-receipt.json");
 writeFileSync(receiptPath, `${JSON.stringify(bindingReceipt, null, 2)}\n`);
 const receiptValidation = JSON.parse(run(cli, ["validate-contract", "--type", "binding-receipt", "--file", receiptPath]));
 const launch = JSON.parse(run(cli, ["launch", "--profile", resolve(root, "scripts/fixtures/contracts/effective-profile.valid.json"), "--envelope", resolve(root, "scripts/fixtures/contracts/task-envelope.valid.json"), "--host-agent", "Codex"]));
-const upgraded = JSON.parse(readFileSync(resolve(consumer, "node_modules/forgerail/package.json"), "utf8")).version === pack.version;
+const upgraded = JSON.parse(readFileSync(resolve(installedPackageRoot, "package.json"), "utf8")).version === pack.version;
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", priorTarball]);
-const rolledBack = JSON.parse(readFileSync(resolve(consumer, "node_modules/forgerail/package.json"), "utf8")).version === "0.1.0-alpha.0";
+const rolledBack = JSON.parse(readFileSync(resolve(installedPackageRoot, "package.json"), "utf8")).version === "0.1.0-alpha.0";
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball]);
 const reinstallValidation = JSON.parse(run(cli, ["validate"]));
-run("npm", ["uninstall", "--no-audit", "--no-fund", "forgerail"]);
+run("npm", ["uninstall", "--no-audit", "--no-fund", packageName]);
 
 const result = {
   schemaVersion: "1.0",
+  packageName,
   sourceVersion: pack.version,
   tarball: { files: pack.entryCount, bytes: pack.size, shasum: pack.shasum, integrity: pack.integrity },
   install: firstValidation.valid,
@@ -132,7 +135,7 @@ const result = {
   reinstall: reinstallValidation.valid,
   upgrade: upgraded,
   rollback: rolledBack,
-  uninstall: !readdirSync(resolve(consumer, "node_modules"), { withFileTypes: true }).some((entry) => entry.name === "forgerail"),
+  uninstall: !existsSync(installedPackageRoot),
   disposableRoot: "[disposable]",
 };
 result.passed = result.priorInstall && result.install && result.binaryShim && result.diagnosis && result.targetUnchangedByDiagnosis && result.adoptionPlan && result.targetUnchangedByPlanner && result.explicitApprovedWrite && result.equivalentNewTaskDiscovery && result.bindingReceipt && result.noPersistedGovernance && result.launch && result.upgrade && result.rollback && result.reinstall && result.uninstall;

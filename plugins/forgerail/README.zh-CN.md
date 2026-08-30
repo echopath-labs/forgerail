@@ -18,7 +18,12 @@ ForgeRail 默认动态计算有效 Workspace Profile，不会因为被调用就�
 
 工作区采用遵循渐进式三级模型：默认 Plugin Only；只有用户确认后才使用轻量绑定；未来只有机器配置或反复冲突等证据充分时，才考虑持久化 `.forgerail/` 治理。宿主 instruction 文件只是 Adapter，不是 ForgeRail Core。alpha.1 支持 Codex；Claude Code 与 Cursor profile 会明确发布，但仍标记为未验证。
 
-可选 npm 安装会提供 `forgerail` 命令入口，用于离线校验、只读诊断和合同闭环；Agent Plugin 本身不依赖该 CLI 才能使用。
+可选官方 npm 包为 `@echopath-labs/forgerail`，安装后仍提供简短的 `forgerail` 命令入口，用于离线校验、只读诊断和合同闭环；Agent Plugin 本身不依赖该 CLI 才能使用。未作用域 `forgerail` 只保留名称占位，不是正式安装入口。
+
+```bash
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.1
+forgerail validate
+```
 
 ## 安装预发布版
 
