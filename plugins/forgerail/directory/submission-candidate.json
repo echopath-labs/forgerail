@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "candidateType": "openai-universal-plugin-directory",
   "submissionType": "skills_only",
-  "status": "local_alpha2_source_candidate",
+  "status": "local_alpha3_forward_fix_candidate",
   "approval": { "type": "submission_approval", "status": "not_granted" },
   "officialBaseline": {
     "observedAt": "2026-08-30",
@@ -13,7 +13,7 @@
   },
   "plugin": {
     "id": "forgerail",
-    "version": "0.1.0-alpha.2",
+    "version": "0.1.0-alpha.3",
     "manifest": ".codex-plugin/plugin.json",
     "skills": [
       "forgerail",
@@ -43,8 +43,7 @@
     "starterPrompts": [
       "Use ForgeRail to govern this engineering task.",
       "Diagnose this workspace before recommending governance changes.",
-      "Review this workspace for governance and recovery risks.",
-      "Audit this architecture for duplicated capability ownership."
+      "Review workspace health or audit duplicated architecture ownership using the matching independent ForgeRail Skill."
     ]
   },
   "availability": {
@@ -58,8 +57,8 @@
   },
   "releaseNotes": {
     "state": "candidate",
-    "path": "./directory/release-notes-alpha2.md",
-    "value": "ForgeRail alpha.2 adds an independently invoked read-only architecture convergence audit and prepares a Skills-only Directory candidate with public Privacy and Terms, deterministic evaluations, and no project-local Node.js or persistent ForgeRail state requirement."
+    "path": "./directory/release-notes-alpha3.md",
+    "value": "ForgeRail alpha.3 keeps all four independent Skills discoverable while reducing the main Plugin to three reviewed starter prompts, matching the Codex host limit without changing Skill ownership, invocation, or project mutation boundaries."
   },
   "evaluationFile": "./directory/evaluations.json",
   "unresolvedGates": [

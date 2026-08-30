@@ -87,7 +87,7 @@ for (const scenario of scenarios) {
 const result = {
   schemaVersion: "1.0",
   agwBaseline: "plugins/agent-workflow-governance@0.2.0-canonical",
-  forgeRailCandidate: "plugins/forgerail@0.1.0-alpha.2-canonical",
+  forgeRailCandidate: "plugins/forgerail@0.1.0-alpha.3-canonical",
   scenarios,
   covered: scenarios.filter((item) => item.passed).length,
   unresolved: scenarios.filter((item) => !item.passed).map((item) => item.id),

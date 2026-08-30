@@ -2,18 +2,18 @@
 
 ForgeRail 的主要形态是 Agent Plugin；npm 包是可选的确定性 CLI 与兼容载荷。
 
-canonical source 当前拟议 `@echopath-labs/forgerail@0.1.0-alpha.2` / `v0.1.0-alpha.2`，但该候选尚未远端集成或发布。不要根据本地版本提案自行拼装安装命令。以下命令继续绑定当前已发布 alpha.1，直到另行批准的 alpha.2 发布完成。
+canonical source 当前拟议本地 `@echopath-labs/forgerail@0.1.0-alpha.3` / `v0.1.0-alpha.3` forward fix，但该候选尚未远端集成或发布。不要根据本地版本提案自行拼装安装命令。以下命令继续绑定当前已发布 alpha.2。
 
 面向人的目标默认入口是 ChatGPT 或 Codex 中的 Universal Plugins Directory。ForgeRail **当前尚未在该目录上线**：本地 Skills-only 候选仍需独立提交审批、OpenAI 审查和开发者发布。以后只有在核对真实 ForgeRail listing、publisher 和能力请求后，才应从界面安装。
 
-当前可用的 Agent Plugin 路径是不可变的 EchoPath Labs Marketplace `v0.1.0-alpha.1` 快照：
+当前可用的 Agent Plugin 路径是不可变的 EchoPath Labs Marketplace `v0.1.0-alpha.2` 快照：
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.1
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.2
 codex plugin add forgerail@echopath-labs
 ```
 
-安装后启动一个新的 Codex 任务，使插件发现基于已安装快照。新任务必须发现 `$forgerail`、`$forgerail-workspace-diagnosis` 和 `$workspace-health-review`。需要可复现安装时，不要用可变分支替代精确 tag。
+安装后启动一个新的 Codex 任务，使插件发现基于已安装快照。新任务必须发现 `$forgerail`、`$forgerail-workspace-diagnosis`、`$workspace-health-review` 和 `$architecture-convergence-audit`。需要可复现安装时，不要用可变分支替代精确 tag。
 
 通过该 Agent Plugin 路径使用 ForgeRail，不要求目标项目安装 Node.js，也不要求存在 `package.json`、`node_modules` 或可选 npm CLI。
 
@@ -54,13 +54,13 @@ alpha.1 只有 Codex Host Adapter 是 `supported`；Claude Code 与 Cursor 以 `
 Agent Plugin 不依赖 npm CLI。官方包名为 `@echopath-labs/forgerail`；未作用域 `forgerail` 只保留名称占位，不是安装或回滚来源。registry 发布后，可用精确 scoped 版本执行离线校验和只读诊断：
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.1 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.1 diagnose --workspace .
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.1
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.2 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.2 diagnose --workspace .
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.2
 ```
 
 升级时注册新的精确 Marketplace tag，重新安装已选择的插件，再启动新的 Codex 任务验证 Skill 发现与只读诊断；npm CLI 只能在精确 `@echopath-labs/forgerail` 版本之间升级。回滚时重新注册最近已验证 tag，或退回冻结的 AGW 版本；卸载可选 CLI 使用 `npm uninstall --global @echopath-labs/forgerail`，不得删除项目记录、Agent instructions 或 Git 历史。
 
 创建或提交 Universal Plugins Directory draft、发布已审查 listing、npm 发布、移动 `latest`、推送公共候选、tag、GitHub Release 和 AGW 生命周期变更都属于各自独立的精确审批门。
 
-当前发布的历史门序见 [ForgeRail 0.1.0-alpha.1 发布 Runbook](release.zh-CN.md)，拟议 source-first 门序见 [ForgeRail 0.1.0-alpha.2 候选 Runbook](release-alpha2.zh-CN.md)。两份文档都不授予执行权限。
+历史门序见 [ForgeRail 0.1.0-alpha.1 发布 Runbook](release.zh-CN.md)与 [ForgeRail 0.1.0-alpha.2 候选 Runbook](release-alpha2.zh-CN.md)，拟议 forward-fix 门序见 [ForgeRail 0.1.0-alpha.3 Runbook](release-alpha3.zh-CN.md)。这些文档都不授予执行权限。

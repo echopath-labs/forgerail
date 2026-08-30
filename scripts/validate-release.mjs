@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedPackageName = "@echopath-labs/forgerail";
-const expectedVersion = "0.1.0-alpha.2";
+const expectedVersion = "0.1.0-alpha.3";
 const expectedTag = `v${expectedVersion}`;
-const expectedDate = "2026-08-30";
+const expectedDate = "2026-08-31";
 const expectedPlugins = [
   "forgerail",
   "forgerail-cross-workspace-orchestration",
@@ -101,7 +101,7 @@ for (const name of expectedPlugins) {
 
 const installation = `${read("docs/installation.md")}\n${read("docs/installation.zh-CN.md")}`;
 for (const phrase of [
-  "codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.1",
+  "codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.2",
   "codex plugin add forgerail@echopath-labs",
   "codex plugin add forgerail-cross-workspace-orchestration@echopath-labs",
   "codex plugin add forgerail-github-rulesets@echopath-labs",
@@ -136,8 +136,8 @@ record("package-adapters", packageJson.files?.includes("adapters/"), packageJson
 record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
 record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-const releaseEnglish = read("docs/release-alpha2.md");
-const releaseChinese = read("docs/release-alpha2.zh-CN.md");
+const releaseEnglish = read("docs/release-alpha3.md");
+const releaseChinese = read("docs/release-alpha3.zh-CN.md");
 const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
 for (const phrase of [
   "remote_integration_approval",
@@ -146,7 +146,7 @@ for (const phrase of [
   expectedVersion,
   expectedTag,
   "Node.js 22 and 24",
-  "codex/forgerail-alpha2-scoped",
+  "codex/forgerail-alpha3-scoped",
   "Do not unpublish",
   "AGW",
   "Host Binding Receipt",
