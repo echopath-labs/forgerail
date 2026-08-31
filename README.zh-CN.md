@@ -2,7 +2,7 @@
 
 ForgeRail 是面向 Coding Agent 的工程引航与治理框架。
 
-当前 canonical source 正在准备 `0.1.0-alpha.2` / `v0.1.0-alpha.2`。该候选尚未完成远端集成、发布或 Universal Plugins Directory 上线；当前可安装的公开版本仍是 alpha.1。
+当前 canonical source 正在准备本地 `0.1.0-alpha.3` / `v0.1.0-alpha.3` forward-fix 候选。该候选尚未完成远端集成、发布或 Universal Plugins Directory 上线；当前可安装的公开版本仍是 alpha.2。
 
 它观察工作区，在证据表明存在缺口时提出建议，组装适用规约，以明确的范围和审批边界发起宿主 Agent 工作，并核验可观察结果。它不替代 Agent，也不强迫项目采用新的规格系统。
 
@@ -30,7 +30,7 @@ Control System 迁移现已加入版本化 Workspace/Profile、Task Control、Re
 可选官方 npm 包为 `@echopath-labs/forgerail`，安装后仍提供简短的 `forgerail` 命令入口，用于离线校验、只读诊断和合同闭环；Agent Plugin 本身不依赖该 CLI 才能使用。未作用域 `forgerail` 只保留名称占位，不是正式安装入口。
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.1
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.2
 forgerail validate
 ```
 
@@ -39,7 +39,7 @@ forgerail validate
 未来面向人的默认入口是 Universal Plugins Directory 界面，但 ForgeRail 当前尚未在该目录上线。在独立提交、审查与发布完成前，请安装已经发布的精确 ForgeRail Marketplace 快照：
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.1
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.2
 codex plugin add forgerail@echopath-labs
 ```
 
@@ -47,4 +47,4 @@ codex plugin add forgerail@echopath-labs
 
 Agent Plugin 不要求目标项目安装 Node.js 或存在 `package.json`；npm/npx 始终只是可选维护与验证工具。
 
-不可变 public alpha.1 仍是当前安装来源。Alpha.2 是本地 source-first 候选，包含 Architecture Convergence、已审查的 Utopia capability harvest、Directory readiness 和 ForgeRail 专属 Privacy/Terms。拟议版本/tag 不授权应用公开投影、远端集成、发布或 Directory submit/publish。
+不可变 public alpha.2 仍是当前安装来源。Alpha.3 是本地 source-first forward fix：主 Plugin 收敛为三条 starter prompts，同时四个 Skills 继续独立发现与调用。拟议版本/tag 不授权应用公开投影、远端集成、发布或 Directory submit/publish。

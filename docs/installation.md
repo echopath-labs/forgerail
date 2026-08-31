@@ -2,16 +2,16 @@
 
 ForgeRail is primarily an Agent Plugin. The npm package is an optional deterministic CLI and compatibility payload.
 
-The canonical source currently proposes `@echopath-labs/forgerail@0.1.0-alpha.2` / `v0.1.0-alpha.2`, but that candidate is not yet remotely integrated or released. Do not construct an installation command from a local version proposal. The commands below remain bound to the currently released alpha.1 until a separately approved alpha.2 release completes.
+The canonical source currently proposes the local `@echopath-labs/forgerail@0.1.0-alpha.3` / `v0.1.0-alpha.3` forward fix, but that candidate is not yet remotely integrated or released. Do not construct an installation command from a local version proposal. The commands below remain bound to the currently released alpha.2.
 
 ## Install
 
 The intended default human route is the Universal Plugins Directory in ChatGPT or Codex. ForgeRail is **not currently available there**: the local Skills-only candidate still needs separately approved submission, OpenAI review, and developer publication. When a verified ForgeRail listing becomes available, use that interface and confirm the publisher and requested capabilities before installation.
 
-The current available Agent Plugin route is the immutable `v0.1.0-alpha.1` EchoPath Labs Marketplace snapshot:
+The current available Agent Plugin route is the immutable `v0.1.0-alpha.2` EchoPath Labs Marketplace snapshot:
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.1
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.2
 codex plugin add forgerail@echopath-labs
 ```
 
@@ -20,6 +20,7 @@ Start a new Codex task after installation so discovery uses the installed snapsh
 - `$forgerail`;
 - `$forgerail-workspace-diagnosis`;
 - `$workspace-health-review`.
+- `$architecture-convergence-audit`.
 
 This Agent Plugin route does not require the target project to have Node.js, `package.json`, `node_modules`, or the optional npm CLI.
 
@@ -47,14 +48,14 @@ Host task/thread APIs are not portable. Codex, Claude Code, Cursor, and other ho
 The npm package is not required by the Agent Plugin. The official package is organization-scoped as `@echopath-labs/forgerail`; the unscoped `forgerail` package remains a reservation and is not an install or rollback source. After registry publication, use an exact scoped prerelease when validating or diagnosing a workspace:
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.1 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.1 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.2 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.2 diagnose --workspace .
 ```
 
 For a persistent CLI shim:
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.1
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.2
 forgerail validate
 ```
 
@@ -91,4 +92,4 @@ Re-register the last validated Marketplace tag and reinstall the selected Plugin
 
 Creating or submitting a Universal Plugins Directory draft, publishing a reviewed listing, publishing npm, moving `latest`, pushing a public candidate, tagging, creating a GitHub Release, or changing AGW lifecycle requires its own exact approval and receipt.
 
-See the historical [ForgeRail 0.1.0-alpha.1 Release Runbook](release.md) for the current release and the [ForgeRail 0.1.0-alpha.2 Candidate Runbook](release-alpha2.md) for the proposed source-first gate order. Neither document grants execution authority.
+See the historical [ForgeRail 0.1.0-alpha.1 Release Runbook](release.md), the [ForgeRail 0.1.0-alpha.2 Candidate Runbook](release-alpha2.md), and the proposed [ForgeRail 0.1.0-alpha.3 Forward-Fix Runbook](release-alpha3.md). None grants execution authority.

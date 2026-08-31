@@ -1,6 +1,6 @@
 {
   "name": "@echopath-labs/forgerail",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
   "license": "Apache-2.0",
   "type": "module",

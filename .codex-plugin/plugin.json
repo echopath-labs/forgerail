@@ -1,6 +1,6 @@
 {
   "name": "forgerail",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Engineering guidance and governance for coding agents, with workspace diagnosis and composable capability packs.",
   "author": {
     "name": "EchoPath Labs",
@@ -33,8 +33,7 @@
     "defaultPrompt": [
       "Use ForgeRail to govern this engineering task.",
       "Diagnose this workspace before recommending governance changes.",
-      "Review this workspace for governance and recovery risks.",
-      "Trace duplicate capability ownership and identify the smallest remaining implementation boundary."
+      "Review workspace health or audit duplicated architecture ownership using the matching independent ForgeRail Skill."
     ],
     "brandColor": "#B45309"
   }

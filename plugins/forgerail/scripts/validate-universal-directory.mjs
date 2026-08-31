@@ -64,17 +64,29 @@ function validateMarkdownLinks(relativePath) {
 }
 
 assert(candidate.submissionType === "skills_only", "candidate is Skills-only");
-assert(candidate.status === "local_alpha2_source_candidate", "candidate status is local alpha.2 source preparation");
+assert(candidate.status === "local_alpha3_forward_fix_candidate", "candidate status is local alpha.3 forward-fix preparation");
 assert(candidate.approval.status === "not_granted", "submission approval is not granted");
 assert(candidate.plugin.id === manifest.name, "candidate and manifest Plugin identity match");
 assert(candidate.plugin.version === manifest.version, "candidate and manifest version match");
-assert(candidate.plugin.version === "0.1.0-alpha.2", "candidate version is alpha.2");
+assert(candidate.plugin.version === "0.1.0-alpha.3", "candidate version is alpha.3");
 assert(packageJson.version === candidate.plugin.version, "optional scoped package version matches candidate");
 assert(candidate.plugin.mcpServers.length === 0, "candidate has no MCP server requirement");
 assert(candidate.plugin.authentication === "none", "candidate has no authentication requirement");
 assert(candidate.plugin.coreRequirements.projectPackageJson === false, "Core requires no project package.json");
 assert(candidate.plugin.coreRequirements.projectNodeModules === false, "Core requires no project node_modules");
 assert(candidate.plugin.coreRequirements.npmCli === "optional", "npm CLI is optional");
+
+const expectedDefaultPrompts = [
+  "Use ForgeRail to govern this engineering task.",
+  "Diagnose this workspace before recommending governance changes.",
+  "Review workspace health or audit duplicated architecture ownership using the matching independent ForgeRail Skill.",
+];
+assert(Array.isArray(manifest.interface.defaultPrompt), "defaultPrompt is an array");
+assert(manifest.interface.defaultPrompt.length <= 3, "defaultPrompt stays within the Codex maximum of three");
+assert(manifest.interface.defaultPrompt.length === expectedDefaultPrompts.length, "defaultPrompt exposes the three reviewed intents");
+assert(new Set(manifest.interface.defaultPrompt).size === manifest.interface.defaultPrompt.length, "defaultPrompt entries are unique");
+assert(manifest.interface.defaultPrompt.every((prompt) => typeof prompt === "string" && prompt.trim().length > 0), "defaultPrompt entries are non-empty strings");
+assert(JSON.stringify(manifest.interface.defaultPrompt) === JSON.stringify(expectedDefaultPrompts), "defaultPrompt entries match the reviewed governance, diagnosis, and either-or review router");
 
 for (const skill of candidate.plugin.skills) {
   assert(existsSync(resolve(pluginRoot, "skills", skill, "SKILL.md")), `declared Skill exists: ${skill}`);
@@ -96,8 +108,8 @@ for (const field of ["websiteUrl", "supportUrl", "privacyPolicyUrl", "termsOfSer
 }
 assert(candidate.availability.intent.state === "confirmed_by_user" && candidate.availability.intent.value === "all_platform_supported_regions", "all-platform-supported-regions intent is user-confirmed");
 assert(candidate.availability.portalEnumeration.state === "pending_confirmation" && candidate.availability.portalEnumeration.values.length === 0, "portal region enumeration remains pending without an invented country list");
-assert(candidate.releaseNotes.state === "candidate" && candidate.releaseNotes.path === "./directory/release-notes-alpha2.md", "alpha.2 release notes path is explicit");
-assert(existsSync(resolve(pluginRoot, candidate.releaseNotes.path)), "alpha.2 release notes file exists");
+assert(candidate.releaseNotes.state === "candidate" && candidate.releaseNotes.path === "./directory/release-notes-alpha3.md", "alpha.3 release notes path is explicit");
+assert(existsSync(resolve(pluginRoot, candidate.releaseNotes.path)), "alpha.3 release notes file exists");
 
 const privacy = readFileSync(resolve(pluginRoot, "PRIVACY.md"), "utf8");
 const terms = readFileSync(resolve(pluginRoot, "TERMS.md"), "utf8");
@@ -107,7 +119,7 @@ for (const phrase of ["Skills-only Agent Plugin", "does not operate its own serv
 for (const phrase of ["Apache License 2.0", "without warranties", "You are responsible", "external actions", "does not provide legal advice", "service-level agreement"]) {
   assert(terms.includes(phrase), `Terms contain required boundary: ${phrase}`);
 }
-for (const path of ["PRIVACY.md", "TERMS.md", "README.md", "README.zh-CN.md", "docs/installation.md", "docs/installation.zh-CN.md", "docs/release-alpha2.md", "docs/release-alpha2.zh-CN.md"]) {
+for (const path of ["PRIVACY.md", "TERMS.md", "README.md", "README.zh-CN.md", "docs/installation.md", "docs/installation.zh-CN.md", "docs/release-alpha3.md", "docs/release-alpha3.zh-CN.md"]) {
   validateMarkdownLinks(path);
 }
 

@@ -11,7 +11,7 @@ const manifest = readJson(".codex-plugin/plugin.json");
 const pack = readJson("pack.json");
 
 if (manifest.name !== "forgerail-cross-workspace-orchestration") errors.push("invalid Plugin name");
-if (manifest.version !== "0.1.0-alpha.2" || manifest.license !== "Apache-2.0") errors.push("invalid version or license");
+if (manifest.version !== "0.1.0-alpha.3" || manifest.license !== "Apache-2.0") errors.push("invalid version or license");
 if (pack.id !== "cross-workspace-orchestration" || pack.risk !== "medium") errors.push("invalid pack identity or risk");
 if (!existsSync(resolve(root, pack.entry))) errors.push("pack entry is missing");
 if (!existsSync(resolve(root, "LICENSE")) || !existsSync(resolve(root, "NOTICE"))) errors.push("license files are missing");

@@ -2,7 +2,7 @@
 
 ForgeRail is an engineering guidance and governance framework for Coding Agents.
 
-This canonical source is preparing `0.1.0-alpha.2` / `v0.1.0-alpha.2`. The candidate is not yet remotely integrated, released, or listed in the Universal Plugins Directory; the currently installable public version remains alpha.1.
+This canonical source is preparing the local `0.1.0-alpha.3` / `v0.1.0-alpha.3` forward-fix candidate. It is not yet remotely integrated, released, or listed in the Universal Plugins Directory; the currently installable public version remains alpha.2.
 
 It observes a workspace, recommends improvements only when evidence warrants them, composes applicable rules, launches the host Agent with explicit scope and approval boundaries, and verifies observable results. It does not replace the Agent or force a new specification system onto the project.
 
@@ -53,7 +53,7 @@ node scripts/forgerail.mjs adoption-plan --workspace scripts/fixtures/workspaces
 The optional official npm package is `@echopath-labs/forgerail`; it exposes the same deterministic CLI through the short `forgerail` binary shim. The unscoped `forgerail` package remains a reservation and is not the product install path.
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.1
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.2
 forgerail validate
 forgerail diagnose --workspace .
 forgerail adoption-plan --workspace . --host codex
@@ -64,7 +64,7 @@ forgerail adoption-plan --workspace . --host codex
 The intended future default is the Universal Plugins Directory UI, but ForgeRail is not listed there yet. Until a separate submission, review, and publication complete, install the released exact ForgeRail Marketplace snapshot:
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.1
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.2
 codex plugin add forgerail@echopath-labs
 ```
 
@@ -74,4 +74,4 @@ The Agent Plugin does not require Node.js or `package.json` in the target projec
 
 ## Status
 
-The immutable public alpha.1 remains the current install source. Alpha.2 is a local source-first candidate containing Architecture Convergence, the reviewed Utopia capability harvest, Directory readiness, and ForgeRail-specific Privacy and Terms. Its proposed version and tag do not authorize public projection application, remote integration, release, or Directory submission/publication.
+The immutable public alpha.2 remains the current install source. Alpha.3 is a local source-first forward fix that limits the main Plugin to three starter prompts while keeping all four Skills independently discoverable and invokable. Its proposed version and tag do not authorize public projection application, remote integration, release, or Directory submission/publication.
