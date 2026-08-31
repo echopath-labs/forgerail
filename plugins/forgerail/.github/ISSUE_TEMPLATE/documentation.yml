@@ -1,0 +1,44 @@
+name: Documentation issue
+description: Report unclear, missing, stale, or incorrect ForgeRail documentation.
+title: "[Docs]: "
+labels:
+  - documentation
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked the current alpha.3 documentation.
+          required: true
+        - label: I removed private or sensitive information.
+          required: true
+  - type: input
+    id: location
+    attributes:
+      label: Documentation location
+      description: URL, file, heading, or command whose documentation needs attention.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is unclear or incorrect?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+      description: Optional wording, example, or information architecture.
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - English
+        - Simplified Chinese
+        - Both
+        - Other
+    validations:
+      required: true

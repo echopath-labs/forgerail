@@ -99,9 +99,9 @@ for (const name of expectedPlugins) {
   if (name !== "forgerail") record(`marketplace-${name}-on-use`, plugin?.policy?.authentication === "ON_USE", plugin?.policy?.authentication ?? null);
 }
 
-const installation = `${read("docs/installation.md")}\n${read("docs/installation.zh-CN.md")}`;
+const installation = `${read("docs/installation.md")}\n${read("docs/installation.zh-CN.md")}\n${read("docs/adoption.md")}\n${read("docs/adoption.zh-CN.md")}`;
 for (const phrase of [
-  "codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.2",
+  `codex plugin marketplace add echopath-labs/forgerail --ref ${expectedTag}`,
   "codex plugin add forgerail@echopath-labs",
   "codex plugin add forgerail-cross-workspace-orchestration@echopath-labs",
   "codex plugin add forgerail-github-rulesets@echopath-labs",

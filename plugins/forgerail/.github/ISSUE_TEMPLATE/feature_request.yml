@@ -1,0 +1,60 @@
+name: Feature request
+description: Propose a ForgeRail capability or workflow improvement grounded in a user problem.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the engineering-governance problem before choosing a mechanism. ForgeRail prefers existing project habits, progressive adoption, and separate Capability Packs for separate risk boundaries.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and documentation.
+          required: true
+        - label: I removed private or sensitive project information.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: Who encounters the problem, in what project context, and what is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Observed evidence
+      description: Describe real workflows, repeated failures, or constraints that motivate this proposal.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Explain what should become easier or safer without prescribing implementation.
+    validations:
+      required: true
+  - type: dropdown
+    id: owner
+    attributes:
+      label: Likely capability boundary
+      options:
+        - ForgeRail Core or main Plugin
+        - Existing Capability Pack
+        - New independent Capability Pack
+        - Host Adapter
+        - Documentation or examples
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals and risks
+      description: What should remain out of scope? Note identity, permission, write, remote, or lifecycle risks.
+    validations:
+      required: true
