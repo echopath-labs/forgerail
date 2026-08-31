@@ -20,6 +20,7 @@
     "skills/",
     "templates/",
     "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
     "CONTRIBUTING.md",
     "LICENSE",
     "NOTICE",
@@ -28,13 +29,15 @@
     "README.md",
     "README.zh-CN.md",
     "SECURITY.md",
+    "SUPPORT.md",
     "TERMS.md"
   ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures && node scripts/forgerail.mjs validate-adoption",
+    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures && node scripts/forgerail.mjs validate-adoption && npm run test:docs",
+    "test:docs": "node scripts/validate-open-source-docs.mjs",
     "test:consumer": "node scripts/disposable-consumer.mjs",
     "test:release": "node scripts/validate-release.mjs",
     "test:shadow": "node scripts/shadow-comparison.mjs",

@@ -1,34 +1,59 @@
-# Installation And Adoption
+# Install ForgeRail
 
-ForgeRail is primarily an Agent Plugin. The npm package is an optional deterministic CLI and compatibility payload.
+ForgeRail is primarily a Codex Agent Plugin. The default installation does not add Node.js, `package.json`, `node_modules`, or `.forgerail/` to the project you use it with.
 
-The canonical source currently proposes the local `@echopath-labs/forgerail@0.1.0-alpha.3` / `v0.1.0-alpha.3` forward fix, but that candidate is not yet remotely integrated or released. Do not construct an installation command from a local version proposal. The commands below remain bound to the currently released alpha.2.
+The current public prerelease is `0.1.0-alpha.3`. Pin the immutable Git tag so another user can reproduce the same Plugin snapshot.
 
-## Install
+## Prerequisites
 
-The intended default human route is the Universal Plugins Directory in ChatGPT or Codex. ForgeRail is **not currently available there**: the local Skills-only candidate still needs separately approved submission, OpenAI review, and developer publication. When a verified ForgeRail listing becomes available, use that interface and confirm the publisher and requested capabilities before installation.
+- Codex with the `codex plugin` command available;
+- Git/network access to GitHub during installation;
+- a new Codex task after installation so Plugin discovery starts from a fresh host context.
 
-The current available Agent Plugin route is the immutable `v0.1.0-alpha.2` EchoPath Labs Marketplace snapshot:
+The target project does not require Node.js, `package.json`, `node_modules`, or `.forgerail/`. Node.js 22 or newer is required only if you choose to run ForgeRail's optional npm CLI.
+
+## Install the Codex Plugin
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.2
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.3
 codex plugin add forgerail@echopath-labs
 ```
 
-Start a new Codex task after installation so discovery uses the installed snapshot. The new task must discover:
+Then start a new Codex task in the project you want to assess.
+
+## Verify the installation
+
+Run:
+
+```bash
+codex plugin list
+```
+
+Confirm that the `forgerail@echopath-labs` Plugin is enabled. In the new task, Codex should discover these four namespaced Skills:
 
 - `$forgerail`;
 - `$forgerail-workspace-diagnosis`;
-- `$workspace-health-review`.
+- `$workspace-health-review`;
 - `$architecture-convergence-audit`.
 
-This Agent Plugin route does not require the target project to have Node.js, `package.json`, `node_modules`, or the optional npm CLI.
+If another Plugin defines the same short Skill name, use the exact namespaced name shown by Codex.
 
-The versioned Marketplace registration is the Plugin release identity; do not replace the tag with a mutable branch when reproducibility matters. For local canonical testing, build a disposable bundle or npm tarball; do not point production workspaces at an uncommitted source tree.
+## First use: stay read-only
+
+Send this request to Codex:
+
+```text
+Use $forgerail to assess this project read-only. Follow its existing AGENTS.md,
+specification, ADR, CI, and documentation habits first. Do not modify files or
+perform remote actions. Recommend Plugin Only or Lightweight Adoption, show the
+evidence and uncertainties, and wait for my confirmation before any write.
+```
+
+A useful first result identifies the workspace and task boundary, applicable project rules, unresolved conflicts, the smallest suitable adoption level, validation evidence, explicit non-actions, and the next decision for a human. Installation alone never authorizes a write or remote operation.
 
 ## Optional Capability Pack Plugins
 
-Install only the packs the project needs. Installation makes a pack available; it does not authenticate, activate, require, or approve its external effects.
+Capability Packs are separate Plugins with separate authentication, risk, and lifecycle boundaries. Install only the ones the project actually needs:
 
 ```bash
 codex plugin add forgerail-github-rulesets@echopath-labs
@@ -37,59 +62,65 @@ codex plugin add forgerail-thread-closure@echopath-labs
 codex plugin add forgerail-cross-workspace-orchestration@echopath-labs
 ```
 
-The Rulesets and Release Safety packs remain read-first. Ruleset mutations, repository protection changes, publishing, deployment, and lifecycle changes require their own exact approvals.
-
-Install Cross-Workspace Orchestration only when a master task must coordinate multiple genuine owner/repository/release boundaries and dependency evidence exposes safe parallel stages. It is not for an ordinary single repository or monorepo folder split. Installation leaves it `available`; invoke it explicitly, or adopt it through existing project instructions only after review. It does not create tasks or durable records, and remote integration, release, and lifecycle approvals remain independent.
-
-Host task/thread APIs are not portable. Codex, Claude Code, Cursor, and other hosts must provide verified create/inspect/wait/message/resume capabilities through a Host Adapter; otherwise use user-created sessions, stable handoffs, or serial execution. RelayPact is an optional delegation transport and EchoPath is an optional recovery/context source, not runtime dependencies.
+Installation only makes a Pack available. It does not authenticate, enable, invoke, or approve the Pack, and it does not grant repository, release, deployment, or lifecycle authority.
 
 ## Optional npm CLI
 
-The npm package is not required by the Agent Plugin. The official package is organization-scoped as `@echopath-labs/forgerail`; the unscoped `forgerail` package remains a reservation and is not an install or rollback source. After registry publication, use an exact scoped prerelease when validating or diagnosing a workspace:
+The CLI is useful for deterministic validation or read-only diagnosis, but it is not required for Plugin use:
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.2 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.2 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 diagnose --workspace .
 ```
 
-For a persistent CLI shim:
+For a global CLI:
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.2
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.3
 forgerail validate
 ```
 
-## Adoption
+The official package is scoped. The unscoped `forgerail` package is only a reservation and is not an installation source.
 
-Installation makes capabilities available. It does not edit a project's `AGENTS.md`, create `.forgerail/`, install OpenSpec, or make Workspace Health mandatory. Project adoption is a separate, explicit decision.
+## Upgrade or reinstall
 
-ForgeRail uses progressive adoption:
+Marketplace registrations are exact-tag snapshots. To move to a newer release, remove the installed Plugin and Marketplace registration using the current `codex plugin` command surface, register the new exact tag, reinstall the Plugin, and start a new task. Verify the four Skills and repeat the read-only smoke test before relying on it.
 
-1. **Plugin Only** is the default and leaves the workspace unchanged.
-2. **Lightweight Adoption** requires an exact read-only plan and user confirmation. One host gets a versioned managed block; multiple hosts may share `FORGERAIL.md` through thin bindings.
-3. **Persisted Governance** is evidence-gated and deferred in alpha.1; the CLI will not generate `.forgerail/` state.
+Do not replace the exact tag with a mutable branch when reproducibility matters. An upgrade must not modify project files or persisted governance unless the user separately approves an exact adoption plan.
 
-The optional CLI can prepare, but never apply, a candidate:
+## Uninstall
+
+Use `codex plugin remove forgerail@echopath-labs`, then remove the `echopath-labs` Marketplace registration if you no longer use any Plugin from it. Remove the optional global CLI with:
 
 ```bash
-forgerail adoption-plan --workspace . --host codex
-forgerail adoption-plan --workspace . --host codex --host claude-code --host cursor
+npm uninstall --global @echopath-labs/forgerail
 ```
 
-Codex is the only `supported` Host Adapter in alpha.1. Claude Code and Cursor are published as `profile-only` boundaries so their target files and limitations are explicit without claiming verified activation. The host Agent must show the exact proposal, obtain confirmation, preserve unrelated content, write only the approved paths, then verify discovery in a new task or equivalent supported check and return a Host Binding Receipt.
+Uninstalling ForgeRail must not delete project instructions, specifications, receipts, Git history, or other project records. Remove a previously approved Lightweight Adoption block only through a separate reviewed change.
 
-See [Progressive Adoption](adoption.md) for the full model, support matrix, verification, and removal semantics.
+## Troubleshooting
 
-## Upgrade And Reinstall
+### The Skills do not appear
 
-Register the new exact Marketplace tag, reinstall the selected Plugin names from `echopath-labs`, then start a new Codex task. Repeat Skill discovery and a bounded read-only diagnosis smoke. Upgrade only between exact `@echopath-labs/forgerail` versions. Reinstall must preserve project files and Profile sources.
+1. Confirm the Marketplace and Plugin are listed and enabled with `codex plugin list`.
+2. Confirm the registration is pinned to `v0.1.0-alpha.3`.
+3. Start a new Codex task; an already-running task may not refresh Plugin discovery.
+4. Use the namespaced Skill name if another Plugin or personal Skill has the same short name.
 
-## Rollback And Uninstall
+### The project asks for Node.js
 
-Re-register the last validated Marketplace tag and reinstall the selected Plugin names, or return to the frozen AGW version. Remove ForgeRail Plugins with the Codex plugin command surface and remove the optional CLI with `npm uninstall --global @echopath-labs/forgerail`; do not delete project records, Agent instructions, or Git history. AGW remains the compatibility rollback until the migration gate is separately approved.
+Plugin Only should not require project-local Node.js. Check that you are invoking the installed Plugin rather than running `npx`, `npm install`, or repository source. Please report a bug if normal Plugin use creates `package.json`, `node_modules`, or `.forgerail/`.
 
-## Release Boundary
+### ForgeRail proposes too much process
 
-Creating or submitting a Universal Plugins Directory draft, publishing a reviewed listing, publishing npm, moving `latest`, pushing a public candidate, tagging, creating a GitHub Release, or changing AGW lifecycle requires its own exact approval and receipt.
+Ask it to remain read-only and explain why Plugin Only is insufficient. ForgeRail should recommend the smallest useful level and follow existing project governance before proposing new files.
 
-See the historical [ForgeRail 0.1.0-alpha.1 Release Runbook](release.md), the [ForgeRail 0.1.0-alpha.2 Candidate Runbook](release-alpha2.md), and the proposed [ForgeRail 0.1.0-alpha.3 Forward-Fix Runbook](release-alpha3.md). None grants execution authority.
+### A command requests credentials or remote authority
+
+Stop and review the exact Pack, identity, scope, and approval boundary. ForgeRail installation is never approval for login, publishing, repository administration, deployment, or lifecycle mutation.
+
+For more help, see [SUPPORT.md](../SUPPORT.md). Report security concerns privately using [SECURITY.md](../SECURITY.md).
+
+## Adoption is separate
+
+Installation makes ForgeRail available. It does not edit `AGENTS.md`, install OpenSpec, create `.forgerail/`, or make Workspace Health mandatory. See [Progressive Adoption](adoption.md) before approving any durable project integration.

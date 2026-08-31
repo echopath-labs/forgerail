@@ -1,23 +1,58 @@
-# 安装与采用
+# 安装 ForgeRail
 
-ForgeRail 的主要形态是 Agent Plugin；npm 包是可选的确定性 CLI 与兼容载荷。
+ForgeRail 首先是一个 Codex Agent Plugin。默认安装不会在目标项目中加入 Node.js、`package.json`、`node_modules` 或 `.forgerail/`。
 
-canonical source 当前拟议本地 `@echopath-labs/forgerail@0.1.0-alpha.3` / `v0.1.0-alpha.3` forward fix，但该候选尚未远端集成或发布。不要根据本地版本提案自行拼装安装命令。以下命令继续绑定当前已发布 alpha.2。
+当前公开预发布版本是 `0.1.0-alpha.3`。请固定不可变 Git tag，让其他用户能够复现同一个 Plugin 快照。
 
-面向人的目标默认入口是 ChatGPT 或 Codex 中的 Universal Plugins Directory。ForgeRail **当前尚未在该目录上线**：本地 Skills-only 候选仍需独立提交审批、OpenAI 审查和开发者发布。以后只有在核对真实 ForgeRail listing、publisher 和能力请求后，才应从界面安装。
+## 准备条件
 
-当前可用的 Agent Plugin 路径是不可变的 EchoPath Labs Marketplace `v0.1.0-alpha.2` 快照：
+- Codex 已提供 `codex plugin` 命令；
+- 安装时能够通过 Git/网络访问 GitHub；
+- 安装后新建一个 Codex 任务，让宿主从新的上下文发现 Plugin。
+
+目标项目**不需要** Node.js。只有选择运行可选 npm CLI 时，才需要 Node.js 22 或更高版本。
+
+## 安装 Codex Plugin
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.2
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.3
 codex plugin add forgerail@echopath-labs
 ```
 
-安装后启动一个新的 Codex 任务，使插件发现基于已安装快照。新任务必须发现 `$forgerail`、`$forgerail-workspace-diagnosis`、`$workspace-health-review` 和 `$architecture-convergence-audit`。需要可复现安装时，不要用可变分支替代精确 tag。
+然后在需要评估的项目中启动一个新的 Codex 任务。
 
-通过该 Agent Plugin 路径使用 ForgeRail，不要求目标项目安装 Node.js，也不要求存在 `package.json`、`node_modules` 或可选 npm CLI。
+## 验证安装
 
-GitHub Rulesets、Release Safety 与 Thread Closure 是单独插件，只按项目需要安装：
+运行：
+
+```bash
+codex plugin list
+```
+
+确认 `forgerail@echopath-labs` 已启用。新任务应能发现四个带命名空间的 Skills：
+
+- `$forgerail`；
+- `$forgerail-workspace-diagnosis`；
+- `$workspace-health-review`；
+- `$architecture-convergence-audit`。
+
+如果其他 Plugin 定义了同名短 Skill，请使用 Codex 显示的完整命名空间名称。
+
+## 第一次使用：保持只读
+
+把下面这段话发给 Codex：
+
+```text
+使用 $forgerail 对当前项目进行只读评估。优先沿用已有的 AGENTS.md、规格、
+ADR、CI 和文档习惯。不要修改文件，也不要执行远端操作。建议使用 Plugin Only
+还是 Lightweight Adoption，展示依据和不确定项，并在任何写入前等待我确认。
+```
+
+一个有用的首次结果应说明：工作区与任务边界、适用的项目规则、尚未解决的冲突、最小采用层级、验证依据、明确没有执行的动作，以及下一项需要人类判断的事情。仅安装 ForgeRail 绝不等于批准写入或远端操作。
+
+## 可选 Capability Pack Plugins
+
+Capability Pack 是独立 Plugin，拥有独立的认证、风险和生命周期边界。只安装项目真正需要的 Pack：
 
 ```bash
 codex plugin add forgerail-github-rulesets@echopath-labs
@@ -26,41 +61,65 @@ codex plugin add forgerail-thread-closure@echopath-labs
 codex plugin add forgerail-cross-workspace-orchestration@echopath-labs
 ```
 
-安装只让能力可用，不等于认证、启用、要求或批准外部副作用。Ruleset、仓库保护、发布、部署和生命周期变更仍需各自的精确审批。
+安装只会让 Pack 可用，不会自动认证、启用、调用或批准它，也不会授予仓库管理、发布、部署或生命周期权限。
 
-只有当主控任务需要协调多个真正独立的 owner workspace、repository 或 release identity，且依赖证据表明存在安全并行阶段时，才安装 Cross-Workspace Orchestration。普通单仓任务或 monorepo 目录拆分不适用。安装后状态仍是 `available`；必须显式调用，或在审查后沿用项目已有 instructions 采用。它不会自动创建任务或 durable record，远端集成、发布和 lifecycle 审批仍相互独立。
+## 可选 npm CLI
 
-不同宿主不共享同一套 task/thread API。Codex、Claude Code、Cursor 等必须由 Host Adapter 明确声明并验证 create/inspect/wait/message/resume 能力；缺失时降级为用户创建的独立会话、稳定 handoff 或串行执行。RelayPact 只是可选委派 transport，EchoPath 只是可选恢复/上下文来源，均非运行时硬依赖。
-
-安装只代表能力可用，不会修改项目 `AGENTS.md`、创建 `.forgerail/`、安装 OpenSpec 或要求项目启用 Workspace Health。项目采用、能力启用和长期规约变更都需要单独确认。
-
-ForgeRail 采用渐进式三级模型：
-
-1. **Plugin Only** 是默认状态，工作区零修改；
-2. **Lightweight Adoption** 必须先生成精确只读计划并经用户确认；单宿主使用带版本 managed block，多宿主可使用 `FORGERAIL.md` 加薄绑定；
-3. **Persisted Governance** 只在真实证据支持时考虑，alpha.1 延期且 CLI 不会生成 `.forgerail/` 状态。
-
-可选 CLI 只生成候选，不会应用：
+CLI 可用于确定性验证或只读诊断，但不是使用 Plugin 的前提：
 
 ```bash
-forgerail adoption-plan --workspace . --host codex
-forgerail adoption-plan --workspace . --host codex --host claude-code --host cursor
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 diagnose --workspace .
 ```
 
-alpha.1 只有 Codex Host Adapter 是 `supported`；Claude Code 与 Cursor 以 `profile-only` 发布，明确目标入口与限制，但不声称已验证激活。宿主 Agent 必须展示精确候选、取得确认、保护无关内容、只写获批路径，再在新任务或等价支持检查中验证发现并返回 Host Binding Receipt。
-
-完整模型、支持矩阵、验证与移除语义见[渐进式采用](adoption.zh-CN.md)。
-
-Agent Plugin 不依赖 npm CLI。官方包名为 `@echopath-labs/forgerail`；未作用域 `forgerail` 只保留名称占位，不是安装或回滚来源。registry 发布后，可用精确 scoped 版本执行离线校验和只读诊断：
+如果需要全局 CLI：
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.2 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.2 diagnose --workspace .
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.2
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.3
+forgerail validate
 ```
 
-升级时注册新的精确 Marketplace tag，重新安装已选择的插件，再启动新的 Codex 任务验证 Skill 发现与只读诊断；npm CLI 只能在精确 `@echopath-labs/forgerail` 版本之间升级。回滚时重新注册最近已验证 tag，或退回冻结的 AGW 版本；卸载可选 CLI 使用 `npm uninstall --global @echopath-labs/forgerail`，不得删除项目记录、Agent instructions 或 Git 历史。
+官方包是 scoped package。未加 scope 的 `forgerail` 只是名称保留包，不是安装来源。
 
-创建或提交 Universal Plugins Directory draft、发布已审查 listing、npm 发布、移动 `latest`、推送公共候选、tag、GitHub Release 和 AGW 生命周期变更都属于各自独立的精确审批门。
+## 升级或重装
 
-历史门序见 [ForgeRail 0.1.0-alpha.1 发布 Runbook](release.zh-CN.md)与 [ForgeRail 0.1.0-alpha.2 候选 Runbook](release-alpha2.zh-CN.md)，拟议 forward-fix 门序见 [ForgeRail 0.1.0-alpha.3 Runbook](release-alpha3.zh-CN.md)。这些文档都不授予执行权限。
+Marketplace 注册对应精确 tag 快照。升级时，应使用当前 `codex plugin` 命令先移除已安装 Plugin 和旧 Marketplace 注册，再注册新的精确 tag、重新安装 Plugin，并启动新任务。确认四个 Skills 可发现，并重新完成只读冒烟测试。
+
+需要可复现性时，不要用可变分支替代精确 tag。升级不能修改项目文件或持久治理状态，除非用户另外批准了精确的采用计划。
+
+## 卸载
+
+使用 `codex plugin remove forgerail@echopath-labs`；如果不再使用该 Marketplace 中的其他 Plugin，再移除 `echopath-labs` Marketplace 注册。可选全局 CLI 可这样移除：
+
+```bash
+npm uninstall --global @echopath-labs/forgerail
+```
+
+卸载 ForgeRail 不应删除项目 instructions、规格、receipt、Git 历史或其他项目记录。已经批准的 Lightweight Adoption 内容只能通过另一次受审查的变更移除。
+
+## 常见问题
+
+### 看不到 Skills
+
+1. 使用 `codex plugin list` 确认 Marketplace 和 Plugin 已列出并启用。
+2. 确认 Marketplace 固定在 `v0.1.0-alpha.3`。
+3. 新建 Codex 任务；已运行的任务可能不会刷新 Plugin discovery。
+4. 如果有同名 Skill，使用带命名空间的完整名称。
+
+### 项目提示需要 Node.js
+
+Plugin Only 不应要求项目安装 Node.js。确认你调用的是已安装 Plugin，而不是在运行 `npx`、`npm install` 或仓库源码。如果正常 Plugin 使用创建了 `package.json`、`node_modules` 或 `.forgerail/`，请报告 bug。
+
+### ForgeRail 建议了过多流程
+
+要求它保持只读，并解释为什么 Plugin Only 不够。ForgeRail 应优先沿用项目已有治理方式，只建议最小有用层级。
+
+### 某个命令要求凭据或远端权限
+
+停止操作并核对准确的 Pack、身份、范围和审批边界。安装 ForgeRail 永远不代表批准登录、发布、仓库管理、部署或生命周期变更。
+
+更多帮助见 [SUPPORT.md](../SUPPORT.md)。安全问题请按 [SECURITY.md](../SECURITY.md) 私下报告。
+
+## 安装不等于采用
+
+安装只是让 ForgeRail 可用；它不会编辑 `AGENTS.md`、安装 OpenSpec、创建 `.forgerail/`，也不会强制使用 Workspace Health。批准任何持久项目接入前，请先阅读[渐进式采用](adoption.zh-CN.md)。

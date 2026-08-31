@@ -1,0 +1,78 @@
+name: Bug report
+description: Report reproducible ForgeRail behavior that differs from the documented boundary.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Remove credentials, private paths, project memory, customer data, production configuration, and unredacted receipts. Security vulnerabilities belong in private reporting, not this form.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: This is not a security vulnerability or conduct report.
+          required: true
+        - label: I removed private or sensitive information.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: ForgeRail version
+      description: Exact Plugin tag or npm version, for example v0.1.0-alpha.3.
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host and operating system
+      description: Codex version, operating system, and installation route.
+    validations:
+      required: true
+  - type: input
+    id: skill
+    attributes:
+      label: Skill or Capability Pack
+      description: Exact namespaced Skill or Pack involved.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: Include the exact sanitized error text when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: List the smallest steps and whether a new task was used after installation.
+    validations:
+      required: true
+  - type: dropdown
+    id: mutation
+    attributes:
+      label: Did the workspace or a remote system change?
+      options:
+        - No observed change
+        - Workspace files changed
+        - Remote state changed
+        - Unsure
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional sanitized context
+      description: Logs, screenshots, or receipts must be redacted.

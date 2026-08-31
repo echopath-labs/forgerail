@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0",
+  "cases": [
+    {
+      "id": "current-release-and-install",
+      "kind": "release-text",
+      "content": "Current public prerelease 0.1.0-alpha.3. codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.3",
+      "expectedErrors": []
+    },
+    {
+      "id": "stale-alpha2-install",
+      "kind": "release-text",
+      "content": "Install the current v0.1.0-alpha.2 release.",
+      "expectedErrors": ["stale-release"]
+    },
+    {
+      "id": "broken-relative-link",
+      "kind": "markdown-link",
+      "content": "Read [missing](does-not-exist.md).",
+      "expectedErrors": ["broken-link"]
+    },
+    {
+      "id": "valid-issue-form",
+      "kind": "issue-form",
+      "content": "name: Bug report\ndescription: Report a problem.\nbody: []\n",
+      "expectedErrors": []
+    },
+    {
+      "id": "missing-issue-description",
+      "kind": "issue-form",
+      "content": "name: Bug report\nbody: []\n",
+      "expectedErrors": ["invalid-issue-metadata"]
+    },
+    {
+      "id": "private-path-leak",
+      "kind": "public-text",
+      "content": "Continue in __PRIVATE_USER_PATH__.",
+      "expectedErrors": ["private-path"]
+    },
+    {
+      "id": "project-node-requirement",
+      "kind": "no-node-claim",
+      "content": "Before using the Plugin, initialize package.json in your project and install Node.js.",
+      "expectedErrors": ["project-node-required"]
+    },
+    {
+      "id": "plugin-only-no-node",
+      "kind": "no-node-claim",
+      "content": "Plugin Only does not require Node.js, package.json, node_modules, or .forgerail/ in the target project.",
+      "expectedErrors": []
+    }
+  ]
+}

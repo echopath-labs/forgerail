@@ -1,51 +1,70 @@
 # Progressive Adoption
 
-ForgeRail separates availability from project adoption. Installing the Agent Plugin or optional CLI makes capabilities available; it does not edit workspace instructions, create durable state, enable Capability Packs, or authorize external effects.
+ForgeRail separates **installation**, **availability**, **project adoption**, and **execution approval**. Installing the Plugin exposes guidance to the Agent; it does not edit workspace instructions, create durable state, enable Capability Packs, or authorize external effects.
 
-## Three Levels
+This guide describes the current `0.1.0-alpha.3` / `v0.1.0-alpha.3` public prerelease.
 
-### Level 0 — Plugin Only
+Start with Plugin Only. Move up only when repeated evidence shows that a small durable project binding is more useful than asking explicitly each time.
 
-This is the default. Skills are available to the host Agent, while the workspace remains unchanged. Use this level when occasional explicit or implicit Skill discovery is enough.
+## Level 0 — Plugin Only
 
-### Level 1 — Lightweight Adoption
+This is the default and recommended first experience. The workspace remains unchanged while these four Skills are available:
 
-Use this only after an Agent shows an exact Adoption Plan and the user confirms its writes.
+- `$forgerail` for bounded engineering guidance;
+- `$forgerail-workspace-diagnosis` for a read-only project picture;
+- `$workspace-health-review` for an independent health review;
+- `$architecture-convergence-audit` for duplicated-capability and ownership review.
 
-- For one host with concise principles, ForgeRail proposes one versioned managed block in that host's native instruction entry.
-- For multiple hosts, ForgeRail proposes `FORGERAIL.md` as the portable Adoption Contract plus thin host bindings that point to it.
+Use Plugin Only for occasional diagnosis, unfamiliar repositories, early experimentation, and any project whose existing instructions are already sufficient.
 
-The planner is read-only:
+## Level 1 — Lightweight Adoption
+
+Use this level only when repeated ForgeRail use justifies a small, reviewable project binding.
+
+- A single-host project may add one versioned managed block to the host's native instruction file.
+- A multi-host project may use `FORGERAIL.md` as a portable Adoption Contract plus thin host bindings.
+- Existing project instructions, specifications, ADRs, CI, and documentation remain authoritative in their own domains.
+
+The optional planner is read-only:
 
 ```bash
-forgerail adoption-plan --workspace . --host codex
-forgerail adoption-plan --workspace . --host codex --host claude-code --host cursor
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 adoption-plan --workspace . --host codex --host claude-code --host cursor
 ```
 
-Each proposal contains the current and proposed level, exact target paths and content, base SHA-256 digests, required confirmation, verification steps, support status, and confirmed non-mutations. There is deliberately no `apply-adoption` command. The host Agent must display the proposal or diff, wait for confirmation, make only the approved writes, then return a Host Binding Receipt.
+Every proposal must show the current and proposed level, exact target paths and content, base digests, required confirmation, verification steps, support status, and non-actions. ForgeRail deliberately has no `apply-adoption` command. The Agent shows the proposal, waits for a human decision, writes only the approved paths, verifies discovery in a new task, and returns a Host Binding Receipt.
 
-### Level 2 — Persisted Governance
+## Level 2 — Persisted Governance
 
-This level is reserved for evidence that cannot be represented coherently through existing workspace sources: machine-consumed configuration, CI enforcement, or repeated cross-host conflicts. ForgeRail alpha.1 neither creates nor proposes `.forgerail/` state. A future design must define ownership, precedence, migration, and deletion semantics before enabling it.
+Persisted machine-consumed ForgeRail state is deferred in the current alpha. It should be considered only when important evidence cannot be represented coherently through existing project sources, such as repeated cross-host conflicts or genuinely machine-enforced policy.
 
-## Host Support
+ForgeRail does not create `.forgerail/` at this level today. A future design must define ownership, precedence, migration, recovery, and deletion before enabling it.
 
-| Host | Native target | Alpha.1 status | Verification |
+## Host support
+
+| Host | Native target | Alpha.3 status | Verification boundary |
 | --- | --- | --- | --- |
-| Codex | `AGENTS.md` | `supported` | Start a new Codex task, verify the binding is in scope, and discover the three main Plugin Skills. |
-| Claude Code | `CLAUDE.md` | `profile-only` | The target and thin binding are modeled, but end-to-end activation is not claimed until host-specific verification exists. |
-| Cursor | `.cursor/rules/forgerail.mdc` | `profile-only` | The Rules target is modeled, but Skill discovery and end-to-end activation are not claimed. |
+| Codex | `AGENTS.md` | `supported` | New Codex task discovers all four main Skills and the approved binding is in scope |
+| Claude Code | `CLAUDE.md` | `profile-only` | Target and thin binding are modeled; end-to-end activation is not claimed |
+| Cursor | `.cursor/rules/forgerail.mdc` | `profile-only` | Target is modeled; Skill discovery and end-to-end activation are not claimed |
 
-Unknown hosts require a reviewed Host Adapter before ForgeRail can generate a binding. A Host Adapter is a projection boundary, not the ForgeRail Core or a second policy source.
+Unknown hosts need a reviewed Host Adapter before ForgeRail can generate a binding. A Host Adapter projects ForgeRail into a host; it is not ForgeRail Core or a second policy source.
 
-## Optional Cross-Workspace Orchestration
+## Capability Packs stay separate
 
-Do not promote the orchestration Pack into a workspace binding merely because it is installed. Recommend it only after observing multiple independent owner/repository/release boundaries and a safe parallel dependency wave. Keep ordinary single-repository work on ForgeRail Core.
+Do not add a Capability Pack to project instructions simply because it is installed. Recommend one only when project evidence calls for that capability. Packs keep independent authentication, approval, validation, rollback, and lifecycle boundaries.
 
-If the project repeatedly uses this pattern, record the choice through its existing OpenSpec, Spec Kit, ADR, Markdown, issue, or instruction habit after exact durable-write confirmation. Do not create a new orchestration state directory. Task creation and every durable, remote, release, or lifecycle operation retain their own authorization.
+Cross-Workspace Orchestration is for genuine multi-owner, multi-repository, or multi-release coordination with safe dependency waves. It is not a reason to split an ordinary repository into artificial tasks. RelayPact can transport a bounded delegation and EchoPath can support recovery/context; neither is a ForgeRail runtime dependency.
 
-## Verification And Removal
+## Completion and removal
 
-An adoption is complete only when the applied file digest matches the approved plan, supported-host discovery is verified in a new task or equivalent supported check, deviations are empty, and non-mutations are recorded. Profile-only hosts remain unverified until their own host check passes.
+A Lightweight Adoption is complete only when:
 
-Removing ForgeRail does not silently remove adopted project instructions. Uninstall the Plugin separately; remove or revise managed blocks through another reviewed plan so unrelated project content is preserved.
+1. the applied file digest matches the approved plan;
+2. supported-host discovery is verified in a new task or equivalent fresh check;
+3. deviations are empty or explicitly accepted;
+4. the receipt records exactly what changed and did not change.
+
+Uninstalling the Plugin does not silently remove adopted instructions. Revise or remove managed blocks through another exact, reviewed plan so unrelated project content is preserved.
+
+For normal use, begin with the [installation guide](installation.md) and stay at Plugin Only until a real project need appears.
