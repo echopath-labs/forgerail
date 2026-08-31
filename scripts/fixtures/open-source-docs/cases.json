@@ -38,6 +38,12 @@
       "expectedErrors": ["private-path"]
     },
     {
+      "id": "private-process-reference-leak",
+      "kind": "public-text",
+      "content": "Canonical architecture change: openspec/changes/private-control-system/",
+      "expectedErrors": ["private-process-reference"]
+    },
+    {
       "id": "project-node-requirement",
       "kind": "no-node-claim",
       "content": "Before using the Plugin, initialize package.json in your project and install Node.js.",

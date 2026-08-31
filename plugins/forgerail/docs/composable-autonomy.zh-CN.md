@@ -1,22 +1,20 @@
 # ForgeRail 可组合自治架构记录
 
-状态：Active product-local architecture record
+状态：公开产品架构说明
 
-日期：2026-08-20
+更新：2026-08-31
 
-Owner workspace：ForgeRail canonical private source workspace
+Owner：ForgeRail
 
-Canonical product source：`plugins/forgerail/`
+产品源：本仓库中的 ForgeRail Plugin 与契约实现
 
-Canonical architecture change：`openspec/changes/evolve-forgerail-engineering-governance-control-system/`
-
-跨产品基线：`docs/architecture/echopath-labs-composable-product-system.md`（根聚合架构；由根索引维护）
+相关公开文档：[控制、授权与验证契约](control-authority-validation-contracts.zh-CN.md)与[跨工作区 Pack 组合契约](cross-workspace-pack-composition-contract.zh-CN.md)
 
 ## 1. 目的与适用范围
 
-本文只记录 ForgeRail 在 EchoPath Labs 可组合自治体系中的产品边界、独立最小闭环、可选输入输出、降级行为和互操作约束。它不复制根聚合架构，也不替代 ForgeRail Control System 的 OpenSpec requirements、versioned schemas 或验证证据。
+本文记录 ForgeRail 在 EchoPath Labs 可组合自治体系中的产品边界、独立最小闭环、可选输入输出、降级行为和互操作约束。它不替代 ForgeRail Control System 的 versioned schemas、实现或验证证据。
 
-本文不授权 task 2.10、evaluator/runtime 实现、公开投影、remote、merge、release、publication、migration 或 lifecycle 变更。
+本文是公开架构说明，不构成实现、远端操作、发布、迁移或生命周期变更的授权。
 
 ## 2. 产品结论
 
@@ -136,7 +134,7 @@ ForgeRail standalone 是正式产品模式，不是缺少生态产品后的残�
 
 ## 8. Reference-only interop
 
-ForgeRail 当前 canonical ecosystem contract 已定义 OpenDomain、OpenSpec 与 EchoPath 的 optional、versioned、additive interop。RelayPact 与 KeptNear 的关系来自跨产品架构 baseline，在 ForgeRail task 2.10 前只作为 reference-only adapter boundary：
+ForgeRail 的 ecosystem contract 将 OpenDomain、OpenSpec 与 EchoPath 建模为 optional、versioned、additive interop。RelayPact 与 KeptNear 只通过 reference-only adapter boundary 与 ForgeRail 组合：
 
 - 不把 RelayPact 或 KeptNear schema 引入 ForgeRail Core；
 - 不创建共享 runtime package 或共享数据库；
@@ -144,9 +142,9 @@ ForgeRail 当前 canonical ecosystem contract 已定义 OpenDomain、OpenSpec �
 - consumer 使用 source product、schema/version、object identity、digest 与 locator 引用源对象；
 - unsupported version 或缺失 required proof 必须 fail closed，optional missing 必须显式降级。
 
-## 9. Task 2.10 前置 delta 结论
+## 9. 跨产品对象边界
 
-task 2.10 固定 ForgeRail 自有对象的 canonical serialization、stable ordering、digest、sanitized exposure、idempotency、unknown-field 与 version negotiation。开始前必须遵守以下已完成的边界评审：
+ForgeRail 自有对象遵守 canonical serialization、stable ordering、digest、sanitized exposure、idempotency、unknown-field 与 version negotiation；跨产品对象只能被引用或适配，不能取得 ForgeRail Core 的所有权。
 
 ### 9.1 Task Envelope 与 Delegation Envelope
 
@@ -169,15 +167,11 @@ task 2.10 固定 ForgeRail 自有对象的 canonical serialization、stable orde
 - EchoPath 不复制或重新计算 ForgeRail state machine，不把 projection 当 current control truth；declared reason 与 inferred causal candidate 必须分开。
 - RelayPact 可以引用一个 ForgeRail decision/revision/receipt，但其 execution lifecycle 与 terminal decision 不由该 revision 驱动或替代。
 
-详细 delta 表与 task 2.10 entry gate 位于：
+详细的公开契约与验证入口参见[控制、授权与验证契约](control-authority-validation-contracts.zh-CN.md)与[Control System fixture matrix](control-system-fixture-matrix.zh-CN.md)。
 
-`openspec/changes/evolve-forgerail-engineering-governance-control-system/inventory/composable-autonomy-delta-review-20260820.md`
+## 10. 使用边界与后续演进
 
-## 10. 当前状态与下一入口
-
-- task 2.5–2.9：schemas、composition contract 与 pre-evaluator fixtures 已完成并有 focused evidence。
-- task 2.10：`not_started`；本文和 delta review 完成架构前置，但不构成启动授权。
-- task 2.11：`not_started`；必须另行证明 contracts 保持 local-first、event-driven 且无外部产品/host hard dependency。
-- evaluator/runtime、public projection、release 与 lifecycle：未启动、未授权。
-
-下一次 ForgeRail 恢复首先读取本文，再读取 delta review，随后读取 active change 的 `tasks.md` 2.10–2.11。不要通过公开投影恢复 canonical architecture。
+- 当前公开 schemas、composition contract 与 pre-evaluator fixtures 用于解释和验证产品边界。
+- evaluator/runtime 必须保持 local-first、event-driven，并通过独立版本和验证证明没有外部产品或 Host Agent 硬依赖。
+- 公开文档只描述产品契约，不携带私有工作区的计划、任务状态、审批记录或恢复入口。
+- 后续演进应从本仓库的版本化契约、测试和发布说明开始，而不是依赖任何未公开的开发过程记录。
