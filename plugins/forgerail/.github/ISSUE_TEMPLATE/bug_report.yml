@@ -23,7 +23,7 @@ body:
     id: version
     attributes:
       label: ForgeRail version
-      description: Exact Plugin tag or npm version, for example v0.1.0-alpha.3.
+      description: Exact Plugin tag or npm version, for example v0.1.0-alpha.4.
     validations:
       required: true
   - type: input

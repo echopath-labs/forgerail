@@ -44,7 +44,8 @@ export const contractTypes = Object.keys(contractSchemaNames);
 const packStates = ["available", "recommended", "enabled", "required", "blocked", "disabled"];
 const idPattern = /^[a-z][a-z0-9-]+$/;
 const ruleIdPattern = /^[a-z][a-z0-9.-]+$/;
-const taskIdPattern = /^[a-zA-Z0-9._:-]+$/;
+const taskIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]+$/;
+const relativePathPattern = /^(?![\\/])(?![a-zA-Z]:[\\/])(?!.*(?:^|[\\/])\.\.(?:[\\/]|$))[^\\]+$/;
 const commitPattern = /^[0-9a-f]{40}$/;
 const digestPattern = /^[0-9a-f]{64}$/;
 const authorityClasses = ["agent_review", "automated_validation", "peer_review", "ownership_approval", "security_approval", "release_approval", "environment_approval"];
@@ -85,7 +86,19 @@ function nullableString(value, label, errors, pattern) {
 
 function dateTime(value, label, errors) {
   string(value, label, errors);
-  if (typeof value === "string" && (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) || Number.isNaN(Date.parse(value)))) errors.push(`${label} must be an ISO 8601 date-time with timezone`);
+  if (typeof value !== "string") return;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/.exec(value);
+  if (!match) {
+    errors.push(`${label} must be an ISO 8601 date-time with timezone`);
+    return;
+  }
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, zone, zoneHourText = "0", zoneMinuteText = "0"] = match;
+  const [year, month, day, hour, minute, second, zoneHour, zoneMinute] = [yearText, monthText, dayText, hourText, minuteText, secondText, zoneHourText, zoneMinuteText].map(Number);
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  const calendarValid = calendar.getUTCFullYear() === year && calendar.getUTCMonth() === month - 1 && calendar.getUTCDate() === day;
+  const clockValid = hour <= 23 && minute <= 59 && second <= 59;
+  const zoneValid = zone === "Z" || (zoneHour <= 23 && zoneMinute <= 59);
+  if (!calendarValid || !clockValid || !zoneValid || Number.isNaN(Date.parse(value))) errors.push(`${label} must be an ISO 8601 date-time with timezone`);
 }
 
 function strings(value, label, errors, { min = 0, pattern, unique = false } = {}) {
@@ -198,6 +211,8 @@ function validateProfile(value, errors) {
   strings(value.conflicts, "profile.conflicts", errors);
   const ids = value.rules?.map((rule) => rule.id) ?? [];
   if (new Set(ids).size !== ids.length) errors.push("profile.rules contains duplicate ids");
+  const packIds = value.packs?.map((pack) => pack.id) ?? [];
+  if (new Set(packIds).size !== packIds.length) errors.push("profile.packs contains duplicate ids");
   const enabled = new Set((value.packs ?? []).filter((item) => ["enabled", "required"].includes(item.state)).map((item) => item.id));
   for (const pack of value.packs ?? []) {
     if (!["enabled", "required"].includes(pack.state)) continue;
@@ -239,9 +254,14 @@ function validateProfileCandidate(value, errors) {
 }
 
 function validateLaunch(value, errors) {
-  if (!exactKeys(value, ["schemaVersion", "envelope", "effectiveRuleSources", "hostAgent", "executionOwner"], [], "launch", errors)) return;
+  if (!exactKeys(value, ["schemaVersion", "envelope", "effectiveProfile", "effectiveRuleSources", "hostAgent", "executionOwner"], [], "launch", errors)) return;
   schemaVersion(value.schemaVersion, "launch", errors);
   validateEnvelope(value.envelope, errors, "launch.envelope");
+  if (exactKeys(value.effectiveProfile, ["workspace", "digest"], [], "launch.effectiveProfile", errors)) {
+    string(value.effectiveProfile.workspace, "launch.effectiveProfile.workspace", errors);
+    string(value.effectiveProfile.digest, "launch.effectiveProfile.digest", errors, digestPattern);
+  }
+  if (value.effectiveProfile?.workspace !== value.envelope?.ownerWorkspace) errors.push("launch Effective Profile workspace must match Task Envelope owner workspace");
   strings(value.effectiveRuleSources, "launch.effectiveRuleSources", errors, { min: 1, unique: true });
   string(value.hostAgent, "launch.hostAgent", errors);
   if (value.executionOwner !== "host-agent") errors.push("launch.executionOwner must equal host-agent");
@@ -275,7 +295,7 @@ function validateHostAdapter(value, errors) {
   if (!["supported", "profile-only"].includes(value.status)) errors.push("hostAdapter.status is invalid");
   if (!["task-start", "rules", "explicit-only", "unknown"].includes(value.instructionDiscovery)) errors.push("hostAdapter.instructionDiscovery is invalid");
   if (!["agent-plugin-skills", "agent-skills", "explicit-only", "unknown"].includes(value.skillDiscovery)) errors.push("hostAdapter.skillDiscovery is invalid");
-  string(value.bindingTarget, "hostAdapter.bindingTarget", errors, /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/);
+  string(value.bindingTarget, "hostAdapter.bindingTarget", errors, relativePathPattern);
   strings(value.bindingModes, "hostAdapter.bindingModes", errors, { min: 1, unique: true });
   for (const mode of value.bindingModes ?? []) if (!["managed-block", "thin-reference"].includes(mode)) errors.push(`hostAdapter.bindingModes contains invalid mode: ${mode}`);
   string(value.managedMarker, "hostAdapter.managedMarker", errors, /^forgerail:binding:[a-z][a-z0-9-]+:v1$/);
@@ -315,7 +335,7 @@ function validateAdoptionPlan(value, errors) {
     if (!exactKeys(host, ["adapterId", "status", "bindingTarget", "verificationMode"], [], label, errors)) return;
     string(host.adapterId, `${label}.adapterId`, errors, idPattern);
     if (!["supported", "profile-only"].includes(host.status)) errors.push(`${label}.status is invalid`);
-    string(host.bindingTarget, `${label}.bindingTarget`, errors, /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/);
+    string(host.bindingTarget, `${label}.bindingTarget`, errors, relativePathPattern);
     if (!["new-task-discovery", "profile-only"].includes(host.verificationMode)) errors.push(`${label}.verificationMode is invalid`);
     if (host.status === "supported" && host.verificationMode !== "new-task-discovery") errors.push(`${label} supported host must use new-task-discovery`);
     if (host.status === "profile-only" && host.verificationMode !== "profile-only") errors.push(`${label} profile-only host must not claim verified discovery`);
@@ -326,7 +346,7 @@ function validateAdoptionPlan(value, errors) {
   else value.proposedWrites.forEach((write, index) => {
     const label = `adoptionPlan.proposedWrites[${index}]`;
     if (!exactKeys(write, ["path", "operation", "baseSha256", "contentSha256", "content", "managedMarker"], [], label, errors)) return;
-    string(write.path, `${label}.path`, errors, /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/);
+    string(write.path, `${label}.path`, errors, relativePathPattern);
     if (!["create", "append-managed-block", "replace-managed-block"].includes(write.operation)) errors.push(`${label}.operation is invalid`);
     nullableString(write.baseSha256, `${label}.baseSha256`, errors, digestPattern);
     string(write.contentSha256, `${label}.contentSha256`, errors, digestPattern);

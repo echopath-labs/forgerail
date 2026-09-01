@@ -10,6 +10,64 @@ const externalApprovalByOperation = new Map([
   ["archive", "lifecycle-change-approval"],
   ["repository-transfer", "lifecycle-change-approval"],
 ]);
+const knownOperations = new Set(externalApprovalByOperation.keys());
+const knownStatuses = new Set(["pending", "accepted", "failed"]);
+
+function duplicates(values) {
+  const seen = new Set();
+  const result = new Set();
+  for (const value of values) {
+    if (seen.has(value)) result.add(value);
+    seen.add(value);
+  }
+  return [...result].sort();
+}
+
+function assertInput(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("orchestration input must be an object");
+  if (!Array.isArray(input.workItems)) throw new Error("orchestration workItems must be an array");
+  const duplicateItems = duplicates(input.workItems.map((item) => item?.id));
+  if (duplicateItems.length > 0) throw new Error(`duplicate work item ids: ${duplicateItems.join(", ")}`);
+  const itemIds = new Set(input.workItems.map((item) => item?.id));
+  for (const item of input.workItems) {
+    if (!item || typeof item !== "object" || typeof item.id !== "string") throw new Error("orchestration work item is malformed");
+    for (const key of ["ownerWorkspace", "repository", "branch", "status"]) if (typeof item[key] !== "string") throw new Error(`work item ${key} must be a string: ${item.id}`);
+    if (!knownStatuses.has(item.status)) throw new Error(`unknown work item status for ${item.id}: ${item.status}`);
+    for (const key of ["aggregateWrites", "dependencies", "grantedApprovals"]) if (!Array.isArray(item[key])) throw new Error(`${key} must be an array: ${item.id}`);
+    for (const key of ["aggregateWrites", "dependencies", "grantedApprovals"]) {
+      const repeated = duplicates(item[key]);
+      if (repeated.length > 0) throw new Error(`duplicate ${key} for ${item.id}: ${repeated.join(", ")}`);
+    }
+    const unknownDependencies = item.dependencies.filter((dependency) => !itemIds.has(dependency));
+    if (unknownDependencies.length > 0) throw new Error(`unknown dependencies for ${item.id}: ${unknownDependencies.join(", ")}`);
+    if (item.dependencies.includes(item.id)) throw new Error(`work item cannot depend on itself: ${item.id}`);
+    if (!Array.isArray(item.requestedOperations)) throw new Error(`requestedOperations must be an array: ${item.id}`);
+    const duplicateOperations = duplicates(item.requestedOperations);
+    if (duplicateOperations.length > 0) throw new Error(`duplicate requested operations for ${item.id}: ${duplicateOperations.join(", ")}`);
+    const unknownOperations = item.requestedOperations.filter((operation) => !knownOperations.has(operation));
+    if (unknownOperations.length > 0) throw new Error(`unknown requested operations for ${item.id}: ${unknownOperations.join(", ")}`);
+  }
+  if (!input.events || !Array.isArray(input.events.failedWorkItems) || !Array.isArray(input.events.acceptedWorkItems)) throw new Error("orchestration events are malformed");
+  for (const [eventName, ids] of Object.entries(input.events)) {
+    const repeated = duplicates(ids);
+    if (repeated.length > 0) throw new Error(`duplicate ${eventName} events: ${repeated.join(", ")}`);
+  }
+  const eventIds = [...input.events.failedWorkItems, ...input.events.acceptedWorkItems];
+  const unknownEventIds = eventIds.filter((id) => !itemIds.has(id));
+  if (unknownEventIds.length > 0) throw new Error(`orchestration events reference unknown work items: ${[...new Set(unknownEventIds)].sort().join(", ")}`);
+  const conflictingEventIds = input.events.failedWorkItems.filter((id) => input.events.acceptedWorkItems.includes(id));
+  if (conflictingEventIds.length > 0) throw new Error(`work items cannot be both failed and accepted: ${[...new Set(conflictingEventIds)].sort().join(", ")}`);
+  for (const id of input.events.failedWorkItems) if (input.workItems.find((item) => item.id === id)?.status !== "failed") throw new Error(`failed event conflicts with work item status: ${id}`);
+  for (const id of input.events.acceptedWorkItems) if (input.workItems.find((item) => item.id === id)?.status !== "accepted") throw new Error(`accepted event conflicts with work item status: ${id}`);
+  const failedEvents = new Set(input.events.failedWorkItems);
+  const acceptedEvents = new Set(input.events.acceptedWorkItems);
+  for (const item of input.workItems) {
+    if (item.status === "failed" && !failedEvents.has(item.id)) throw new Error(`failed work item is missing its event: ${item.id}`);
+    if (item.status === "accepted" && !acceptedEvents.has(item.id)) throw new Error(`accepted work item is missing its event: ${item.id}`);
+  }
+  if (!input.hostAdapter || typeof input.hostAdapter !== "object") throw new Error("orchestration hostAdapter is malformed");
+  if (!input.relayPact || typeof input.relayPact !== "object") throw new Error("orchestration relayPact is malformed");
+}
 
 function descendants(items, roots) {
   const paused = new Set(roots);
@@ -73,6 +131,7 @@ function buildWaves(items, blocked) {
 }
 
 export function evaluateOrchestration(input) {
+  assertInput(input);
   const conflicts = [];
   const itemsById = new Map(input.workItems.map((item) => [item.id, item]));
   const writerOwners = new Map();

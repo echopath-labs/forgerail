@@ -1,68 +1,219 @@
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, relative, resolve, sep } from "node:path";
+import {
+  chmodSync,
+  copyFileSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, relative, resolve, sep } from "node:path";
 
-const roots = [".codex-plugin", ".github", "adapters", "contracts", "docs", "packs", "scripts", "skills", "templates"];
-const files = ["CHANGELOG.md", "CONTRIBUTING.md", "LICENSE", "NOTICE", "PLUGIN.md", "README.md", "README.zh-CN.md", "SECURITY.md", "package.json"];
-const catalog = "marketplace/.agents/plugins/marketplace.json";
 const externalPluginNames = [
   "forgerail-cross-workspace-orchestration",
   "forgerail-github-rulesets",
   "forgerail-release-safety",
   "forgerail-thread-closure",
 ];
+const externalRoots = [".codex-plugin", "scripts", "skills"];
+const externalFiles = ["LICENSE", "NOTICE", "README.md", "README.zh-CN.md", "pack.json"];
+const maintainerRoots = [".github", "tools"];
+const deniedSegments = new Set([".git", ".hg", ".svn", "node_modules", "coverage", "dist", "build", ".cache"]);
+const deniedNames = new Set([".env", ".npmrc"]);
+
+function compare(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function confined(base, candidate) {
+  const path = relative(base, candidate);
+  return path === "" || (path !== ".." && !path.startsWith(`..${sep}`) && !path.startsWith("/"));
+}
+
+function safeRelativePath(path) {
+  const segments = path.split("/");
+  return path !== "" && !path.startsWith("/") && !path.includes("\\")
+    && !segments.includes("..") && !segments.some((segment) => deniedSegments.has(segment))
+    && !segments.some((segment) => deniedNames.has(segment) || segment.endsWith(".pem") || segment.endsWith(".key"));
+}
+
+function regularFile(path, label) {
+  const metadata = lstatSync(path);
+  if (metadata.isSymbolicLink()) throw new Error(`bundle source must not be a symbolic link: ${label}`);
+  if (!metadata.isFile()) throw new Error(`bundle source is not a regular file: ${label}`);
+  return metadata;
+}
 
 function below(base, prefix, result = []) {
-  for (const entry of readdirSync(resolve(base, prefix), { withFileTypes: true })) {
-    const path = `${prefix}/${entry.name}`;
+  const directory = resolve(base, prefix);
+  const metadata = lstatSync(directory);
+  if (metadata.isSymbolicLink() || !metadata.isDirectory()) throw new Error(`bundle source is not a regular directory: ${prefix}`);
+  for (const entry of readdirSync(directory, { withFileTypes: true }).sort((left, right) => compare(left.name, right.name))) {
+    const path = prefix === "." ? entry.name : `${prefix}/${entry.name}`;
+    if (!safeRelativePath(path)) throw new Error(`bundle source path is not allowed: ${path}`);
+    if (entry.isSymbolicLink()) throw new Error(`bundle source must not be a symbolic link: ${path}`);
     if (entry.isDirectory()) below(base, path, result);
     else if (entry.isFile()) result.push(path);
-    else throw new Error(`unsupported entry: ${path}`);
+    else throw new Error(`unsupported bundle source entry: ${path}`);
   }
   return result;
 }
 
-export function buildBundle(root, output) {
-  const target = resolve(output);
-  const relativeToTmp = relative("/private/tmp", target);
-  const relativeToSystemTmp = relative("/tmp", target);
-  const safe = (value) => value !== "" && value !== ".." && !value.startsWith(`..${sep}`) && !value.startsWith("/");
-  if (!safe(relativeToTmp) && !safe(relativeToSystemTmp)) throw new Error("output must be a new directory below /private/tmp or /tmp");
-  if (existsSync(target)) throw new Error("output already exists");
-  for (const required of [...roots, ...files, catalog]) if (!existsSync(resolve(root, required))) throw new Error(`public bundle source is missing: ${required}`);
-  const payload = [...files, ...roots.flatMap((prefix) => below(root, prefix))].sort();
-  const externalPlugins = externalPluginNames.map((name) => {
-    const pluginRoot = resolve(root, `../${name}`);
-    if (!existsSync(pluginRoot)) throw new Error(`external Plugin source is missing: ${name}`);
+function packagePayload(root) {
+  const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
+  const entries = Array.isArray(packageJson.files) ? packageJson.files : [];
+  const payload = ["package.json"];
+  const packageLock = resolve(root, "package-lock.json");
+  if (existsSync(packageLock)) {
+    regularFile(packageLock, "package-lock.json");
+    payload.push("package-lock.json");
+  }
+  for (const raw of entries) {
+    const entry = raw.replace(/\/$/, "");
+    if (!safeRelativePath(entry)) throw new Error(`package allowlist path is not allowed: ${raw}`);
+    if (entry === "marketplace") continue;
+    const source = resolve(root, entry);
+    if (!confined(root, source) || !existsSync(source)) throw new Error(`package allowlist source is missing: ${raw}`);
+    const metadata = lstatSync(source);
+    if (metadata.isSymbolicLink()) throw new Error(`package allowlist source must not be a symbolic link: ${raw}`);
+    if (metadata.isDirectory()) payload.push(...below(root, entry));
+    else if (metadata.isFile()) payload.push(entry);
+    else throw new Error(`unsupported package allowlist entry: ${raw}`);
+  }
+  for (const entry of maintainerRoots) {
+    const source = resolve(root, entry);
+    if (!existsSync(source)) throw new Error(`maintainer publication source is missing: ${entry}`);
+    payload.push(...below(root, entry));
+  }
+  return [...new Set(payload)].sort(compare);
+}
+
+function externalPayload(root) {
+  const payload = [];
+  for (const entry of externalFiles) {
+    const source = resolve(root, entry);
+    if (existsSync(source)) {
+      regularFile(source, entry);
+      payload.push(entry);
+    }
+  }
+  for (const entry of externalRoots) {
+    const source = resolve(root, entry);
+    if (!existsSync(source)) continue;
+    payload.push(...below(root, entry));
+  }
+  if (!payload.includes(".codex-plugin/plugin.json") || !payload.includes("pack.json")) {
+    throw new Error(`external Plugin publication allowlist is incomplete: ${root}`);
+  }
+  return payload.sort(compare);
+}
+
+function sourceLayout(root) {
+  const privateCatalog = resolve(root, "marketplace/.agents/plugins/marketplace.json");
+  const publicCatalog = resolve(root, ".agents/plugins/marketplace.json");
+  if (existsSync(privateCatalog)) {
     return {
-      name,
-      root: pluginRoot,
-      files: below(pluginRoot, ".").map((path) => path.startsWith("./") ? path.slice(2) : path).sort(),
+      catalog: privateCatalog,
+      externalRoots: Object.fromEntries(externalPluginNames.map((name) => [name, resolve(root, "..", name)])),
     };
+  }
+  if (existsSync(publicCatalog)) {
+    return {
+      catalog: publicCatalog,
+      externalRoots: Object.fromEntries(externalPluginNames.map((name) => [name, resolve(root, "plugins", name)])),
+    };
+  }
+  throw new Error("supported ForgeRail private or public bundle layout was not found");
+}
+
+function outputParent(target) {
+  const lexicalBases = [...new Set([tmpdir(), "/private/tmp", "/tmp"].map((base) => resolve(base)))]
+    .filter((base) => existsSync(base));
+  const lexicalBase = lexicalBases.find((base) => confined(base, target) && target !== base);
+  if (!lexicalBase) throw new Error("output must be a new directory below the host temporary directory");
+  const parentSegments = relative(lexicalBase, dirname(target)).split(sep).filter(Boolean);
+  let cursor = realpathSync(lexicalBase);
+  for (const segment of parentSegments) {
+    const candidate = resolve(cursor, segment);
+    if (!existsSync(candidate)) throw new Error("output parent directory must already exist");
+    const metadata = lstatSync(candidate);
+    if (metadata.isSymbolicLink()) throw new Error("output parent directory must not contain symbolic links");
+    if (!metadata.isDirectory()) throw new Error("output parent must be a directory");
+    cursor = realpathSync(candidate);
+  }
+  const realBases = [...new Set(lexicalBases.map((base) => realpathSync(base)))];
+  if (!realBases.some((base) => confined(base, cursor))) throw new Error("output must be a new directory below the host temporary directory");
+  return cursor;
+}
+
+export function buildBundle(rootInput, output) {
+  const root = realpathSync(resolve(rootInput));
+  const requestedTarget = resolve(output);
+  if (existsSync(requestedTarget)) throw new Error("output already exists");
+  const parent = outputParent(requestedTarget);
+  const target = resolve(parent, basename(requestedTarget));
+  if (!confined(parent, target)) throw new Error("output escapes its parent directory");
+
+  const layout = sourceLayout(root);
+  regularFile(layout.catalog, "marketplace catalog");
+  const payload = packagePayload(root);
+  const externalPlugins = externalPluginNames.map((name) => {
+    const pluginRoot = layout.externalRoots[name];
+    if (!existsSync(pluginRoot)) throw new Error(`external Plugin source is missing: ${name}`);
+    const realPluginRoot = realpathSync(pluginRoot);
+    if (!confined(root, realPluginRoot) && !confined(dirname(root), realPluginRoot)) {
+      throw new Error(`external Plugin source escapes supported roots: ${name}`);
+    }
+    return { name, root: realPluginRoot, files: externalPayload(realPluginRoot) };
   });
-  const inventory = [];
+
   const projections = [
-    { source: catalog, target: ".agents/plugins/marketplace.json" },
+    { source: layout.catalog, sourceIdentity: "marketplace/.agents/plugins/marketplace.json", target: ".agents/plugins/marketplace.json" },
     ...payload.flatMap((path) => [
-      { source: path, target: path },
-      { source: path, target: `plugins/forgerail/${path}` },
+      { source: resolve(root, path), sourceIdentity: path, target: path },
+      { source: resolve(root, path), sourceIdentity: path, target: `plugins/forgerail/${path}` },
     ]),
     ...externalPlugins.flatMap((plugin) => plugin.files.map((path) => ({
       source: resolve(plugin.root, path),
+      sourceIdentity: `../${plugin.name}/${path}`,
       target: `plugins/${plugin.name}/${path}`,
-      externalSource: `../${plugin.name}/${path}`,
-      absolute: true,
     }))),
-  ].sort((left, right) => left.target.localeCompare(right.target));
-  for (const { source: path, target: publicPath, externalSource, absolute = false } of projections) {
-    const source = absolute ? path : resolve(root, path);
-    if (!statSync(source).isFile()) throw new Error(`bundle source is not a file: ${path}`);
-    const destination = resolve(target, publicPath);
-    mkdirSync(dirname(destination), { recursive: true });
-    copyFileSync(source, destination);
-    const bytes = readFileSync(source);
-    inventory.push({ path: publicPath, source: absolute ? externalSource : path, bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") });
+  ].sort((left, right) => compare(left.target, right.target));
+
+  const staging = mkdtempSync(resolve(parent, ".forgerail-bundle-"));
+  const inventory = [];
+  try {
+    for (const projection of projections) {
+      if (!safeRelativePath(projection.target)) throw new Error(`bundle target path is not allowed: ${projection.target}`);
+      const metadata = regularFile(projection.source, projection.sourceIdentity);
+      const destination = resolve(staging, projection.target);
+      if (!confined(staging, destination)) throw new Error(`bundle target escapes staging directory: ${projection.target}`);
+      mkdirSync(dirname(destination), { recursive: true });
+      copyFileSync(projection.source, destination);
+      const mode = (metadata.mode & 0o111) === 0 ? 0o644 : 0o755;
+      chmodSync(destination, mode);
+      const bytes = readFileSync(projection.source);
+      inventory.push({
+        path: projection.target,
+        source: projection.sourceIdentity,
+        type: "file",
+        mode: mode.toString(8).padStart(3, "0"),
+        bytes: bytes.length,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+      });
+    }
+    renameSync(staging, target);
+  } catch (error) {
+    rmSync(staging, { recursive: true, force: true });
+    throw error;
   }
+
   const digest = createHash("sha256").update(`${JSON.stringify(inventory)}\n`).digest("hex");
   return {
     schemaVersion: "1.0",

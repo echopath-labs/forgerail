@@ -1,0 +1,13 @@
+{
+  "name": "unknown-operation-rejected",
+  "input": {
+    "workItems": [
+      { "id": "one", "ownerWorkspace": "a", "repository": "a", "branch": "a", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": ["delete-everything"], "grantedApprovals": [] }
+    ],
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] },
+    "hostAdapter": {},
+    "relayPact": { "available": false },
+    "recordStrategy": "existing-habits-first"
+  },
+  "expectedErrorContains": "unknown requested operations"
+}

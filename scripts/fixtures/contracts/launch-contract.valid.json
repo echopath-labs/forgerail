@@ -13,6 +13,10 @@
     "validation": ["git diff --check passes"],
     "returnContract": "forgerail-return-receipt-v1"
   },
+  "effectiveProfile": {
+    "workspace": "fixture-workspace",
+    "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
   "effectiveRuleSources": ["AGENTS.md", "ForgeRail Core"],
   "hostAgent": "Codex",
   "executionOwner": "host-agent"

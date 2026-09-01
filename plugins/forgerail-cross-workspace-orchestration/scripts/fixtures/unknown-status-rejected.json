@@ -1,0 +1,13 @@
+{
+  "name": "unknown-status-rejected",
+  "input": {
+    "workItems": [
+      { "id": "one", "ownerWorkspace": "/workspaces/one", "repository": "one", "branch": "feat/one", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "blocked", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "openspec",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expectedErrorContains": "unknown work item status for one: blocked"
+}

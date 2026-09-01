@@ -4,6 +4,15 @@
 
 No shipping changes yet.
 
+## 0.1.0-alpha.4 - 2026-09-01
+
+- Make contract identifiers, calendar values and portable paths fail closed and align the CLI with the published schemas.
+- Reject duplicate Profile, Pack and cross-workspace identities; bind Launch Contracts to the validated Effective Profile and every required active Pack.
+- Harden Adoption and source-repository projection construction against symlink traversal, sensitive files, unsupported file types, partial output and non-deterministic inventory modes.
+- Make Shadow comparison independent from its expected phrases and fail non-zero when coverage is missing.
+- Reject unknown orchestration operations, dependencies and conflicting terminal events; handle malformed receipts and package metadata without crashes or private absolute paths.
+- Add complete Node.js 22 and 24 integrity, Core, shadow, release, consumer, Directory and external Pack gates while preserving Skills-only installation, no project Node.js requirement, no implicit `.forgerail/` state and Apache-2.0.
+
 ## 0.1.0-alpha.3 - 2026-08-31
 
 - Keep the main Agent Plugin within Codex's maximum of three `defaultPrompt` entries while preserving discovery and direct invocation for all four ForgeRail Skills.

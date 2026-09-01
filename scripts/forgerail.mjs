@@ -5,7 +5,6 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadHostAdapters, planAdoption } from "./lib/adoption.mjs";
-import { buildBundle } from "./lib/bundle.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
 import { contractSchemaNames, contractTypes, readJson, validateContract } from "./lib/contracts.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
@@ -229,7 +228,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.0-alpha.3") errors.push("Plugin version must be 0.1.0-alpha.3");
+  if (manifest.version !== "0.1.0-alpha.4") errors.push("Plugin version must be 0.1.0-alpha.4");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -651,13 +650,13 @@ if (command === "validate") {
   if (!profile || !envelope || !hostAgent) fail("launch requires --profile, --envelope, and --host-agent");
   const profilePayload = readJson(resolve(profile));
   const effectiveProfile = profilePayload.profile ?? profilePayload;
-  const result = createLaunchContract(effectiveProfile, readJson(resolve(envelope)), hostAgent); emit(result); if (!result.valid) process.exitCode = 1;
+  const manifests = [
+    ...readdirSync(resolve(root, "packs")).filter((name) => name.endsWith(".json")).map((name) => readJson(resolve(root, "packs", name))),
+    ...args("--pack-manifest").map((path) => readJson(resolve(path))),
+  ];
+  const result = createLaunchContract(effectiveProfile, readJson(resolve(envelope)), hostAgent, manifests); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "verify-receipt") {
   const receipt = arg("--receipt"); const workspace = arg("--workspace");
   if (!receipt || !workspace) fail("verify-receipt requires --receipt and --workspace");
   const result = verifyReceipt(readJson(resolve(receipt)), workspace); emit(result); if (!result.valid) process.exitCode = 1;
-} else if (command === "build-bundle") {
-  const output = arg("--output"); if (!output) fail("build-bundle requires --output");
-  const result = buildBundle(root, output);
-  emit(process.argv.includes("--summary") ? { schemaVersion: result.schemaVersion, productId: result.productId, projection: result.projection, fileCount: result.fileCount, totalBytes: result.totalBytes, digest: result.digest, receiptDigest: result.receiptDigest } : result);
-} else fail("usage: forgerail.mjs validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt | build-bundle");
+} else fail("usage: forgerail.mjs validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");

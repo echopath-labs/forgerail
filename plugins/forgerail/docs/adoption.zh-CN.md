@@ -2,7 +2,7 @@
 
 ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执行授权**。安装 Plugin 只是让 Agent 能发现引导能力；不会编辑工作区 instructions、创建持久状态、启用 Capability Pack 或批准任何外部影响。
 
-本文对应当前公开预发布版本 `0.1.0-alpha.3` / `v0.1.0-alpha.3`。
+本文对应当前公开预发布版本 `0.1.0-alpha.4` / `v0.1.0-alpha.4`。
 
 默认从 Plugin Only 开始。只有重复证据表明“小范围持久绑定”比每次显式调用更有价值时，才升级采用层级。
 
@@ -28,8 +28,8 @@ ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执�
 可选 planner 只读运行：
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 adoption-plan --workspace . --host codex
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 adoption-plan --workspace . --host codex --host claude-code --host cursor
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex --host claude-code --host cursor
 ```
 
 每个 proposal 必须展示当前与目标层级、准确路径和内容、基线摘要、所需确认、验证步骤、支持状态与明确不执行的动作。ForgeRail 有意不提供 `apply-adoption` 命令。Agent 应先展示 proposal，等待人类判断，只写入获批路径，在新任务中验证发现结果，并返回 Host Binding Receipt。

@@ -2,7 +2,7 @@
 
 ForgeRail separates **installation**, **availability**, **project adoption**, and **execution approval**. Installing the Plugin exposes guidance to the Agent; it does not edit workspace instructions, create durable state, enable Capability Packs, or authorize external effects.
 
-This guide describes the current `0.1.0-alpha.3` / `v0.1.0-alpha.3` public prerelease.
+This guide describes the current `0.1.0-alpha.4` / `v0.1.0-alpha.4` public prerelease.
 
 Start with Plugin Only. Move up only when repeated evidence shows that a small durable project binding is more useful than asking explicitly each time.
 
@@ -28,8 +28,8 @@ Use this level only when repeated ForgeRail use justifies a small, reviewable pr
 The optional planner is read-only:
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 adoption-plan --workspace . --host codex
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 adoption-plan --workspace . --host codex --host claude-code --host cursor
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex --host claude-code --host cursor
 ```
 
 Every proposal must show the current and proposed level, exact target paths and content, base digests, required confirmation, verification steps, support status, and non-actions. ForgeRail deliberately has no `apply-adoption` command. The Agent shows the proposal, waits for a human decision, writes only the approved paths, verifies discovery in a new task, and returns a Host Binding Receipt.

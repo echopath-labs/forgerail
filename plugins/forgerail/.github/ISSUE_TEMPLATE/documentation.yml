@@ -9,7 +9,7 @@ body:
     attributes:
       label: Before submitting
       options:
-        - label: I checked the current alpha.3 documentation.
+        - label: I checked the current alpha.4 documentation.
           required: true
         - label: I removed private or sensitive information.
           required: true

@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedPackageName = "@echopath-labs/forgerail";
-const expectedVersion = "0.1.0-alpha.3";
+const expectedVersion = "0.1.0-alpha.4";
 const expectedTag = `v${expectedVersion}`;
-const expectedDate = "2026-08-31";
+const expectedDate = "2026-09-01";
 const expectedPlugins = [
   "forgerail",
   "forgerail-cross-workspace-orchestration",
@@ -38,6 +38,7 @@ function findExisting(candidates) {
 
 const packageJson = json("package.json");
 const packageLock = json("package-lock.json");
+const publicCli = read("scripts/forgerail.mjs");
 record("package-name", packageJson.name === expectedPackageName, packageJson.name);
 record("package-lock-name", packageLock.name === expectedPackageName && packageLock.packages?.[""]?.name === expectedPackageName, packageLock.name);
 record("package-version", packageJson.version === expectedVersion, packageJson.version);
@@ -45,9 +46,10 @@ record("package-lock-version", packageLock.version === expectedVersion && packag
 record("package-license", packageJson.license === "Apache-2.0", packageJson.license);
 record("package-lock-license", packageLock.packages?.[""]?.license === "Apache-2.0", packageLock.packages?.[""]?.license ?? null);
 record("npm-next-tag", packageJson.publishConfig?.tag === "next", packageJson.publishConfig?.tag ?? null);
+record("no-public-bundle-builder-command", !publicCli.includes('command === "build-bundle"'), "source-repository maintainer tool only");
 record(
   "prepublish-gate",
-  ["npm test", "npm run test:shadow", "npm run test:release", "npm run test:consumer", "npm run test:directory"].every((command) => packageJson.scripts?.prepublishOnly?.includes(command)),
+  ["npm test", "npm run test:integrity", "npm run test:shadow", "npm run test:release", "npm run test:consumer", "npm run test:directory"].every((command) => packageJson.scripts?.prepublishOnly?.includes(command)),
   packageJson.scripts?.prepublishOnly ?? null,
 );
 
@@ -136,8 +138,8 @@ record("package-adapters", packageJson.files?.includes("adapters/"), packageJson
 record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
 record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-const releaseEnglish = read("docs/release-alpha3.md");
-const releaseChinese = read("docs/release-alpha3.zh-CN.md");
+const releaseEnglish = read("docs/release-alpha4.md");
+const releaseChinese = read("docs/release-alpha4.zh-CN.md");
 const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
 for (const phrase of [
   "remote_integration_approval",
@@ -146,7 +148,7 @@ for (const phrase of [
   expectedVersion,
   expectedTag,
   "Node.js 22 and 24",
-  "codex/forgerail-alpha3-scoped",
+  "codex/forgerail-alpha4-critical-integrity",
   "Do not unpublish",
   "AGW",
   "Host Binding Receipt",
@@ -179,8 +181,11 @@ record("runbook-no-fixed-external-pack-count", !releaseChinese.includes("三个�
 const workflow = read(".github/workflows/plugin-contracts.yml");
 record("ci-node-22", workflow.includes("- 22"), "Node.js 22");
 record("ci-node-24", workflow.includes("- 24"), "Node.js 24");
+record("ci-full-core", workflow.includes("run: npm test"), "npm test");
+record("ci-integrity-regressions", workflow.includes("run: npm run test:integrity"), "npm run test:integrity");
 record("ci-release-source", workflow.includes("node scripts/validate-release.mjs"), "release source validator");
 record("ci-progressive-adoption", workflow.includes("node scripts/forgerail.mjs validate-adoption"), "progressive adoption validator");
+record("ci-directory", workflow.includes("node scripts/validate-universal-directory.mjs"), "Universal Directory validator");
 
 const failures = checks.filter((check) => !check.passed);
 const report = {

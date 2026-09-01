@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
-    "planId": { "type": "string", "pattern": "^[a-zA-Z0-9._:-]+$" },
+    "planId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
     "workspace": { "type": "string", "minLength": 1 },
     "currentLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
     "proposedLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
@@ -23,7 +23,7 @@
         "properties": {
           "adapterId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
           "status": { "enum": ["supported", "profile-only"] },
-          "bindingTarget": { "type": "string", "minLength": 1 },
+          "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\\\]+$" },
           "verificationMode": { "enum": ["new-task-discovery", "profile-only"] }
         }
       }
@@ -35,7 +35,7 @@
         "additionalProperties": false,
         "required": ["path", "operation", "baseSha256", "contentSha256", "content", "managedMarker"],
         "properties": {
-          "path": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\\\]+$" },
           "operation": { "enum": ["create", "append-managed-block", "replace-managed-block"] },
           "baseSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
           "contentSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },

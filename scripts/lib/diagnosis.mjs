@@ -6,7 +6,8 @@ function observed(id, source, value) {
 }
 
 function safeJson(path) {
-  try { return JSON.parse(readFileSync(path, "utf8")); } catch { return null; }
+  try { return { state: "available", value: JSON.parse(readFileSync(path, "utf8")), error: null }; }
+  catch (error) { return { state: "malformed", value: null, error: error instanceof SyntaxError ? "invalid-json" : "unreadable" }; }
 }
 
 function hasMarkdown(directory) {
@@ -52,8 +53,13 @@ export function diagnoseWorkspace(workspace) {
   evidence.push(observed("record-systems", "bounded well-known paths", recordSystems));
 
   const packageJsonPath = resolve(root, "package.json");
-  const packageJson = existsSync(packageJsonPath) ? safeJson(packageJsonPath) : null;
-  if (packageJson) evidence.push(observed("package-scripts", "package.json", Object.keys(packageJson.scripts ?? {}).sort()));
+  const packageJson = existsSync(packageJsonPath) ? safeJson(packageJsonPath) : { state: "absent", value: null, error: null };
+  if (packageJson.state === "available") evidence.push(observed("package-scripts", "package.json", Object.keys(packageJson.value.scripts ?? {}).sort()));
+  else if (packageJson.state === "malformed") {
+    evidence.push(observed("package-metadata", "package.json", { state: "malformed", reason: packageJson.error }));
+    recommendations.push({ kind: "recommendation", priority: "P1", reason: "package.json exists but could not be parsed safely.", options: ["repair package.json before relying on package-script observations"] });
+    confirmationRequired.push("Confirm whether malformed package metadata should block the intended task.");
+  }
 
   if (existsSync(resolve(root, ".git"))) evidence.push(observed("git-root", ".git/", "available"));
   const skillRoots = [".codex/skills", ".agents/skills"].filter((path) => existsSync(resolve(root, path)));
@@ -73,10 +79,12 @@ export function diagnoseWorkspace(workspace) {
     schemaVersion: "1.0",
     mode: "read-only",
     workspace: basename(root),
-    workspacePath: root,
     evidence,
     inheritedHabits: recordSystems,
-    gaps: recordSystems.length === 0 ? ["durable-record-practice-not-observed"] : [],
+    gaps: [
+      ...(recordSystems.length === 0 ? ["durable-record-practice-not-observed"] : []),
+      ...(packageJson.state === "malformed" ? ["package-metadata-malformed"] : []),
+    ],
     recommendations,
     confirmationRequired,
     mutations: [],

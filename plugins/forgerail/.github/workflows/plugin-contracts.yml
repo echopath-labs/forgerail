@@ -33,7 +33,9 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Validate ForgeRail Core and contracts
-        run: node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures
+        run: npm test
+      - name: Run integrity regression suite
+        run: npm run test:integrity
       - name: Validate progressive adoption and Host Adapters
         run: node scripts/forgerail.mjs validate-adoption
       - name: Validate external Capability Packs
@@ -44,3 +46,5 @@ jobs:
         run: node scripts/validate-release.mjs
       - name: Run disposable consumer lifecycle
         run: node scripts/disposable-consumer.mjs
+      - name: Validate Universal Directory candidate
+        run: node scripts/validate-universal-directory.mjs
