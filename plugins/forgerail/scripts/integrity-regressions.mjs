@@ -24,7 +24,7 @@ import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
 import { evaluateShadowComparison } from "./shadow-comparison.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const workspaceRoot = resolve(root, "../..");
+const workspaceRoot = isPrivateLayout(root) ? resolve(root, "../..") : root;
 const fixtureRoot = resolve(root, "scripts/fixtures/contracts");
 const externalPluginNames = [
   "forgerail-cross-workspace-orchestration",
@@ -54,9 +54,9 @@ function isPrivateLayout(path) {
   return existsSync(resolve(path, "marketplace/.agents/plugins/marketplace.json"));
 }
 
-function publicLayoutFixture() {
+function publicLayoutFixture(sourceRoot = root) {
   const publicRoot = resolve(temporary("forgerail-public-layout-"), "forgerail");
-  cpSync(isPrivateLayout(root) ? root : workspaceRoot, publicRoot, { recursive: true, dereference: false });
+  cpSync(sourceRoot, publicRoot, { recursive: true, dereference: false });
   if (isPrivateLayout(publicRoot)) {
     mkdirSync(resolve(publicRoot, ".agents/plugins"), { recursive: true });
     cpSync(
@@ -65,26 +65,27 @@ function publicLayoutFixture() {
     );
     rmSync(resolve(publicRoot, "marketplace"), { recursive: true, force: true });
     for (const name of externalPluginNames) {
-      cpSync(resolve(root, "..", name), resolve(publicRoot, "plugins", name), { recursive: true, dereference: false });
+      cpSync(resolve(sourceRoot, "..", name), resolve(publicRoot, "plugins", name), { recursive: true, dereference: false });
     }
   }
   return publicRoot;
 }
 
-function privateLayoutFixture() {
-  if (isPrivateLayout(root)) return root;
+function privateLayoutFixture(sourceRoot = root) {
+  if (isPrivateLayout(sourceRoot)) return sourceRoot;
   const ownerRoot = temporary("forgerail-private-owner-");
   const privateRoot = resolve(ownerRoot, "forgerail");
-  cpSync(root, privateRoot, { recursive: true, dereference: false });
+  cpSync(sourceRoot, privateRoot, { recursive: true, dereference: false });
   mkdirSync(resolve(privateRoot, "marketplace/.agents/plugins"), { recursive: true });
   cpSync(
-    resolve(workspaceRoot, ".agents/plugins/marketplace.json"),
+    resolve(sourceRoot, ".agents/plugins/marketplace.json"),
     resolve(privateRoot, "marketplace/.agents/plugins/marketplace.json"),
   );
   rmSync(resolve(privateRoot, ".agents"), { recursive: true, force: true });
   for (const name of externalPluginNames) {
-    cpSync(resolve(workspaceRoot, "plugins", name), resolve(ownerRoot, name), { recursive: true, dereference: false });
+    cpSync(resolve(sourceRoot, "plugins", name), resolve(ownerRoot, name), { recursive: true, dereference: false });
   }
+  rmSync(resolve(privateRoot, "plugins"), { recursive: true, force: true });
   return privateRoot;
 }
 
@@ -340,6 +341,12 @@ try {
       assert.equal(item.bytes, bytes.length, item.path);
       assert.equal(item.sha256, createHash("sha256").update(bytes).digest("hex"), item.path);
     }
+
+    const reconstructedPrivateRoot = privateLayoutFixture(publicRoot);
+    const reconstructedPrivateOutput = resolve(temporary("forgerail-reconstructed-private-output-parent-"), "bundle");
+    const reconstructedPrivateResult = buildBundle(reconstructedPrivateRoot, reconstructedPrivateOutput);
+    assert.equal(reconstructedPrivateResult.digest, first.digest);
+    assert.deepEqual(reconstructedPrivateResult.files, first.files);
 
     const unsafeRoot = resolve(temporary("forgerail-unsafe-layout-"), "forgerail");
     cpSync(publicRoot, unsafeRoot, { recursive: true, dereference: false });
