@@ -14,7 +14,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { planAdoption } from "./lib/adoption.mjs";
+import { applyApprovedAdoptionWrite, planAdoption, renderProposedWrite } from "./lib/adoption.mjs";
 import { buildBundle } from "./lib/bundle.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
 import { readJson, validateContract } from "./lib/contracts.mjs";
@@ -165,12 +165,58 @@ try {
     assert.equal(JSON.stringify(result).includes(workspace), false);
   });
 
+  pass("unusable-package-json-roots-are-visible-and-private", () => {
+    for (const [name, value] of [["null", "null\n"], ["array", "[]\n"], ["scalar", '"package"\n']]) {
+      const workspace = temporary(`forgerail-${name}-package-`);
+      writeFileSync(resolve(workspace, "package.json"), value);
+      const result = diagnoseWorkspace(workspace, root);
+      assert.ok(result.gaps.includes("package-metadata-malformed"));
+      assert.equal(result.evidence.find(({ id }) => id === "package-metadata")?.value.reason, "invalid-root-shape");
+      assert.equal(JSON.stringify(result).includes(workspace), false);
+    }
+  });
+
   pass("adoption-rejects-symlink-target", () => {
     const workspace = temporary("forgerail-adoption-");
     const outside = resolve(temporary("forgerail-outside-"), "AGENTS.md");
     writeFileSync(outside, "outside\n");
     symlinkSync(outside, resolve(workspace, "AGENTS.md"));
     assert.throws(() => planAdoption(root, workspace, ["codex"]), /symbolic link/);
+  });
+
+  pass("adoption-rejects-dangling-symlink-target-and-ancestor", () => {
+    const finalWorkspace = temporary("forgerail-adoption-dangling-final-");
+    const finalOutside = resolve(temporary("forgerail-dangling-final-outside-"), "missing-AGENTS.md");
+    symlinkSync(finalOutside, resolve(finalWorkspace, "AGENTS.md"));
+    assert.throws(() => planAdoption(root, finalWorkspace, ["codex"]), /symbolic link/);
+    assert.equal(existsSync(finalOutside), false);
+
+    const ancestorWorkspace = temporary("forgerail-adoption-dangling-ancestor-");
+    const ancestorOutside = resolve(temporary("forgerail-dangling-ancestor-outside-"), "missing-rules");
+    mkdirSync(resolve(ancestorWorkspace, ".cursor"), { recursive: true });
+    symlinkSync(ancestorOutside, resolve(ancestorWorkspace, ".cursor/rules"));
+    assert.throws(() => planAdoption(root, ancestorWorkspace, ["cursor"]), /symbolic link/);
+    assert.equal(existsSync(resolve(ancestorOutside, "forgerail.mdc")), false);
+
+    const driftWorkspace = temporary("forgerail-adoption-dangling-drift-");
+    const plan = planAdoption(root, driftWorkspace, ["codex"]);
+    const driftOutside = resolve(temporary("forgerail-dangling-drift-outside-"), "missing-AGENTS.md");
+    symlinkSync(driftOutside, resolve(driftWorkspace, "AGENTS.md"));
+    assert.throws(() => renderProposedWrite(driftWorkspace, plan.proposedWrites[0]), /symbolic link/);
+    assert.throws(() => applyApprovedAdoptionWrite(driftWorkspace, plan.proposedWrites[0]), /symbolic link/);
+    assert.equal(existsSync(driftOutside), false);
+  });
+
+  pass("invalid-pack-collections-fail-closed-with-structured-errors", () => {
+    for (const [field, value] of [["dependencies", {}], ["dependencies", null], ["conflicts", "other-pack"]]) {
+      const malformed = { ...clone(pack), [field]: value };
+      const profileResult = resolveProfile(profileInput, [malformed]);
+      assert.equal(profileResult.valid, false);
+      assert.ok(profileResult.errors.some((error) => error.includes(`${field} must be an array`)), profileResult.errors.join("; "));
+      const launchResult = createLaunchContract(resolved.profile, { ...envelope, packs: [pack.id] }, "Codex", [malformed]);
+      assert.equal(launchResult.valid, false);
+      assert.ok(launchResult.errors.some((error) => error.includes(`${field} must be an array`)), launchResult.errors.join("; "));
+    }
   });
 
   pass("shadow-mutation-fails-coverage", () => {

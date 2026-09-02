@@ -2,16 +2,24 @@ const externalApprovalByOperation = new Map([
   ["push", "remote-integration-approval"],
   ["draft-pr", "remote-integration-approval"],
   ["remote-ci", "remote-integration-approval"],
+  ["ready", "release-approval"],
   ["merge", "release-approval"],
   ["tag", "release-approval"],
   ["publish", "release-approval"],
+  ["deploy", "release-approval"],
   ["release", "release-approval"],
   ["lifecycle-change", "lifecycle-change-approval"],
+  ["deprecate", "lifecycle-change-approval"],
   ["archive", "lifecycle-change-approval"],
+  ["delete", "lifecycle-change-approval"],
+  ["redirect", "lifecycle-change-approval"],
+  ["transfer", "lifecycle-change-approval"],
   ["repository-transfer", "lifecycle-change-approval"],
+  ["default-branch", "lifecycle-change-approval"],
+  ["ruleset", "lifecycle-change-approval"],
 ]);
 const knownOperations = new Set(externalApprovalByOperation.keys());
-const knownStatuses = new Set(["pending", "accepted", "failed"]);
+const knownStatuses = new Set(["pending", "active", "review-required", "accepted", "failed", "paused", "blocked"]);
 
 function duplicates(values) {
   const seen = new Set();
@@ -107,7 +115,7 @@ function independentBoundaryCount(items) {
 }
 
 function buildWaves(items, blocked) {
-  const remaining = new Map(items.filter((item) => !blocked.has(item.id) && item.status !== "accepted").map((item) => [item.id, item]));
+  const remaining = new Map(items.filter((item) => !blocked.has(item.id) && item.status === "pending").map((item) => [item.id, item]));
   const accepted = new Set(items.filter((item) => item.status === "accepted").map((item) => item.id));
   const waves = [];
   while (remaining.size > 0) {
@@ -158,10 +166,13 @@ export function evaluateOrchestration(input) {
 
   const failed = new Set(input.events.failedWorkItems);
   const paused = descendants(input.workItems, failed);
+  for (const item of input.workItems) if (item.status === "paused") paused.add(item.id);
+  const held = new Set(input.workItems.filter((item) => ["active", "review-required", "paused", "blocked"].includes(item.status)).map((item) => item.id));
   const accepted = new Set(input.events.acceptedWorkItems);
   const preservedAccepted = [...accepted].filter((id) => !paused.has(id)).sort();
   const blocked = new Set([
     ...paused,
+    ...held,
     ...conflicts.flatMap(({ workItems }) => workItems),
     ...missingApprovals.map(({ workItem }) => workItem),
   ]);
@@ -188,6 +199,7 @@ export function evaluateOrchestration(input) {
     writerConflicts: conflicts,
     missingApprovals,
     paused: [...paused].sort(),
+    held: [...held].sort(),
     preservedAccepted,
     hostMode,
     missingHostCapabilities,

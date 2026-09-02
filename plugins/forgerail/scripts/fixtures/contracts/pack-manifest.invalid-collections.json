@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "id": "malformed-pack",
+  "purpose": "Exercise structured rejection of invalid Pack collection fields.",
+  "entry": "skills/forgerail/SKILL.md",
+  "risk": "low",
+  "states": ["available"],
+  "triggers": ["test only"],
+  "inputs": ["test input"],
+  "dependencies": {},
+  "conflicts": [],
+  "approvals": [],
+  "validation": ["must fail closed"],
+  "receiptExtensions": []
+}

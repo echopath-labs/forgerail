@@ -1,6 +1,21 @@
 import { createHash } from "node:crypto";
-import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
-import { basename, relative, resolve, sep } from "node:path";
+import {
+  closeSync,
+  constants,
+  existsSync,
+  fstatSync,
+  fsyncSync,
+  ftruncateSync,
+  lstatSync,
+  openSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  statSync,
+  unlinkSync,
+  writeSync,
+} from "node:fs";
+import { basename, dirname, relative, resolve, sep } from "node:path";
 import { validateContract } from "./contracts.mjs";
 
 const levels = ["plugin-only", "lightweight-adoption", "persisted-governance"];
@@ -25,6 +40,14 @@ function confined(root, target) {
   return value === "" || (value !== ".." && !value.startsWith(`..${sep}`) && !value.startsWith("/"));
 }
 
+function linkAwareStat(path) {
+  try { return lstatSync(path); }
+  catch (error) {
+    if (error && typeof error === "object" && error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
 function adoptionTarget(workspace, path) {
   if (typeof path !== "string" || !portableRelativePath.test(path)) throw new Error(`adoption target path is unsafe: ${path}`);
   const root = realpathSync(resolve(workspace));
@@ -32,14 +55,23 @@ function adoptionTarget(workspace, path) {
   for (const segment of path.split("/")) {
     const candidate = resolve(cursor, segment);
     if (!confined(root, candidate)) throw new Error(`adoption target escapes workspace: ${path}`);
-    if (existsSync(candidate)) {
-      if (lstatSync(candidate).isSymbolicLink()) throw new Error(`adoption target cannot traverse a symbolic link: ${path}`);
+    const metadata = linkAwareStat(candidate);
+    if (metadata !== null) {
+      if (metadata.isSymbolicLink()) throw new Error(`adoption target cannot traverse a symbolic link: ${path}`);
       const observed = realpathSync(candidate);
       if (!confined(root, observed)) throw new Error(`adoption target escapes workspace: ${path}`);
       cursor = observed;
     } else cursor = candidate;
   }
   return cursor;
+}
+
+export function resolveAdoptionWriteTarget(workspace, path) {
+  return adoptionTarget(workspace, path);
+}
+
+function sameFile(left, right) {
+  return left.dev === right.dev && left.ino === right.ino;
 }
 
 export function loadHostAdapters(pluginRoot) {
@@ -112,6 +144,55 @@ export function renderProposedWrite(workspace, write) {
   const endIndex = prior.indexOf(end, startIndex);
   if (startIndex < 0 || endIndex < 0) throw new Error(`managed block is missing for ${write.path}`);
   return `${prior.slice(0, startIndex)}${write.content}${prior.slice(endIndex + end.length)}`;
+}
+
+export function applyApprovedAdoptionWrite(workspace, write) {
+  const root = realpathSync(resolve(workspace));
+  const content = renderProposedWrite(root, write);
+  const target = adoptionTarget(root, write.path);
+  const parent = realpathSync(dirname(target));
+  if (!confined(root, parent)) throw new Error(`adoption target parent escapes workspace: ${write.path}`);
+  const leaf = basename(target);
+  const creating = write.operation === "create";
+  const flags = creating
+    ? constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW
+    : constants.O_RDWR | constants.O_NOFOLLOW;
+  let descriptor;
+  let created = false;
+  const originalDirectory = process.cwd();
+  let parentBound = false;
+  try {
+    process.chdir(parent);
+    parentBound = true;
+    const boundParent = realpathSync(".");
+    if (!confined(root, boundParent)) throw new Error(`adoption target parent moved outside workspace: ${write.path}`);
+    descriptor = openSync(leaf, flags, 0o644);
+    created = creating;
+    const descriptorStat = fstatSync(descriptor);
+    const pathStat = lstatSync(leaf);
+    if (pathStat.isSymbolicLink() || !sameFile(descriptorStat, pathStat)) throw new Error(`adoption target changed before write: ${write.path}`);
+    const observed = realpathSync(leaf);
+    if (!confined(root, observed)) throw new Error(`adoption target escapes workspace before write: ${write.path}`);
+    if (!creating) {
+      const current = readFileSync(descriptor, "utf8");
+      if (sha256(current) !== write.baseSha256) throw new Error(`base digest drifted for ${write.path}`);
+    }
+    ftruncateSync(descriptor, 0);
+    writeSync(descriptor, content, 0, "utf8");
+    fsyncSync(descriptor);
+    return { path: write.path, contentSha256: sha256(content) };
+  } catch (error) {
+    if (created) {
+      try {
+        const pathStat = lstatSync(leaf);
+        if (descriptor !== undefined && sameFile(fstatSync(descriptor), pathStat)) unlinkSync(leaf);
+      } catch {}
+    }
+    throw error;
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+    if (parentBound) process.chdir(originalDirectory);
+  }
 }
 
 export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "lightweight-adoption") {

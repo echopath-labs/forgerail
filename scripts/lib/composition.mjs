@@ -27,10 +27,30 @@ function duplicateIds(values = []) {
   return [...duplicates].sort();
 }
 
+function validatePackManifests(packManifests) {
+  if (!Array.isArray(packManifests)) return { valid: false, manifests: [], errors: ["pack manifests must be an array"] };
+  const manifests = [];
+  const errors = [];
+  for (const [index, manifest] of packManifests.entries()) {
+    const validation = validateContract("pack", manifest);
+    const identity = manifest && typeof manifest === "object" && !Array.isArray(manifest) && typeof manifest.id === "string"
+      ? manifest.id
+      : `pack[${index}]`;
+    if (!validation.valid) {
+      errors.push(...validation.errors.map((error) => `${identity}: ${error}`));
+      continue;
+    }
+    manifests.push(manifest);
+  }
+  for (const id of duplicateIds(manifests.map((manifest) => manifest.id))) errors.push(`${id}: duplicate pack manifest identity`);
+  return { valid: errors.length === 0, manifests, errors };
+}
+
 export function resolveProfile(input, packManifests = []) {
   const conflicts = [];
   if (!input || typeof input !== "object" || Array.isArray(input)) return { profile: null, activePacks: [], valid: false, errors: ["profile input must be an object"] };
-  for (const id of duplicateIds(packManifests.map((pack) => pack?.id))) conflicts.push(`${id}: duplicate pack manifest identity`);
+  const manifestValidation = validatePackManifests(packManifests);
+  if (!manifestValidation.valid) return { profile: null, activePacks: [], valid: false, errors: manifestValidation.errors };
   for (const id of duplicateIds((input.packs ?? []).map((pack) => pack?.id))) conflicts.push(`${id}: duplicate pack state identity`);
   for (const identity of duplicateIds((input.rules ?? []).map((rule) => `${rule?.id}\u0000${rule?.source}`))) {
     const [id, source] = identity.split("\u0000");
@@ -45,7 +65,7 @@ export function resolveProfile(input, packManifests = []) {
     }
   }
 
-  const manifests = new Map(packManifests.map((pack) => [pack.id, pack]));
+  const manifests = new Map(manifestValidation.manifests.map((pack) => [pack.id, pack]));
   const states = new Map((input.packs ?? []).map((pack) => [pack.id, pack]));
   const active = new Set([...states.values()].filter((pack) => ["enabled", "required"].includes(pack.state)).map((pack) => pack.id));
   for (const id of active) {
@@ -80,19 +100,17 @@ export function createLaunchContract(profile, envelope, hostAgent, packManifests
   if (profile.conflicts?.length > 0) errors.push(...profile.conflicts.map((conflict) => `unresolved profile conflict: ${conflict}`));
   const activePacks = new Set((profile.packs ?? []).filter((pack) => ["enabled", "required"].includes(pack.state)).map((pack) => pack.id));
   const requiredPacks = new Set((profile.packs ?? []).filter((pack) => pack.state === "required").map((pack) => pack.id));
-  const duplicateManifestIds = duplicateIds(packManifests.map((pack) => pack?.id));
-  for (const id of duplicateManifestIds) errors.push(`duplicate pack manifest identity: ${id}`);
-  const manifests = new Map(packManifests.map((pack) => [pack.id, pack]));
+  const manifestValidation = validatePackManifests(packManifests);
+  if (!manifestValidation.valid) return { launch: null, valid: false, errors: [...errors, ...manifestValidation.errors] };
+  const manifests = new Map(manifestValidation.manifests.map((pack) => [pack.id, pack]));
   for (const id of activePacks) {
     const manifest = manifests.get(id);
     if (!manifest) {
       errors.push(`active pack manifest is unavailable: ${id}`);
       continue;
     }
-    const validation = validateContract("pack", manifest);
-    if (!validation.valid) errors.push(...validation.errors.map((error) => `${id}: ${error}`));
-    for (const dependency of manifest.dependencies ?? []) if (!activePacks.has(dependency)) errors.push(`${id}: missing active dependency ${dependency}`);
-    for (const conflict of manifest.conflicts ?? []) if (activePacks.has(conflict)) errors.push(`${id}: conflicts with active pack ${conflict}`);
+    for (const dependency of manifest.dependencies) if (!activePacks.has(dependency)) errors.push(`${id}: missing active dependency ${dependency}`);
+    for (const conflict of manifest.conflicts) if (activePacks.has(conflict)) errors.push(`${id}: conflicts with active pack ${conflict}`);
   }
   for (const pack of envelope.packs ?? []) if (!activePacks.has(pack)) errors.push(`task requests inactive pack: ${pack}`);
   for (const pack of requiredPacks) if (!(envelope.packs ?? []).includes(pack)) errors.push(`task omits required pack: ${pack}`);

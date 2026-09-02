@@ -6,7 +6,13 @@ function observed(id, source, value) {
 }
 
 function safeJson(path) {
-  try { return { state: "available", value: JSON.parse(readFileSync(path, "utf8")), error: null }; }
+  try {
+    const value = JSON.parse(readFileSync(path, "utf8"));
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+      return { state: "malformed", value: null, error: "invalid-root-shape" };
+    }
+    return { state: "available", value, error: null };
+  }
   catch (error) { return { state: "malformed", value: null, error: error instanceof SyntaxError ? "invalid-json" : "unreadable" }; }
 }
 
@@ -57,7 +63,7 @@ export function diagnoseWorkspace(workspace) {
   if (packageJson.state === "available") evidence.push(observed("package-scripts", "package.json", Object.keys(packageJson.value.scripts ?? {}).sort()));
   else if (packageJson.state === "malformed") {
     evidence.push(observed("package-metadata", "package.json", { state: "malformed", reason: packageJson.error }));
-    recommendations.push({ kind: "recommendation", priority: "P1", reason: "package.json exists but could not be parsed safely.", options: ["repair package.json before relying on package-script observations"] });
+    recommendations.push({ kind: "recommendation", priority: "P1", reason: "package.json exists but is not usable as object metadata.", options: ["repair package.json before relying on package-script observations"] });
     confirmationRequired.push("Confirm whether malformed package metadata should block the intended task.");
   }
 

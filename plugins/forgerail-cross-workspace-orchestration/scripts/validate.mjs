@@ -70,6 +70,8 @@ for (const required of [
   "failed-status-missing-event-rejected",
   "accepted-status-missing-event-rejected",
   "unknown-status-rejected",
+  "documented-statuses-supported",
+  "documented-operations-approval-mapping",
   "failed-event-status-mismatch-rejected",
   "accepted-event-status-mismatch-rejected",
   "self-dependency-rejected",
