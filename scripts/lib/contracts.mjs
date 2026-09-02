@@ -94,7 +94,9 @@ function dateTime(value, label, errors) {
   }
   const [, yearText, monthText, dayText, hourText, minuteText, secondText, zone, zoneHourText = "0", zoneMinuteText = "0"] = match;
   const [year, month, day, hour, minute, second, zoneHour, zoneMinute] = [yearText, monthText, dayText, hourText, minuteText, secondText, zoneHourText, zoneMinuteText].map(Number);
-  const calendar = new Date(Date.UTC(year, month - 1, day));
+  const calendar = new Date(0);
+  calendar.setUTCHours(0, 0, 0, 0);
+  calendar.setUTCFullYear(year, month - 1, day);
   const calendarValid = calendar.getUTCFullYear() === year && calendar.getUTCMonth() === month - 1 && calendar.getUTCDate() === day;
   const clockValid = hour <= 23 && minute <= 59 && second <= 59;
   const zoneValid = zone === "Z" || (zoneHour <= 23 && zoneMinute <= 59);
@@ -345,14 +347,28 @@ function validateAdoptionPlan(value, errors) {
   if (!Array.isArray(value.proposedWrites)) errors.push("adoptionPlan.proposedWrites must be an array");
   else value.proposedWrites.forEach((write, index) => {
     const label = `adoptionPlan.proposedWrites[${index}]`;
-    if (!exactKeys(write, ["path", "operation", "baseSha256", "contentSha256", "content", "managedMarker"], [], label, errors)) return;
+    if (!exactKeys(write, ["workspaceSha256", "path", "operation", "baseSha256", "contentSha256", "content", "managedMarker", "approvalSha256"], [], label, errors)) return;
+    string(write.workspaceSha256, `${label}.workspaceSha256`, errors, digestPattern);
     string(write.path, `${label}.path`, errors, relativePathPattern);
     if (!["create", "append-managed-block", "replace-managed-block"].includes(write.operation)) errors.push(`${label}.operation is invalid`);
     nullableString(write.baseSha256, `${label}.baseSha256`, errors, digestPattern);
     string(write.contentSha256, `${label}.contentSha256`, errors, digestPattern);
     string(write.content, `${label}.content`, errors);
     string(write.managedMarker, `${label}.managedMarker`, errors, /^forgerail:(?:binding:[a-z][a-z0-9-]+|adoption-contract):v1$/);
+    string(write.approvalSha256, `${label}.approvalSha256`, errors, digestPattern);
     if (typeof write.content === "string" && write.contentSha256 !== sha256(write.content)) errors.push(`${label}.contentSha256 does not match content`);
+    if (typeof write.content === "string") {
+      const approvalBound = {
+        workspaceSha256: write.workspaceSha256,
+        path: write.path,
+        operation: write.operation,
+        baseSha256: write.baseSha256,
+        contentSha256: write.contentSha256,
+        content: write.content,
+        managedMarker: write.managedMarker,
+      };
+      if (write.approvalSha256 !== sha256(JSON.stringify(approvalBound))) errors.push(`${label}.approvalSha256 does not match the proposed write`);
+    }
     if (typeof write.content === "string" && (!write.content.includes(`<!-- ${write.managedMarker}:start -->`) || !write.content.includes(`<!-- ${write.managedMarker}:end -->`))) errors.push(`${label}.content must contain its complete managed marker`);
     if (write.operation === "create" && write.baseSha256 !== null) errors.push(`${label}.baseSha256 must be null for create`);
     if (write.operation !== "create" && !digestPattern.test(write.baseSha256 ?? "")) errors.push(`${label}.baseSha256 is required for managed-block updates`);

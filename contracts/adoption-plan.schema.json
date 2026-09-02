@@ -33,14 +33,16 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["path", "operation", "baseSha256", "contentSha256", "content", "managedMarker"],
+        "required": ["workspaceSha256", "path", "operation", "baseSha256", "contentSha256", "content", "managedMarker", "approvalSha256"],
         "properties": {
+          "workspaceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
           "path": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\\\]+$" },
           "operation": { "enum": ["create", "append-managed-block", "replace-managed-block"] },
           "baseSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
           "contentSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
           "content": { "type": "string", "minLength": 1 },
-          "managedMarker": { "type": "string", "pattern": "^forgerail:(binding:[a-z][a-z0-9-]+|adoption-contract):v1$" }
+          "managedMarker": { "type": "string", "pattern": "^forgerail:(binding:[a-z][a-z0-9-]+|adoption-contract):v1$" },
+          "approvalSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
         }
       }
     },

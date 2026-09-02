@@ -116,7 +116,11 @@ for (const phrase of ["Workspace Diagnosis", "Return Receipts", "GitHub Rulesets
   record(`changelog-${phrase.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, changelog.includes(phrase), phrase);
 }
 
-const marketplacePath = findExisting(["marketplace/.agents/plugins/marketplace.json", ".agents/plugins/marketplace.json"]);
+const marketplacePath = findExisting([
+  "marketplace/.agents/plugins/marketplace.json",
+  ".agents/plugins/marketplace.json",
+  "../../.agents/plugins/marketplace.json",
+]);
 const marketplace = json(marketplacePath);
 const marketplacePlugins = new Map(marketplace.plugins.map((plugin) => [plugin.name, plugin]));
 record("marketplace-name", marketplace.name === "echopath-labs", marketplace.name);

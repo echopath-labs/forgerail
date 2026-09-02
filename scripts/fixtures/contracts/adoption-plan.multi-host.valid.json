@@ -12,28 +12,34 @@
   ],
   "proposedWrites": [
     {
+      "workspaceSha256": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d",
       "path": "FORGERAIL.md",
       "operation": "create",
       "baseSha256": null,
       "contentSha256": "ebba8da7ae587252193419a647f0d8e6898074899158b4f441df573351c9de7c",
       "content": "<!-- forgerail:adoption-contract:v1:start -->\nShared contract.\n<!-- forgerail:adoption-contract:v1:end -->\n",
-      "managedMarker": "forgerail:adoption-contract:v1"
+      "managedMarker": "forgerail:adoption-contract:v1",
+      "approvalSha256": "c074e0b035d4dd68ac597b1ebedc7b58f29b3b3ba98d4cf33de49d437ed27fe0"
     },
     {
+      "workspaceSha256": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d",
       "path": "AGENTS.md",
       "operation": "create",
       "baseSha256": null,
       "contentSha256": "989f89220b826a5f355083497552db142fcf1f19cd299febf22b037494c71645",
       "content": "<!-- forgerail:binding:codex:v1:start -->\nRead FORGERAIL.md.\n<!-- forgerail:binding:codex:v1:end -->\n",
-      "managedMarker": "forgerail:binding:codex:v1"
+      "managedMarker": "forgerail:binding:codex:v1",
+      "approvalSha256": "b2f76b3d4f6730ebac4771e7fcecb1969df6ec62a05c2f6bcc441e8e8aa2741a"
     },
     {
+      "workspaceSha256": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d",
       "path": "CLAUDE.md",
       "operation": "create",
       "baseSha256": null,
       "contentSha256": "e72fdc3bd532202c2b9c52095e8e20050d428a150285c3b4f1cfce040d3a481c",
       "content": "<!-- forgerail:binding:claude-code:v1:start -->\nRead FORGERAIL.md.\n<!-- forgerail:binding:claude-code:v1:end -->\n",
-      "managedMarker": "forgerail:binding:claude-code:v1"
+      "managedMarker": "forgerail:binding:claude-code:v1",
+      "approvalSha256": "cc472c070fcc287f1d226600e316b0cb0cfbf8303dfd9ed44dc2b6b98b9d47ff"
     }
   ],
   "requiredConfirmation": true,

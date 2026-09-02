@@ -56,7 +56,7 @@ function isPrivateLayout(path) {
 
 function publicLayoutFixture() {
   const publicRoot = resolve(temporary("forgerail-public-layout-"), "forgerail");
-  cpSync(root, publicRoot, { recursive: true, dereference: false });
+  cpSync(isPrivateLayout(root) ? root : workspaceRoot, publicRoot, { recursive: true, dereference: false });
   if (isPrivateLayout(publicRoot)) {
     mkdirSync(resolve(publicRoot, ".agents/plugins"), { recursive: true });
     cpSync(
@@ -78,13 +78,12 @@ function privateLayoutFixture() {
   cpSync(root, privateRoot, { recursive: true, dereference: false });
   mkdirSync(resolve(privateRoot, "marketplace/.agents/plugins"), { recursive: true });
   cpSync(
-    resolve(privateRoot, ".agents/plugins/marketplace.json"),
+    resolve(workspaceRoot, ".agents/plugins/marketplace.json"),
     resolve(privateRoot, "marketplace/.agents/plugins/marketplace.json"),
   );
   rmSync(resolve(privateRoot, ".agents"), { recursive: true, force: true });
   for (const name of externalPluginNames) {
-    cpSync(resolve(privateRoot, "plugins", name), resolve(ownerRoot, name), { recursive: true, dereference: false });
-    rmSync(resolve(privateRoot, "plugins", name), { recursive: true, force: true });
+    cpSync(resolve(workspaceRoot, "plugins", name), resolve(ownerRoot, name), { recursive: true, dereference: false });
   }
   return privateRoot;
 }
@@ -111,6 +110,16 @@ try {
   pass("invalid-calendar-date-rejected", () => {
     const reason = clone(readJson(resolve(fixtureRoot, "limited-reason.valid.json")));
     reason.observedAt = "2026-02-31T12:00:00Z";
+    assert.equal(validateContract("limited-reason", reason).valid, false);
+  });
+
+  pass("literal-four-digit-years-are-preserved", () => {
+    const reason = clone(readJson(resolve(fixtureRoot, "limited-reason.valid.json")));
+    for (const observedAt of ["0000-02-29T00:00:00Z", "0001-01-01T00:00:00Z", "0099-12-31T23:59:59+23:59"]) {
+      reason.observedAt = observedAt;
+      assert.equal(validateContract("limited-reason", reason).valid, true, observedAt);
+    }
+    reason.observedAt = "0001-02-29T00:00:00Z";
     assert.equal(validateContract("limited-reason", reason).valid, false);
   });
 
@@ -205,7 +214,7 @@ try {
     const driftOutside = resolve(temporary("forgerail-dangling-drift-outside-"), "missing-AGENTS.md");
     symlinkSync(driftOutside, resolve(driftWorkspace, "AGENTS.md"));
     assert.throws(() => renderProposedWrite(driftWorkspace, plan.proposedWrites[0]), /symbolic link/);
-    assert.throws(() => applyApprovedAdoptionWrite(driftWorkspace, plan.proposedWrites[0]), /symbolic link/);
+    assert.throws(() => applyApprovedAdoptionWrite(driftWorkspace, plan.proposedWrites[0], plan.proposedWrites[0].approvalSha256), /symbolic link/);
     assert.equal(existsSync(driftOutside), false);
   });
 
@@ -213,17 +222,65 @@ try {
     const workspace = temporary("forgerail-adoption-approved-content-");
     const plan = planAdoption(root, workspace, ["codex", "cursor"]);
     const write = clone(plan.proposedWrites.find(({ path }) => path === ".cursor/rules/forgerail.mdc"));
+    const approvedWriteDigest = write.approvalSha256;
     write.content = `${write.content}\nunapproved\n`;
     assert.throws(() => renderProposedWrite(workspace, write), /approved content digest does not match/);
-    assert.throws(() => applyApprovedAdoptionWrite(workspace, write), /approved content digest does not match/);
+    assert.throws(() => applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest), /approved write digest does not match/);
     assert.equal(existsSync(resolve(workspace, ".cursor")), false);
+  });
+
+  pass("adoption-binds-approved-write-metadata-before-destination-selection", () => {
+    for (const mutate of [
+      (write) => { write.workspaceSha256 = "0".repeat(64); },
+      (write) => { write.path = "UNAPPROVED.md"; },
+      (write) => { write.operation = "append-managed-block"; },
+      (write) => { write.managedMarker = "forgerail:binding:cursor:v1"; },
+    ]) {
+      const workspace = temporary("forgerail-adoption-approved-metadata-");
+      const write = clone(planAdoption(root, workspace, ["codex"]).proposedWrites[0]);
+      const approvedWriteDigest = write.approvalSha256;
+      mutate(write);
+      assert.throws(() => applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest), /approved write digest does not match/);
+      assert.deepEqual(readdirSync(workspace), []);
+    }
+    const workspace = temporary("forgerail-adoption-missing-approval-digest-");
+    const write = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
+    assert.throws(() => applyApprovedAdoptionWrite(workspace, write), /approved write digest does not match/);
+    assert.deepEqual(readdirSync(workspace), []);
+
+    const approvedWorkspace = temporary("forgerail-adoption-approved-workspace-");
+    const replayWorkspace = temporary("forgerail-adoption-replay-workspace-");
+    const approved = planAdoption(root, approvedWorkspace, ["codex"]).proposedWrites[0];
+    assert.throws(
+      () => applyApprovedAdoptionWrite(replayWorkspace, approved, approved.approvalSha256),
+      /approved write digest does not match/,
+    );
+    assert.deepEqual(readdirSync(approvedWorkspace), []);
+    assert.deepEqual(readdirSync(replayWorkspace), []);
+
+    const dynamicWorkspace = temporary("forgerail-adoption-dynamic-write-");
+    const stable = planAdoption(root, dynamicWorkspace, ["codex"]).proposedWrites[0];
+    let pathReads = 0;
+    const dynamic = { ...stable };
+    Object.defineProperty(dynamic, "path", {
+      enumerable: true,
+      get() {
+        pathReads += 1;
+        return pathReads === 1 ? stable.path : "UNAPPROVED.md";
+      },
+    });
+    const receipt = applyApprovedAdoptionWrite(dynamicWorkspace, dynamic, stable.approvalSha256);
+    assert.equal(receipt.path, "AGENTS.md");
+    assert.equal(existsSync(resolve(dynamicWorkspace, "AGENTS.md")), true);
+    assert.equal(existsSync(resolve(dynamicWorkspace, "UNAPPROVED.md")), false);
+    assert.equal(pathReads, 1);
   });
 
   pass("adoption-creates-bounded-parents-and-replaces-atomically", () => {
     const cursorWorkspace = temporary("forgerail-adoption-cursor-");
     const multiHost = planAdoption(root, cursorWorkspace, ["codex", "cursor"]);
     const cursorWrite = multiHost.proposedWrites.find(({ path }) => path === ".cursor/rules/forgerail.mdc");
-    const cursorReceipt = applyApprovedAdoptionWrite(cursorWorkspace, cursorWrite);
+    const cursorReceipt = applyApprovedAdoptionWrite(cursorWorkspace, cursorWrite, cursorWrite.approvalSha256);
     assert.equal(cursorReceipt.contentSha256, createHash("sha256").update(cursorWrite.content).digest("hex"));
     assert.equal(readFileSync(resolve(cursorWorkspace, cursorWrite.path), "utf8"), cursorWrite.content);
     assert.equal(readdirSync(resolve(cursorWorkspace, ".cursor/rules")).some((name) => name.startsWith(".forgerail-") && (name.endsWith(".tmp") || name.endsWith(".bak"))), false);
@@ -233,7 +290,7 @@ try {
     const plan = planAdoption(root, existingWorkspace, ["codex"]);
     const approved = plan.proposedWrites[0];
     const expected = renderProposedWrite(existingWorkspace, approved);
-    const receipt = applyApprovedAdoptionWrite(existingWorkspace, approved);
+    const receipt = applyApprovedAdoptionWrite(existingWorkspace, approved, approved.approvalSha256);
     assert.equal(readFileSync(resolve(existingWorkspace, "AGENTS.md"), "utf8"), expected);
     assert.equal(receipt.contentSha256, createHash("sha256").update(expected).digest("hex"));
     assert.equal(readdirSync(existingWorkspace).some((name) => name.startsWith(".forgerail-") && (name.endsWith(".tmp") || name.endsWith(".bak"))), false);

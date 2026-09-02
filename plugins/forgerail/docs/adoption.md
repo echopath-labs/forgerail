@@ -32,7 +32,7 @@ npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --h
 npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex --host claude-code --host cursor
 ```
 
-Every proposal must show the current and proposed level, exact target paths and content, base digests, required confirmation, verification steps, support status, and non-actions. ForgeRail deliberately has no `apply-adoption` command. The Agent shows the proposal and waits for a human decision. Node-based integrations should then use `applyApprovedAdoptionWrite()` from `scripts/lib/adoption.mjs` so confinement, no-follow open, file identity and base digest are revalidated at write time. The Agent verifies discovery in a new task and returns a Host Binding Receipt.
+Every proposal must show the current and proposed level, exact target paths and content, base digests, each write's `approvalSha256`, required confirmation, verification steps, support status, and non-actions. ForgeRail deliberately has no `apply-adoption` command. The Agent shows the proposal and waits for a human decision. Node-based integrations must retain the approved `approvalSha256` separately from the mutable proposal, then pass it as the third argument to `applyApprovedAdoptionWrite()` from `scripts/lib/adoption.mjs` so the canonical workspace identity, destination, operation, marker, content, confinement, no-follow open, file identity and base digest are revalidated against one immutable snapshot at write time. The Agent verifies discovery in a new task and returns a Host Binding Receipt.
 
 ## Level 2 — Persisted Governance
 

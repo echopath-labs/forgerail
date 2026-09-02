@@ -9,6 +9,7 @@ No shipping changes yet.
 - Make contract identifiers, calendar values and portable paths fail closed and align the CLI with the published schemas.
 - Reject duplicate Profile, Pack and cross-workspace identities; bind Launch Contracts to the validated Effective Profile and every required active Pack.
 - Harden Adoption and source-repository projection construction against symlink traversal, sensitive files, unsupported file types, partial output and non-deterministic inventory modes.
+- Bind each approved Adoption write to its canonical workspace and complete executable metadata using one immutable apply-time snapshot, atomically replace an existing managed binding without a missing-target window, and preserve literal four-digit years including `0000` through `0099`.
 - Make Shadow comparison independent from its expected phrases and fail non-zero when coverage is missing.
 - Reject unknown orchestration operations, dependencies and conflicting terminal events; handle malformed receipts and package metadata without crashes or private absolute paths.
 - Add complete Node.js 22 and 24 integrity, Core, shadow, release, consumer, Directory and external Pack gates while preserving Skills-only installation, no project Node.js requirement, no implicit `.forgerail/` state and Apache-2.0.

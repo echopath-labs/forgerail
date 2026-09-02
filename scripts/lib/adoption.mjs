@@ -77,6 +77,49 @@ function sameFile(left, right) {
   return left.dev === right.dev && left.ino === right.ino;
 }
 
+function snapshotAdoptionWrite(write) {
+  return Object.freeze({
+    workspaceSha256: write.workspaceSha256,
+    path: write.path,
+    operation: write.operation,
+    baseSha256: write.baseSha256,
+    contentSha256: write.contentSha256,
+    content: write.content,
+    managedMarker: write.managedMarker,
+    approvalSha256: write.approvalSha256,
+  });
+}
+
+function approvalBoundWrite(write) {
+  return {
+    workspaceSha256: write.workspaceSha256,
+    path: write.path,
+    operation: write.operation,
+    baseSha256: write.baseSha256,
+    contentSha256: write.contentSha256,
+    content: write.content,
+    managedMarker: write.managedMarker,
+  };
+}
+
+export function adoptionWriteApprovalDigest(write) {
+  return sha256(JSON.stringify(approvalBoundWrite(snapshotAdoptionWrite(write))));
+}
+
+function verifyApprovedWrite(write, approvedWriteDigest, workspaceSha256) {
+  const snapshot = snapshotAdoptionWrite(write);
+  const currentDigest = sha256(JSON.stringify(approvalBoundWrite(snapshot)));
+  if (
+    typeof approvedWriteDigest !== "string"
+    || approvedWriteDigest !== snapshot.approvalSha256
+    || approvedWriteDigest !== currentDigest
+    || snapshot.workspaceSha256 !== workspaceSha256
+  ) {
+    throw new Error("approved write digest does not match the proposed write");
+  }
+  return snapshot;
+}
+
 function approvedContent(write) {
   if (typeof write.content !== "string" || sha256(write.content) !== write.contentSha256) {
     throw new Error(`approved content digest does not match for ${write.path}`);
@@ -173,6 +216,7 @@ function templateName(adapterId, strategy) {
 }
 
 function proposedWrite(workspace, path, content, managedMarker) {
+  const workspaceSha256 = sha256(realpathSync(resolve(workspace)));
   const target = adoptionTarget(workspace, path);
   const exists = existsSync(target);
   if (exists && !statSync(target).isFile()) throw new Error(`adoption target is not a file: ${path}`);
@@ -189,7 +233,8 @@ function proposedWrite(workspace, path, content, managedMarker) {
   const approvedContent = operation === "replace-managed-block" && content.indexOf(start) > 0
     ? `${content.slice(content.indexOf(start), content.indexOf(end) + end.length)}\n`
     : content;
-  return {
+  const write = {
+    workspaceSha256,
     path,
     operation,
     baseSha256: prior === null ? null : sha256(prior),
@@ -197,6 +242,7 @@ function proposedWrite(workspace, path, content, managedMarker) {
     content: approvedContent,
     managedMarker,
   };
+  return { ...write, approvalSha256: adoptionWriteApprovalDigest(write) };
 }
 
 export function renderProposedWrite(workspace, write) {
@@ -214,13 +260,14 @@ export function renderProposedWrite(workspace, write) {
   return `${prior.slice(0, startIndex)}${content}${prior.slice(endIndex + end.length)}`;
 }
 
-export function applyApprovedAdoptionWrite(workspace, write) {
+export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest) {
   const root = realpathSync(resolve(workspace));
-  const content = renderProposedWrite(root, write);
-  const creating = write.operation === "create";
-  return withBoundAdoptionParent(root, write.path, (leaf) => {
+  const approvedWrite = verifyApprovedWrite(write, approvedWriteDigest, sha256(root));
+  const content = renderProposedWrite(root, approvedWrite);
+  const creating = approvedWrite.operation === "create";
+  return withBoundAdoptionParent(root, approvedWrite.path, (leaf) => {
     const boundParent = realpathSync(".");
-    if (!confined(root, boundParent)) throw new Error(`adoption target parent moved outside workspace: ${write.path}`);
+    if (!confined(root, boundParent)) throw new Error(`adoption target parent moved outside workspace: ${approvedWrite.path}`);
     const identity = randomBytes(12).toString("hex");
     const temporary = `.forgerail-${identity}.tmp`;
     let backup;
@@ -230,7 +277,6 @@ export function applyApprovedAdoptionWrite(workspace, write) {
     let temporaryExists = false;
     let backupExists = false;
     let createdTarget = false;
-    let targetDetached = false;
     let replacementInstalled = false;
     let preserveBackup = false;
     let temporaryStat;
@@ -238,17 +284,17 @@ export function applyApprovedAdoptionWrite(workspace, write) {
     try {
       const pathStat = linkAwareStat(leaf);
       if (creating) {
-        if (pathStat !== null) throw new Error(`adoption target changed before write: ${write.path}`);
+        if (pathStat !== null) throw new Error(`adoption target changed before write: ${approvedWrite.path}`);
       } else {
         sourceDescriptor = openSync(leaf, constants.O_RDONLY | constants.O_NOFOLLOW);
         sourceStat = fstatSync(sourceDescriptor);
         if (pathStat === null || pathStat.isSymbolicLink() || !sameFile(sourceStat, pathStat)) {
-          throw new Error(`adoption target changed before write: ${write.path}`);
+          throw new Error(`adoption target changed before write: ${approvedWrite.path}`);
         }
         const observed = realpathSync(leaf);
-        if (!confined(root, observed)) throw new Error(`adoption target escapes workspace before write: ${write.path}`);
+        if (!confined(root, observed)) throw new Error(`adoption target escapes workspace before write: ${approvedWrite.path}`);
         const current = readFileSync(sourceDescriptor, "utf8");
-        if (sha256(current) !== write.baseSha256) throw new Error(`base digest drifted for ${write.path}`);
+        if (sha256(current) !== approvedWrite.baseSha256) throw new Error(`base digest drifted for ${approvedWrite.path}`);
       }
 
       const mode = creating ? 0o644 : sourceStat.mode & 0o777;
@@ -271,24 +317,27 @@ export function applyApprovedAdoptionWrite(workspace, write) {
       } else {
         const finalPathStat = lstatSync(leaf);
         if (finalPathStat.isSymbolicLink() || !sameFile(sourceStat, finalPathStat)) {
-          throw new Error(`adoption target changed before replace: ${write.path}`);
+          throw new Error(`adoption target changed before replace: ${approvedWrite.path}`);
         }
         backup = `.forgerail-${randomBytes(12).toString("hex")}.bak`;
-        if (linkAwareStat(backup) !== null) throw new Error(`adoption recovery path already exists: ${write.path}`);
-        renameSync(leaf, backup);
+        if (linkAwareStat(backup) !== null) throw new Error(`adoption recovery path already exists: ${approvedWrite.path}`);
+        linkSync(leaf, backup);
         backupExists = true;
-        targetDetached = true;
         const detached = lstatSync(backup);
         if (detached.isSymbolicLink() || !sameFile(sourceStat, detached)) {
-          throw new Error(`adoption target changed while preparing replacement: ${write.path}`);
+          throw new Error(`adoption target changed while preparing replacement: ${approvedWrite.path}`);
         }
-        linkSync(temporary, leaf);
-        createdTarget = true;
+        const beforeReplace = lstatSync(leaf);
+        if (beforeReplace.isSymbolicLink() || !sameFile(sourceStat, beforeReplace)) {
+          throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
+        }
+        renameSync(temporary, leaf);
+        temporaryExists = false;
         replacementInstalled = true;
       }
       const installed = lstatSync(leaf);
       if (installed.isSymbolicLink() || !sameFile(temporaryStat, installed)) {
-        throw new Error(`adoption target identity mismatch after write: ${write.path}`);
+        throw new Error(`adoption target identity mismatch after write: ${approvedWrite.path}`);
       }
       fsyncSync(directoryDescriptor);
       if (creating) {
@@ -297,28 +346,17 @@ export function applyApprovedAdoptionWrite(workspace, write) {
       } else {
         unlinkSync(backup);
         backupExists = false;
+        fsyncSync(directoryDescriptor);
       }
-      return { path: write.path, contentSha256: sha256(content) };
+      return { path: approvedWrite.path, contentSha256: sha256(content) };
     } catch (error) {
       if (replacementInstalled && backupExists) {
         try {
           const installed = lstatSync(leaf);
           if (temporaryStat === undefined || installed.isSymbolicLink() || !sameFile(temporaryStat, installed)) {
-            throw new Error(`adoption target changed before recovery: ${write.path}`);
+            throw new Error(`adoption target changed before recovery: ${approvedWrite.path}`);
           }
-          unlinkSync(leaf);
-          linkSync(backup, leaf);
-          unlinkSync(backup);
-          backupExists = false;
-          if (directoryDescriptor !== undefined) fsyncSync(directoryDescriptor);
-        } catch {
-          preserveBackup = true;
-        }
-      } else if (targetDetached && backupExists) {
-        try {
-          if (linkAwareStat(leaf) !== null) throw new Error(`adoption target changed before recovery: ${write.path}`);
-          linkSync(backup, leaf);
-          unlinkSync(backup);
+          renameSync(backup, leaf);
           backupExists = false;
           if (directoryDescriptor !== undefined) fsyncSync(directoryDescriptor);
         } catch {
@@ -380,7 +418,7 @@ export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "li
       writes.push(proposedWrite(realRoot, adapter.bindingTarget, content, adapter.managedMarker));
     }
   }
-  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hosts: hostIds, writes: writes.map(({ path, operation, baseSha256, contentSha256 }) => ({ path, operation, baseSha256, contentSha256 })) })).slice(0, 20);
+  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hosts: hostIds, writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
   const plan = {
     schemaVersion: "1.0",
     planId: `adoption:${identity}`,
