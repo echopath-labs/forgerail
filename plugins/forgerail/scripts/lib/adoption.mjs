@@ -1,16 +1,19 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   closeSync,
   constants,
   existsSync,
   fstatSync,
   fsyncSync,
-  ftruncateSync,
+  linkSync,
   lstatSync,
+  mkdirSync,
   openSync,
   readFileSync,
   readdirSync,
   realpathSync,
+  renameSync,
+  rmdirSync,
   statSync,
   unlinkSync,
   writeSync,
@@ -74,6 +77,70 @@ function sameFile(left, right) {
   return left.dev === right.dev && left.ino === right.ino;
 }
 
+function approvedContent(write) {
+  if (typeof write.content !== "string" || sha256(write.content) !== write.contentSha256) {
+    throw new Error(`approved content digest does not match for ${write.path}`);
+  }
+  return write.content;
+}
+
+function removeCreatedParents(root, created) {
+  for (const directory of created.reverse()) {
+    try {
+      const metadata = lstatSync(directory.path);
+      if (confined(root, directory.path) && sameFile(metadata, directory.metadata)) rmdirSync(directory.path);
+    } catch {}
+  }
+}
+
+function withBoundAdoptionParent(root, path, operation) {
+  const parentPath = dirname(path);
+  const segments = parentPath === "." ? [] : parentPath.split("/");
+  const originalDirectory = process.cwd();
+  const created = [];
+  let failed = false;
+  try {
+    process.chdir(root);
+    for (const segment of segments) {
+      let metadata = linkAwareStat(segment);
+      let directoryCreated = false;
+      if (metadata === null) {
+        try {
+          mkdirSync(segment, { mode: 0o755 });
+          directoryCreated = true;
+        } catch (error) {
+          if (!error || typeof error !== "object" || error.code !== "EEXIST") throw error;
+        }
+        metadata = lstatSync(segment);
+      }
+      if (metadata.isSymbolicLink() || !metadata.isDirectory()) {
+        throw new Error(`adoption target parent is not a regular directory: ${path}`);
+      }
+      process.chdir(segment);
+      const observed = realpathSync(".");
+      if (!confined(root, observed)) throw new Error(`adoption target parent escapes workspace: ${path}`);
+      if (directoryCreated) created.push({ path: observed, metadata: lstatSync(".") });
+    }
+    return operation(basename(path));
+  } catch (error) {
+    failed = true;
+    throw error;
+  } finally {
+    process.chdir(originalDirectory);
+    if (failed) removeCreatedParents(root, created);
+  }
+}
+
+function writeAll(descriptor, content) {
+  const buffer = Buffer.from(content, "utf8");
+  let offset = 0;
+  while (offset < buffer.length) {
+    const written = writeSync(descriptor, buffer, offset, buffer.length - offset, null);
+    if (written <= 0) throw new Error("adoption target write made no progress");
+    offset += written;
+  }
+}
+
 export function loadHostAdapters(pluginRoot) {
   const adapters = adapterFiles(pluginRoot).map((name) => JSON.parse(read(resolve(pluginRoot, "adapters", name))));
   const errors = [];
@@ -133,66 +200,149 @@ function proposedWrite(workspace, path, content, managedMarker) {
 }
 
 export function renderProposedWrite(workspace, write) {
+  const content = approvedContent(write);
   const target = adoptionTarget(workspace, write.path);
   const prior = existsSync(target) ? read(target) : "";
-  if (write.operation === "create") return write.content;
+  if (write.operation === "create") return content;
   if (sha256(prior) !== write.baseSha256) throw new Error(`base digest drifted for ${write.path}`);
-  if (write.operation === "append-managed-block") return `${prior.replace(/\s*$/, "")}\n\n${write.content}`;
+  if (write.operation === "append-managed-block") return `${prior.replace(/\s*$/, "")}\n\n${content}`;
   const start = `<!-- ${write.managedMarker}:start -->`;
   const end = `<!-- ${write.managedMarker}:end -->`;
   const startIndex = prior.indexOf(start);
   const endIndex = prior.indexOf(end, startIndex);
   if (startIndex < 0 || endIndex < 0) throw new Error(`managed block is missing for ${write.path}`);
-  return `${prior.slice(0, startIndex)}${write.content}${prior.slice(endIndex + end.length)}`;
+  return `${prior.slice(0, startIndex)}${content}${prior.slice(endIndex + end.length)}`;
 }
 
 export function applyApprovedAdoptionWrite(workspace, write) {
   const root = realpathSync(resolve(workspace));
   const content = renderProposedWrite(root, write);
-  const target = adoptionTarget(root, write.path);
-  const parent = realpathSync(dirname(target));
-  if (!confined(root, parent)) throw new Error(`adoption target parent escapes workspace: ${write.path}`);
-  const leaf = basename(target);
   const creating = write.operation === "create";
-  const flags = creating
-    ? constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW
-    : constants.O_RDWR | constants.O_NOFOLLOW;
-  let descriptor;
-  let created = false;
-  const originalDirectory = process.cwd();
-  let parentBound = false;
-  try {
-    process.chdir(parent);
-    parentBound = true;
+  return withBoundAdoptionParent(root, write.path, (leaf) => {
     const boundParent = realpathSync(".");
     if (!confined(root, boundParent)) throw new Error(`adoption target parent moved outside workspace: ${write.path}`);
-    descriptor = openSync(leaf, flags, 0o644);
-    created = creating;
-    const descriptorStat = fstatSync(descriptor);
-    const pathStat = lstatSync(leaf);
-    if (pathStat.isSymbolicLink() || !sameFile(descriptorStat, pathStat)) throw new Error(`adoption target changed before write: ${write.path}`);
-    const observed = realpathSync(leaf);
-    if (!confined(root, observed)) throw new Error(`adoption target escapes workspace before write: ${write.path}`);
-    if (!creating) {
-      const current = readFileSync(descriptor, "utf8");
-      if (sha256(current) !== write.baseSha256) throw new Error(`base digest drifted for ${write.path}`);
+    const identity = randomBytes(12).toString("hex");
+    const temporary = `.forgerail-${identity}.tmp`;
+    let backup;
+    let sourceDescriptor;
+    let temporaryDescriptor;
+    let directoryDescriptor;
+    let temporaryExists = false;
+    let backupExists = false;
+    let createdTarget = false;
+    let targetDetached = false;
+    let replacementInstalled = false;
+    let preserveBackup = false;
+    let temporaryStat;
+    let sourceStat;
+    try {
+      const pathStat = linkAwareStat(leaf);
+      if (creating) {
+        if (pathStat !== null) throw new Error(`adoption target changed before write: ${write.path}`);
+      } else {
+        sourceDescriptor = openSync(leaf, constants.O_RDONLY | constants.O_NOFOLLOW);
+        sourceStat = fstatSync(sourceDescriptor);
+        if (pathStat === null || pathStat.isSymbolicLink() || !sameFile(sourceStat, pathStat)) {
+          throw new Error(`adoption target changed before write: ${write.path}`);
+        }
+        const observed = realpathSync(leaf);
+        if (!confined(root, observed)) throw new Error(`adoption target escapes workspace before write: ${write.path}`);
+        const current = readFileSync(sourceDescriptor, "utf8");
+        if (sha256(current) !== write.baseSha256) throw new Error(`base digest drifted for ${write.path}`);
+      }
+
+      const mode = creating ? 0o644 : sourceStat.mode & 0o777;
+      temporaryDescriptor = openSync(
+        temporary,
+        constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
+        mode,
+      );
+      temporaryExists = true;
+      writeAll(temporaryDescriptor, content);
+      fsyncSync(temporaryDescriptor);
+      temporaryStat = fstatSync(temporaryDescriptor);
+      closeSync(temporaryDescriptor);
+      temporaryDescriptor = undefined;
+
+      directoryDescriptor = openSync(".", constants.O_RDONLY);
+      if (creating) {
+        linkSync(temporary, leaf);
+        createdTarget = true;
+      } else {
+        const finalPathStat = lstatSync(leaf);
+        if (finalPathStat.isSymbolicLink() || !sameFile(sourceStat, finalPathStat)) {
+          throw new Error(`adoption target changed before replace: ${write.path}`);
+        }
+        backup = `.forgerail-${randomBytes(12).toString("hex")}.bak`;
+        if (linkAwareStat(backup) !== null) throw new Error(`adoption recovery path already exists: ${write.path}`);
+        renameSync(leaf, backup);
+        backupExists = true;
+        targetDetached = true;
+        const detached = lstatSync(backup);
+        if (detached.isSymbolicLink() || !sameFile(sourceStat, detached)) {
+          throw new Error(`adoption target changed while preparing replacement: ${write.path}`);
+        }
+        linkSync(temporary, leaf);
+        createdTarget = true;
+        replacementInstalled = true;
+      }
+      const installed = lstatSync(leaf);
+      if (installed.isSymbolicLink() || !sameFile(temporaryStat, installed)) {
+        throw new Error(`adoption target identity mismatch after write: ${write.path}`);
+      }
+      fsyncSync(directoryDescriptor);
+      if (creating) {
+        unlinkSync(temporary);
+        temporaryExists = false;
+      } else {
+        unlinkSync(backup);
+        backupExists = false;
+      }
+      return { path: write.path, contentSha256: sha256(content) };
+    } catch (error) {
+      if (replacementInstalled && backupExists) {
+        try {
+          const installed = lstatSync(leaf);
+          if (temporaryStat === undefined || installed.isSymbolicLink() || !sameFile(temporaryStat, installed)) {
+            throw new Error(`adoption target changed before recovery: ${write.path}`);
+          }
+          unlinkSync(leaf);
+          linkSync(backup, leaf);
+          unlinkSync(backup);
+          backupExists = false;
+          if (directoryDescriptor !== undefined) fsyncSync(directoryDescriptor);
+        } catch {
+          preserveBackup = true;
+        }
+      } else if (targetDetached && backupExists) {
+        try {
+          if (linkAwareStat(leaf) !== null) throw new Error(`adoption target changed before recovery: ${write.path}`);
+          linkSync(backup, leaf);
+          unlinkSync(backup);
+          backupExists = false;
+          if (directoryDescriptor !== undefined) fsyncSync(directoryDescriptor);
+        } catch {
+          preserveBackup = true;
+        }
+      } else if (createdTarget) {
+        try {
+          const installed = lstatSync(leaf);
+          if (temporaryStat !== undefined && sameFile(temporaryStat, installed)) unlinkSync(leaf);
+        } catch {}
+      }
+      throw error;
+    } finally {
+      if (sourceDescriptor !== undefined) closeSync(sourceDescriptor);
+      if (temporaryDescriptor !== undefined) closeSync(temporaryDescriptor);
+      if (directoryDescriptor !== undefined) closeSync(directoryDescriptor);
+      if (temporaryExists) {
+        try { unlinkSync(temporary); } catch {}
+      }
+      if (backupExists && !preserveBackup) {
+        try { unlinkSync(backup); } catch {}
+      }
     }
-    ftruncateSync(descriptor, 0);
-    writeSync(descriptor, content, 0, "utf8");
-    fsyncSync(descriptor);
-    return { path: write.path, contentSha256: sha256(content) };
-  } catch (error) {
-    if (created) {
-      try {
-        const pathStat = lstatSync(leaf);
-        if (descriptor !== undefined && sameFile(fstatSync(descriptor), pathStat)) unlinkSync(leaf);
-      } catch {}
-    }
-    throw error;
-  } finally {
-    if (descriptor !== undefined) closeSync(descriptor);
-    if (parentBound) process.chdir(originalDirectory);
-  }
+  });
 }
 
 export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "lightweight-adoption") {

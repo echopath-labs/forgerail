@@ -50,6 +50,21 @@ function regularFile(path, label) {
   return metadata;
 }
 
+function regularFileBelow(root, path, label) {
+  const relativePath = relative(root, path);
+  if (!safeRelativePath(relativePath)) throw new Error(`bundle source path is not allowed: ${label}`);
+  let cursor = root;
+  for (const [index, segment] of relativePath.split(sep).entries()) {
+    cursor = resolve(cursor, segment);
+    const metadata = lstatSync(cursor);
+    if (metadata.isSymbolicLink()) throw new Error(`bundle source must not traverse a symbolic link: ${label}`);
+    if (index < relativePath.split(sep).length - 1 && !metadata.isDirectory()) {
+      throw new Error(`bundle source ancestor is not a regular directory: ${label}`);
+    }
+  }
+  return regularFile(path, label);
+}
+
 function below(base, prefix, result = []) {
   const directory = resolve(base, prefix);
   const metadata = lstatSync(directory);
@@ -161,7 +176,7 @@ export function buildBundle(rootInput, output) {
   if (!confined(parent, target)) throw new Error("output escapes its parent directory");
 
   const layout = sourceLayout(root);
-  regularFile(layout.catalog, "marketplace catalog");
+  regularFileBelow(root, layout.catalog, "marketplace catalog");
   const payload = packagePayload(root);
   const externalPlugins = externalPluginNames.map((name) => {
     const pluginRoot = layout.externalRoots[name];
@@ -198,7 +213,7 @@ export function buildBundle(rootInput, output) {
       copyFileSync(projection.source, destination);
       const mode = (metadata.mode & 0o111) === 0 ? 0o644 : 0o755;
       chmodSync(destination, mode);
-      const bytes = readFileSync(projection.source);
+      const bytes = readFileSync(destination);
       inventory.push({
         path: projection.target,
         source: projection.sourceIdentity,

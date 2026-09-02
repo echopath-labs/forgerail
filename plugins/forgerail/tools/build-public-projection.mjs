@@ -2,7 +2,7 @@
 
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildBundle } from "../scripts/lib/bundle.mjs";
+import { buildBundle } from "./lib/bundle.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const index = process.argv.indexOf("--output");

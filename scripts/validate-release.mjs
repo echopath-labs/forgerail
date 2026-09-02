@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -39,6 +41,27 @@ function findExisting(candidates) {
 const packageJson = json("package.json");
 const packageLock = json("package-lock.json");
 const publicCli = read("scripts/forgerail.mjs");
+const packCache = mkdtempSync(resolve(tmpdir(), "forgerail-pack-cache-"));
+const packEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => key.toLowerCase() !== "npm_config_cache"),
+);
+packEnvironment.NPM_CONFIG_CACHE = packCache;
+let packResult;
+try {
+  packResult = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+    cwd: root,
+    encoding: "utf8",
+    env: packEnvironment,
+  });
+} finally {
+  rmSync(packCache, { recursive: true, force: true });
+}
+let packedFiles = [];
+try {
+  packedFiles = packResult.status === 0
+    ? JSON.parse(packResult.stdout)[0]?.files?.map(({ path }) => path) ?? []
+    : [];
+} catch {}
 record("package-name", packageJson.name === expectedPackageName, packageJson.name);
 record("package-lock-name", packageLock.name === expectedPackageName && packageLock.packages?.[""]?.name === expectedPackageName, packageLock.name);
 record("package-version", packageJson.version === expectedVersion, packageJson.version);
@@ -47,6 +70,8 @@ record("package-license", packageJson.license === "Apache-2.0", packageJson.lice
 record("package-lock-license", packageLock.packages?.[""]?.license === "Apache-2.0", packageLock.packages?.[""]?.license ?? null);
 record("npm-next-tag", packageJson.publishConfig?.tag === "next", packageJson.publishConfig?.tag ?? null);
 record("no-public-bundle-builder-command", !publicCli.includes('command === "build-bundle"'), "source-repository maintainer tool only");
+record("npm-pack-dry-run", packResult.status === 0 && packedFiles.length > 0, packResult.status === 0 ? `${packedFiles.length} files` : packResult.stderr.trim());
+record("bundle-builder-source-only", existsSync(resolve(root, "tools/lib/bundle.mjs")) && !packedFiles.includes("tools/lib/bundle.mjs"), "tools/lib/bundle.mjs");
 record(
   "prepublish-gate",
   ["npm test", "npm run test:integrity", "npm run test:shadow", "npm run test:release", "npm run test:consumer", "npm run test:directory"].every((command) => packageJson.scripts?.prepublishOnly?.includes(command)),
