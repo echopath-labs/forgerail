@@ -374,6 +374,60 @@ try {
     assert.throws(() => buildBundle(root, resolve(outputLink, "bundle")), /symbolic links|below the host temporary directory/);
   });
 
+  pass("bundle-rejects-symlinked-external-plugin-roots", () => {
+    for (const kind of ["root", "ancestor"]) {
+      const publicRoot = publicLayoutFixture();
+      if (kind === "root") {
+        const pluginRoot = resolve(publicRoot, "plugins/forgerail-release-safety");
+        const replacementRoot = resolve(publicRoot, "plugins/forgerail-release-safety-source");
+        cpSync(pluginRoot, replacementRoot, { recursive: true, dereference: false });
+        rmSync(pluginRoot, { recursive: true, force: true });
+        symlinkSync(replacementRoot, pluginRoot);
+      } else {
+        const pluginsRoot = resolve(publicRoot, "plugins");
+        const replacementRoot = resolve(publicRoot, "plugins-source");
+        cpSync(pluginsRoot, replacementRoot, { recursive: true, dereference: false });
+        rmSync(pluginsRoot, { recursive: true, force: true });
+        symlinkSync(replacementRoot, pluginsRoot);
+      }
+      const output = resolve(temporary(`forgerail-symlinked-plugin-${kind}-output-parent-`), "bundle");
+      assert.throws(() => buildBundle(publicRoot, output), /symbolic link/);
+      assert.equal(existsSync(output), false);
+    }
+  });
+
+  pass("bundle-rejects-environment-and-npmrc-filename-families", () => {
+    for (const path of ["scripts/.env.local", "docs/.env.production", "scripts/.npmrc.backup"]) {
+      const publicRoot = publicLayoutFixture();
+      writeFileSync(resolve(publicRoot, path), "PRIVATE_VALUE=should-not-project\n");
+      const output = resolve(temporary("forgerail-sensitive-name-output-parent-"), "bundle");
+      assert.throws(() => buildBundle(publicRoot, output), /path is not allowed/);
+      assert.equal(existsSync(output), false);
+    }
+  });
+
+  pass("bundle-rejects-output-inside-source-before-staging", () => {
+    const publicRoot = publicLayoutFixture();
+    const output = resolve(publicRoot, "docs/projection");
+    const before = readdirSync(resolve(publicRoot, "docs")).sort();
+    assert.throws(() => buildBundle(publicRoot, output), /output must not be inside the source tree/);
+    assert.equal(existsSync(output), false);
+    assert.deepEqual(readdirSync(resolve(publicRoot, "docs")).sort(), before);
+  });
+
+  pass("bundle-rejects-duplicate-projection-targets", () => {
+    for (const extra of [".agents/", "plugins/"]) {
+      const publicRoot = publicLayoutFixture();
+      const packagePath = resolve(publicRoot, "package.json");
+      const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
+      packageJson.files.push(extra);
+      writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+      const output = resolve(temporary("forgerail-duplicate-target-output-parent-"), "bundle");
+      assert.throws(() => buildBundle(publicRoot, output), /duplicate bundle target/);
+      assert.equal(existsSync(output), false);
+    }
+  });
+
   console.log(JSON.stringify({ valid: true, assertions, mutations: [], externalSideEffects: [] }, null, 2));
 } finally {
   for (const path of temporaryRoots.reverse()) rmSync(path, { recursive: true, force: true });

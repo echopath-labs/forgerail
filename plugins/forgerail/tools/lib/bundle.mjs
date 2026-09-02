@@ -36,11 +36,18 @@ function confined(base, candidate) {
   return path === "" || (path !== ".." && !path.startsWith(`..${sep}`) && !path.startsWith("/"));
 }
 
+function deniedFileName(name) {
+  return deniedNames.has(name)
+    || [...deniedNames].some((denied) => name.startsWith(`${denied}.`))
+    || name.endsWith(".pem")
+    || name.endsWith(".key");
+}
+
 function safeRelativePath(path) {
   const segments = path.split("/");
   return path !== "" && !path.startsWith("/") && !path.includes("\\")
     && !segments.includes("..") && !segments.some((segment) => deniedSegments.has(segment))
-    && !segments.some((segment) => deniedNames.has(segment) || segment.endsWith(".pem") || segment.endsWith(".key"));
+    && !segments.some((segment) => deniedFileName(segment));
 }
 
 function regularFile(path, label) {
@@ -52,17 +59,32 @@ function regularFile(path, label) {
 
 function regularFileBelow(root, path, label) {
   const relativePath = relative(root, path);
-  if (!safeRelativePath(relativePath)) throw new Error(`bundle source path is not allowed: ${label}`);
+  const segments = relativePath.split(sep).filter(Boolean);
+  if (!safeRelativePath(segments.join("/"))) throw new Error(`bundle source path is not allowed: ${label}`);
   let cursor = root;
-  for (const [index, segment] of relativePath.split(sep).entries()) {
+  for (const [index, segment] of segments.entries()) {
     cursor = resolve(cursor, segment);
     const metadata = lstatSync(cursor);
     if (metadata.isSymbolicLink()) throw new Error(`bundle source must not traverse a symbolic link: ${label}`);
-    if (index < relativePath.split(sep).length - 1 && !metadata.isDirectory()) {
+    if (index < segments.length - 1 && !metadata.isDirectory()) {
       throw new Error(`bundle source ancestor is not a regular directory: ${label}`);
     }
   }
   return regularFile(path, label);
+}
+
+function regularDirectoryBelow(root, path, label) {
+  const relativePath = relative(root, path);
+  const segments = relativePath.split(sep).filter(Boolean);
+  if (!safeRelativePath(segments.join("/"))) throw new Error(`bundle source path is not allowed: ${label}`);
+  let cursor = root;
+  for (const segment of segments) {
+    cursor = resolve(cursor, segment);
+    const metadata = lstatSync(cursor);
+    if (metadata.isSymbolicLink()) throw new Error(`bundle source must not traverse a symbolic link: ${label}`);
+    if (!metadata.isDirectory()) throw new Error(`bundle source is not a regular directory: ${label}`);
+  }
+  return realpathSync(path);
 }
 
 function below(base, prefix, result = []) {
@@ -174,6 +196,7 @@ export function buildBundle(rootInput, output) {
   const parent = outputParent(requestedTarget);
   const target = resolve(parent, basename(requestedTarget));
   if (!confined(parent, target)) throw new Error("output escapes its parent directory");
+  if (confined(root, target)) throw new Error("output must not be inside the source tree");
 
   const layout = sourceLayout(root);
   regularFileBelow(root, layout.catalog, "marketplace catalog");
@@ -181,10 +204,12 @@ export function buildBundle(rootInput, output) {
   const externalPlugins = externalPluginNames.map((name) => {
     const pluginRoot = layout.externalRoots[name];
     if (!existsSync(pluginRoot)) throw new Error(`external Plugin source is missing: ${name}`);
-    const realPluginRoot = realpathSync(pluginRoot);
-    if (!confined(root, realPluginRoot) && !confined(dirname(root), realPluginRoot)) {
+    const pluginBase = confined(root, pluginRoot) ? root : confined(dirname(root), pluginRoot) ? dirname(root) : null;
+    if (!pluginBase) {
       throw new Error(`external Plugin source escapes supported roots: ${name}`);
     }
+    const realPluginRoot = regularDirectoryBelow(pluginBase, pluginRoot, `external Plugin ${name}`);
+    if (!confined(pluginBase, realPluginRoot)) throw new Error(`external Plugin source escapes supported roots: ${name}`);
     return { name, root: realPluginRoot, files: externalPayload(realPluginRoot) };
   });
 
@@ -200,6 +225,12 @@ export function buildBundle(rootInput, output) {
       target: `plugins/${plugin.name}/${path}`,
     }))),
   ].sort((left, right) => compare(left.target, right.target));
+
+  const targets = new Set();
+  for (const projection of projections) {
+    if (targets.has(projection.target)) throw new Error(`duplicate bundle target: ${projection.target}`);
+    targets.add(projection.target);
+  }
 
   const staging = mkdtempSync(resolve(parent, ".forgerail-bundle-"));
   const inventory = [];
