@@ -16,7 +16,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, win32 } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { applyApprovedAdoptionWrite, planAdoption, renderProposedWrite } from "./lib/adoption.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
@@ -25,9 +25,11 @@ import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const bundleModulePath = resolve(root, "tools/lib/bundle.mjs");
-const buildBundle = existsSync(bundleModulePath)
-  ? (await import(pathToFileURL(bundleModulePath).href)).buildBundle
+const bundleModule = existsSync(bundleModulePath)
+  ? await import(pathToFileURL(bundleModulePath).href)
   : null;
+const buildBundle = bundleModule?.buildBundle ?? null;
+const pathIsConfined = bundleModule?.pathIsConfined ?? null;
 const workspaceRoot = isPrivateLayout(root) ? resolve(root, "../..") : root;
 const fixtureRoot = resolve(root, "scripts/fixtures/contracts");
 const externalPluginNames = [
@@ -331,6 +333,25 @@ try {
     assert.deepEqual(readdirSync(originalWorkspace), []);
   });
 
+  pass("adoption-keeps-workspace-path-bound-through-install", () => {
+    for (const hook of ["beforeInstall", "afterInstall"]) {
+      const workspace = temporary(`forgerail-adoption-write-path-${hook}-`);
+      const approved = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
+      const originalWorkspace = `${workspace}-approved-inode`;
+      assert.throws(
+        () => applyApprovedAdoptionWrite(workspace, approved, approved.approvalSha256, {
+          [hook]() {
+            renameSync(workspace, originalWorkspace);
+            mkdirSync(workspace);
+          },
+        }),
+        /workspace directory identity changed|target parent identity changed/,
+      );
+      assert.deepEqual(readdirSync(workspace), []);
+      assert.deepEqual(readdirSync(originalWorkspace), []);
+    }
+  });
+
   pass("adoption-creates-bounded-parents-and-replaces-atomically", () => {
     const cursorWorkspace = temporary("forgerail-adoption-cursor-");
     const multiHost = planAdoption(root, cursorWorkspace, ["codex", "cursor"]);
@@ -520,6 +541,25 @@ try {
       assert.throws(() => buildBundle(publicRoot, output), /duplicate bundle target/);
       assert.equal(existsSync(output), false);
     }
+  });
+
+  if (buildBundle) pass("bundle-normalizes-marketplace-allowlist-before-exclusion", () => {
+    for (const alias of ["./marketplace/", "marketplace//"]) {
+      const privateRoot = privateLayoutFixture(publicLayoutFixture());
+      const packagePath = resolve(privateRoot, "package.json");
+      const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
+      packageJson.files = packageJson.files.map((entry) => entry === "marketplace/" ? alias : entry);
+      writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+      const output = resolve(temporary("forgerail-marketplace-alias-output-parent-"), "bundle");
+      const result = buildBundle(privateRoot, output);
+      assert.equal(result.files.some(({ path }) => path.includes("/marketplace/") || path.startsWith("marketplace/")), false);
+      assert.equal(result.files.filter(({ path }) => path === ".agents/plugins/marketplace.json").length, 1);
+    }
+  });
+
+  if (pathIsConfined) pass("bundle-rejects-cross-drive-relative-results", () => {
+    assert.equal(pathIsConfined("D:\\forgerail", "C:\\Temp\\bundle", win32), false);
+    assert.equal(pathIsConfined("D:\\forgerail", "D:\\forgerail\\nested", win32), true);
   });
 
   if (buildBundle) pass("bundle-keeps-source-root-bound-for-entire-build", () => {

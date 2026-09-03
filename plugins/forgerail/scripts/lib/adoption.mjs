@@ -202,12 +202,37 @@ function removeCreatedParents(root, created) {
   }
 }
 
+function verifyBoundAdoptionParentPath(workspaceBinding, parentBinding, path) {
+  verifyBoundWorkspacePath(workspaceBinding);
+  const retained = fstatSync(parentBinding.descriptor, { bigint: true });
+  let current;
+  try {
+    current = lstatSync(parentBinding.path, { bigint: true });
+  } catch {
+    throw new Error(`approved adoption target parent identity changed during write: ${path}`);
+  }
+  const entered = lstatSync(".", { bigint: true });
+  if (
+    !retained.isDirectory()
+    || current.isSymbolicLink()
+    || !current.isDirectory()
+    || !entered.isDirectory()
+    || !sameFile(parentBinding.metadata, retained)
+    || !sameFile(parentBinding.metadata, current)
+    || !sameFile(parentBinding.metadata, entered)
+    || !confined(workspaceBinding.root, parentBinding.path)
+  ) {
+    throw new Error(`approved adoption target parent identity changed during write: ${path}`);
+  }
+}
+
 function withBoundAdoptionParent(root, path, workspaceMetadata, operation) {
   const parentPath = dirname(path);
   const segments = parentPath === "." ? [] : parentPath.split("/");
   const originalDirectory = process.cwd();
   const created = [];
   let failed = false;
+  let parentDescriptor;
   try {
     process.chdir(root);
     const enteredWorkspace = lstatSync(".", { bigint: true });
@@ -234,11 +259,31 @@ function withBoundAdoptionParent(root, path, workspaceMetadata, operation) {
       if (!confined(root, observed)) throw new Error(`adoption target parent escapes workspace: ${path}`);
       if (directoryCreated) created.push({ path: observed, metadata: lstatSync(".") });
     }
-    return operation(basename(path));
+    const boundParent = realpathSync(".");
+    const observedParent = lstatSync(".", { bigint: true });
+    parentDescriptor = openSync(
+      ".",
+      constants.O_RDONLY | constants.O_NOFOLLOW | (constants.O_DIRECTORY ?? 0),
+    );
+    const openedParent = fstatSync(parentDescriptor, { bigint: true });
+    if (
+      observedParent.isSymbolicLink()
+      || !observedParent.isDirectory()
+      || !openedParent.isDirectory()
+      || !sameFile(observedParent, openedParent)
+    ) {
+      throw new Error(`approved adoption target parent identity changed before write: ${path}`);
+    }
+    return operation(basename(path), {
+      path: boundParent,
+      descriptor: parentDescriptor,
+      metadata: openedParent,
+    });
   } catch (error) {
     failed = true;
     throw error;
   } finally {
+    if (parentDescriptor !== undefined) closeSync(parentDescriptor);
     process.chdir(originalDirectory);
     if (failed) removeCreatedParents(root, created);
   }
@@ -333,15 +378,15 @@ function renderApprovedWriteContent(write, prior) {
   return `${prior.slice(0, startIndex)}${content}${prior.slice(endIndex + end.length)}`;
 }
 
-export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest) {
+export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest, testHooks = {}) {
   const binding = openBoundWorkspace(workspace);
   try {
     const { root } = binding;
     const approvedWrite = verifyApprovedWrite(write, approvedWriteDigest, binding.workspaceSha256);
     verifyBoundWorkspacePath(binding);
     const creating = approvedWrite.operation === "create";
-    return withBoundAdoptionParent(root, approvedWrite.path, binding.metadata, (leaf) => {
-    const boundParent = realpathSync(".");
+    return withBoundAdoptionParent(root, approvedWrite.path, binding.metadata, (leaf, parentBinding) => {
+    const boundParent = parentBinding.path;
     if (!confined(root, boundParent)) throw new Error(`adoption target parent moved outside workspace: ${approvedWrite.path}`);
     const identity = randomBytes(12).toString("hex");
     const temporary = `.forgerail-${identity}.tmp`;
@@ -391,6 +436,8 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
       temporaryDescriptor = undefined;
 
       directoryDescriptor = openSync(".", constants.O_RDONLY);
+      if (typeof testHooks.beforeInstall === "function") testHooks.beforeInstall();
+      verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
       if (creating) {
         linkSync(temporary, leaf);
         createdTarget = true;
@@ -415,6 +462,8 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         temporaryExists = false;
         replacementInstalled = true;
       }
+      if (typeof testHooks.afterInstall === "function") testHooks.afterInstall();
+      verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
       const installed = lstatSync(leaf);
       if (installed.isSymbolicLink() || !sameFile(temporaryStat, installed)) {
         throw new Error(`adoption target identity mismatch after write: ${approvedWrite.path}`);
@@ -428,6 +477,7 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         backupExists = false;
         fsyncSync(directoryDescriptor);
       }
+      verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
       return { path: approvedWrite.path, contentSha256: sha256(content) };
     } catch (error) {
       if (replacementInstalled && backupExists) {

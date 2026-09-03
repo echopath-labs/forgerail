@@ -17,7 +17,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, parse, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, parse, posix, relative, resolve, sep } from "node:path";
 
 const externalPluginNames = [
   "forgerail-cross-workspace-orchestration",
@@ -35,9 +35,18 @@ function compare(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+export function pathIsConfined(base, candidate, pathApi = { isAbsolute, relative, sep }) {
+  const path = pathApi.relative(base, candidate);
+  return path === "" || (
+    !pathApi.isAbsolute(path)
+    && path !== ".."
+    && !path.startsWith(`..${pathApi.sep}`)
+    && !path.startsWith("/")
+  );
+}
+
 function confined(base, candidate) {
-  const path = relative(base, candidate);
-  return path === "" || (path !== ".." && !path.startsWith(`..${sep}`) && !path.startsWith("/"));
+  return pathIsConfined(base, candidate);
 }
 
 function deniedFileName(name) {
@@ -236,7 +245,10 @@ function packagePayload(boundRoot) {
     payload.push("package-lock.json");
   }
   for (const raw of entries) {
-    const entry = raw.replace(/\/$/, "");
+    if (typeof raw !== "string" || !safeRelativePath(raw)) {
+      throw new Error(`package allowlist path is not allowed: ${raw}`);
+    }
+    const entry = posix.normalize(raw).replace(/\/+$/, "");
     if (!safeRelativePath(entry)) throw new Error(`package allowlist path is not allowed: ${raw}`);
     if (entry === "marketplace") continue;
     const source = resolve(root, entry);
