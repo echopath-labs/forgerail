@@ -84,7 +84,7 @@ export function resolveProfile(input, packManifests = []) {
     workspace: input.workspace,
     computed: true,
     rules: [...selected.values()].sort((left, right) => left.id.localeCompare(right.id)),
-    packs: (input.packs ?? []).map((pack) => ({ id: pack.id, state: pack.state, reason: pack.reason })),
+    packs: Object.fromEntries((input.packs ?? []).slice().sort((left, right) => left.id.localeCompare(right.id)).map((pack) => [pack.id, { state: pack.state, reason: pack.reason }])),
     conflicts: [...new Set(conflicts)].sort(),
   };
   const contract = validateContract("profile", profile);
@@ -98,8 +98,9 @@ export function createLaunchContract(profile, envelope, hostAgent, packManifests
   if (!profileResult.valid || !envelopeResult.valid) return { launch: null, valid: false, errors };
   if (profile.workspace !== envelope.ownerWorkspace) errors.push(`profile workspace mismatch: ${profile.workspace} != ${envelope.ownerWorkspace}`);
   if (profile.conflicts?.length > 0) errors.push(...profile.conflicts.map((conflict) => `unresolved profile conflict: ${conflict}`));
-  const activePacks = new Set((profile.packs ?? []).filter((pack) => ["enabled", "required"].includes(pack.state)).map((pack) => pack.id));
-  const requiredPacks = new Set((profile.packs ?? []).filter((pack) => pack.state === "required").map((pack) => pack.id));
+  const profilePacks = profile.packs && typeof profile.packs === "object" && !Array.isArray(profile.packs) ? Object.entries(profile.packs) : [];
+  const activePacks = new Set(profilePacks.filter(([, pack]) => ["enabled", "required"].includes(pack.state)).map(([id]) => id));
+  const requiredPacks = new Set(profilePacks.filter(([, pack]) => pack.state === "required").map(([id]) => id));
   const manifestValidation = validatePackManifests(packManifests);
   if (!manifestValidation.valid) return { launch: null, valid: false, errors: [...errors, ...manifestValidation.errors] };
   const manifests = new Map(manifestValidation.manifests.map((pack) => [pack.id, pack]));
@@ -118,7 +119,7 @@ export function createLaunchContract(profile, envelope, hostAgent, packManifests
     const manifest = manifests.get(id);
     return manifest ? [[id, digest(manifest)]] : [];
   }));
-  const requestedPackManifests = Object.fromEntries((envelope.packs ?? []).sort().flatMap((id) => (
+  const requestedPackManifests = Object.fromEntries([...(envelope.packs ?? [])].sort().flatMap((id) => (
     Object.hasOwn(effectivePackManifests, id) ? [[id, effectivePackManifests[id]]] : []
   )));
   const launch = {

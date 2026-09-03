@@ -41,6 +41,7 @@ function findExisting(candidates) {
 const packageJson = json("package.json");
 const packageLock = json("package-lock.json");
 const launchContractSchema = json("contracts/launch-contract.schema.json");
+const effectiveProfileSchema = json("contracts/effective-profile.schema.json");
 const publicCli = read("scripts/forgerail.mjs");
 const packCache = mkdtempSync(resolve(tmpdir(), "forgerail-pack-cache-"));
 const packEnvironment = Object.fromEntries(
@@ -78,6 +79,14 @@ record(
   launchContractSchema.properties?.envelope?.properties?.packs?.type === "object"
     && launchContractSchema.properties?.envelope?.properties?.packs?.additionalProperties?.pattern === "^[0-9a-f]{64}$",
   launchContractSchema.properties?.envelope?.properties?.packs ?? null,
+);
+record(
+  "profile-pack-schema-native-identity",
+  effectiveProfileSchema.properties?.packs?.type === "object"
+    && effectiveProfileSchema.properties?.packs?.propertyNames?.pattern === "^[a-z][a-z0-9-]+$"
+    && effectiveProfileSchema.properties?.packs?.additionalProperties?.required?.includes("state")
+    && effectiveProfileSchema.properties?.packs?.additionalProperties?.required?.includes("reason"),
+  effectiveProfileSchema.properties?.packs ?? null,
 );
 record(
   "prepublish-gate",

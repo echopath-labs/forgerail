@@ -12,7 +12,7 @@
     "status": { "enum": ["supported", "profile-only"] },
     "instructionDiscovery": { "enum": ["task-start", "rules", "explicit-only", "unknown"] },
     "skillDiscovery": { "enum": ["agent-plugin-skills", "agent-skills", "explicit-only", "unknown"] },
-    "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\\\]+$" },
+    "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*/$)[^\\\\]+$" },
     "bindingModes": {
       "type": "array",
       "items": { "enum": ["managed-block", "thin-reference"] },

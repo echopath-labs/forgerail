@@ -45,7 +45,7 @@ const packStates = ["available", "recommended", "enabled", "required", "blocked"
 const idPattern = /^[a-z][a-z0-9-]+$/;
 const ruleIdPattern = /^[a-z][a-z0-9.-]+$/;
 const taskIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]+$/;
-const relativePathPattern = /^(?![\\/])(?![a-zA-Z]:)(?!.*(?:^|[\\/])\.\.(?:[\\/]|$))[^\\]+$/;
+const relativePathPattern = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\/$)[^\\]+$/;
 const commitPattern = /^[0-9a-f]{40}$/;
 const digestPattern = /^[0-9a-f]{64}$/;
 const authorityClasses = ["agent_review", "automated_validation", "peer_review", "ownership_approval", "security_approval", "release_approval", "environment_approval"];
@@ -202,23 +202,22 @@ function validateProfile(value, errors) {
     if (!Number.isInteger(rule.precedence) || rule.precedence < 1 || rule.precedence > 6) errors.push(`${label}.precedence must be 1-6`);
     if (!["observed", "inferred", "confirmed", "default"].includes(rule.status)) errors.push(`${label}.status is invalid`);
   });
-  if (!Array.isArray(value.packs)) errors.push("profile.packs must be an array");
-  else value.packs.forEach((pack, index) => {
-    const label = `profile.packs[${index}]`;
-    if (!exactKeys(pack, ["id", "state", "reason"], [], label, errors)) return;
-    string(pack.id, `${label}.id`, errors, idPattern);
+  if (!object(value.packs)) errors.push("profile.packs must be an identity-keyed object");
+  else Object.entries(value.packs).forEach(([id, pack]) => {
+    const label = `profile.packs.${id}`;
+    string(id, `${label} identity`, errors, idPattern);
+    if (!exactKeys(pack, ["state", "reason"], [], label, errors)) return;
     if (!packStates.includes(pack.state)) errors.push(`${label}.state is invalid`);
     string(pack.reason, `${label}.reason`, errors);
   });
   strings(value.conflicts, "profile.conflicts", errors);
   const ids = value.rules?.map((rule) => rule.id) ?? [];
   if (new Set(ids).size !== ids.length) errors.push("profile.rules contains duplicate ids");
-  const packIds = value.packs?.map((pack) => pack.id) ?? [];
-  if (new Set(packIds).size !== packIds.length) errors.push("profile.packs contains duplicate ids");
-  const enabled = new Set((value.packs ?? []).filter((item) => ["enabled", "required"].includes(item.state)).map((item) => item.id));
-  for (const pack of value.packs ?? []) {
+  const profilePacks = object(value.packs) ? Object.entries(value.packs) : [];
+  const enabled = new Set(profilePacks.filter(([, item]) => ["enabled", "required"].includes(item.state)).map(([id]) => id));
+  for (const [id, pack] of profilePacks) {
     if (!["enabled", "required"].includes(pack.state)) continue;
-    if (pack.id === "agent-workflow-governance" && enabled.has("forgerail-core")) errors.push("profile has duplicate core workflow owners");
+    if (id === "agent-workflow-governance" && enabled.has("forgerail-core")) errors.push("profile has duplicate core workflow owners");
   }
 }
 
@@ -394,6 +393,8 @@ function validateAdoptionPlan(value, errors) {
   });
   const writePaths = value.proposedWrites?.map((write) => write.path) ?? [];
   if (new Set(writePaths).size !== writePaths.length) errors.push("adoptionPlan.proposedWrites contains duplicate paths");
+  const writeWorkspaces = (value.proposedWrites ?? []).map((write) => write.workspaceSha256).filter((identity) => typeof identity === "string");
+  if (new Set(writeWorkspaces).size > 1) errors.push("adoptionPlan.proposedWrites must share one workspace identity");
   if (value.requiredConfirmation !== true) errors.push("adoptionPlan.requiredConfirmation must equal true");
   strings(value.verification, "adoptionPlan.verification", errors, { min: 1, unique: true });
   strings(value.confirmedNonMutations, "adoptionPlan.confirmedNonMutations", errors, { min: 1, unique: true });

@@ -59,7 +59,7 @@ function deniedFileName(name) {
 function safeRelativePath(path) {
   const segments = path.split("/");
   return path !== "" && !path.startsWith("/") && !path.includes("\\")
-    && !segments.includes("..") && !segments.some((segment) => deniedSegments.has(segment))
+    && !segments.includes("..") && !segments.some((segment) => deniedSegments.has(segment.toLowerCase()))
     && !segments.some((segment) => deniedFileName(segment));
 }
 

@@ -141,9 +141,16 @@ try {
 
   pass("windows-and-parent-paths-rejected", () => {
     const adapter = clone(readJson(resolve(fixtureRoot, "host-adapter.codex.valid.json")));
-    for (const path of ["..\\outside", "C:\\outside", "\\\\server\\share"]) {
+    for (const path of ["..\\outside", "C:\\outside", "\\\\server\\share", "dir//AGENTS.md", "dir/./AGENTS.md", "dir/"]) {
       adapter.bindingTarget = path;
       assert.equal(validateContract("host-adapter", adapter).valid, false, path);
+    }
+  });
+
+  pass("adoption-rejects-noncanonical-relative-path-segments", () => {
+    const workspace = temporary("forgerail-adoption-noncanonical-path-");
+    for (const path of ["dir//AGENTS.md", "dir/./AGENTS.md", "dir/"]) {
+      assert.throws(() => resolveAdoptionWriteTarget(workspace, path), /unsafe/, path);
     }
   });
 
@@ -163,6 +170,14 @@ try {
   const resolved = resolveProfile(profileInput, [pack]);
   assert.equal(resolved.valid, true, resolved.errors.join("; "));
   const envelope = readJson(resolve(fixtureRoot, "task-envelope.valid.json"));
+
+  pass("profile-schema-encodes-pack-identity", () => {
+    const schema = readJson(resolve(root, "contracts/effective-profile.schema.json"));
+    assert.equal(schema.properties?.packs?.type, "object");
+    assert.equal(schema.properties?.packs?.propertyNames?.pattern, "^[a-z][a-z0-9-]+$");
+    assert.deepEqual(Object.keys(resolved.profile.packs), [pack.id]);
+    assert.deepEqual(resolved.profile.packs[pack.id], { state: "required", reason: "Required for the fixture." });
+  });
 
   pass("required-pack-and-effective-profile-bound", () => {
     const missing = createLaunchContract(resolved.profile, envelope, "Codex", [pack]);
@@ -200,6 +215,24 @@ try {
     assert.equal(packs?.type, "object");
     assert.equal(packs?.propertyNames?.pattern, "^[a-z][a-z0-9-]+$");
     assert.equal(packs?.additionalProperties?.pattern, "^[0-9a-f]{64}$");
+  });
+
+  pass("launch-composition-does-not-mutate-requested-pack-order", () => {
+    const secondPack = readJson(resolve(root, "packs/architecture-convergence-audit.json"));
+    const twoPackInput = {
+      ...profileInput,
+      packs: [
+        { id: pack.id, state: "enabled", reason: "Enabled for ordering regression." },
+        { id: secondPack.id, state: "enabled", reason: "Enabled for ordering regression." },
+      ],
+    };
+    const twoPackProfile = resolveProfile(twoPackInput, [pack, secondPack]);
+    assert.equal(twoPackProfile.valid, true, twoPackProfile.errors.join("; "));
+    const requested = { ...envelope, packs: [pack.id, secondPack.id] };
+    const before = JSON.stringify(requested);
+    const launch = createLaunchContract(twoPackProfile.profile, requested, "Codex", [pack, secondPack]);
+    assert.equal(launch.valid, true, launch.errors.join("; "));
+    assert.equal(JSON.stringify(requested), before);
   });
 
   pass("malformed-receipt-fails-closed", () => {
@@ -413,6 +446,32 @@ try {
     assert.equal(readFileSync(resolve(existingWorkspace, "AGENTS.md"), "utf8"), expected);
     assert.equal(receipt.contentSha256, createHash("sha256").update(expected).digest("hex"));
     assert.equal(readdirSync(existingWorkspace).some((name) => name.startsWith(".forgerail-") && (name.endsWith(".tmp") || name.endsWith(".bak"))), false);
+  });
+
+  pass("adoption-rejects-duplicate-managed-boundaries", () => {
+    const marker = "forgerail:binding:codex:v1";
+    for (const duplicate of ["start", "end"]) {
+      const workspace = temporary(`forgerail-adoption-duplicate-${duplicate}-`);
+      const start = `<!-- ${marker}:start -->`;
+      const end = `<!-- ${marker}:end -->`;
+      const content = duplicate === "start"
+        ? `${start}\n${start}\nmanaged\n${end}\n`
+        : `${start}\nmanaged\n${end}\n${end}\n`;
+      writeFileSync(resolve(workspace, "AGENTS.md"), content);
+      assert.throws(() => planAdoption(root, workspace, ["codex"]), /duplicate managed markers/);
+      assert.equal(readFileSync(resolve(workspace, "AGENTS.md"), "utf8"), content);
+    }
+  });
+
+  pass("adoption-plan-requires-one-workspace-identity", () => {
+    const workspace = temporary("forgerail-adoption-plan-workspace-identity-");
+    const plan = planAdoption(root, workspace, ["codex", "cursor"]);
+    const changed = clone(plan);
+    changed.proposedWrites[1].workspaceSha256 = "0".repeat(64);
+    changed.proposedWrites[1].approvalSha256 = adoptionWriteApprovalDigest(changed.proposedWrites[1]);
+    const validation = validateContract("adoption-plan", changed);
+    assert.equal(validation.valid, false);
+    assert.ok(validation.errors.includes("adoptionPlan.proposedWrites must share one workspace identity"));
   });
 
   pass("adoption-preserves-existing-binding-mode-across-umask", () => {
@@ -642,6 +701,17 @@ try {
       const publicRoot = publicLayoutFixture();
       writeFileSync(resolve(publicRoot, path), "PRIVATE_VALUE=should-not-project\n");
       const output = resolve(temporary("forgerail-sensitive-name-output-parent-"), "bundle");
+      assert.throws(() => buildBundle(publicRoot, output), /path is not allowed/);
+      assert.equal(existsSync(output), false);
+    }
+  });
+
+  if (buildBundle) pass("bundle-applies-directory-denylist-case-insensitively", () => {
+    for (const path of ["scripts/NODE_MODULES/private.txt", "docs/COVERAGE/private.txt", "scripts/.CACHE/private.txt"]) {
+      const publicRoot = publicLayoutFixture();
+      mkdirSync(dirname(resolve(publicRoot, path)), { recursive: true });
+      writeFileSync(resolve(publicRoot, path), "private\n");
+      const output = resolve(temporary("forgerail-denied-directory-output-parent-"), "bundle");
       assert.throws(() => buildBundle(publicRoot, output), /path is not allowed/);
       assert.equal(existsSync(output), false);
     }

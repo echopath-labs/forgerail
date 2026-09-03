@@ -24,7 +24,7 @@ import { validateContract } from "./contracts.mjs";
 
 const levels = ["plugin-only", "lightweight-adoption", "persisted-governance"];
 const adoptionOperations = new Set(["create", "append-managed-block", "replace-managed-block"]);
-const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*(?:^|[\\/])\.\.(?:[\\/]|$))[^\\]+$/;
+const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\/$)[^\\]+$/;
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -341,6 +341,16 @@ function templateName(adapterId, strategy) {
   throw new Error(`no binding template for host adapter: ${adapterId}`);
 }
 
+function countLiteralOccurrences(content, marker) {
+  let count = 0;
+  let offset = 0;
+  while ((offset = content.indexOf(marker, offset)) >= 0) {
+    count += 1;
+    offset += marker.length;
+  }
+  return count;
+}
+
 function proposedWrite(workspace, workspaceSha256, path, content, managedMarker) {
   const target = adoptionTarget(workspace, path);
   const exists = existsSync(target);
@@ -348,11 +358,13 @@ function proposedWrite(workspace, workspaceSha256, path, content, managedMarker)
   const prior = exists ? readAdoptionTarget(target, path) : null;
   const start = `<!-- ${managedMarker}:start -->`;
   const end = `<!-- ${managedMarker}:end -->`;
-  const hasStart = prior?.includes(start) ?? false;
-  const hasEnd = prior?.includes(end) ?? false;
+  const startCount = prior === null ? 0 : countLiteralOccurrences(prior, start);
+  const endCount = prior === null ? 0 : countLiteralOccurrences(prior, end);
+  const hasStart = startCount > 0;
+  const hasEnd = endCount > 0;
   if (hasStart !== hasEnd) throw new Error(`adoption target has an incomplete managed marker: ${path}`);
   if (hasStart && prior.indexOf(start) > prior.indexOf(end)) throw new Error(`adoption target has reversed managed markers: ${path}`);
-  if (hasStart && (prior.match(new RegExp(start.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))?.length ?? 0) !== 1) throw new Error(`adoption target has duplicate managed markers: ${path}`);
+  if (startCount > 1 || endCount > 1) throw new Error(`adoption target has duplicate managed markers: ${path}`);
   if (exists && path === ".cursor/rules/forgerail.mdc" && !hasStart) throw new Error("Cursor binding target already exists without a ForgeRail managed marker");
   const operation = exists ? (hasStart ? "replace-managed-block" : "append-managed-block") : "create";
   const approvedContent = operation === "replace-managed-block" && content.indexOf(start) > 0
