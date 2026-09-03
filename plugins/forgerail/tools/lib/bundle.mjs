@@ -201,7 +201,7 @@ export function buildBundle(rootInput, output) {
   const layout = sourceLayout(root);
   regularFileBelow(root, layout.catalog, "marketplace catalog");
   const payload = packagePayload(root);
-  const externalPlugins = externalPluginNames.map((name) => {
+  const externalPluginRoots = externalPluginNames.map((name) => {
     const pluginRoot = layout.externalRoots[name];
     if (!existsSync(pluginRoot)) throw new Error(`external Plugin source is missing: ${name}`);
     const pluginBase = confined(root, pluginRoot) ? root : confined(dirname(root), pluginRoot) ? dirname(root) : null;
@@ -210,8 +210,15 @@ export function buildBundle(rootInput, output) {
     }
     const realPluginRoot = regularDirectoryBelow(pluginBase, pluginRoot, `external Plugin ${name}`);
     if (!confined(pluginBase, realPluginRoot)) throw new Error(`external Plugin source escapes supported roots: ${name}`);
-    return { name, root: realPluginRoot, files: externalPayload(realPluginRoot) };
+    return { name, root: realPluginRoot };
   });
+  if (externalPluginRoots.some((plugin) => confined(plugin.root, target))) {
+    throw new Error("output must not be inside an external Plugin source tree");
+  }
+  const externalPlugins = externalPluginRoots.map((plugin) => ({
+    ...plugin,
+    files: externalPayload(plugin.root),
+  }));
 
   const projections = [
     { source: layout.catalog, sourceIdentity: "marketplace/.agents/plugins/marketplace.json", target: ".agents/plugins/marketplace.json" },

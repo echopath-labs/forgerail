@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   cpSync,
@@ -219,6 +220,29 @@ try {
     assert.equal(existsSync(driftOutside), false);
   });
 
+  pass("adoption-rejects-non-regular-targets-before-read", () => {
+    for (const existing of [false, true]) {
+      const workspace = temporary(`forgerail-adoption-fifo-${existing ? "existing" : "create"}-`);
+      const target = resolve(workspace, "AGENTS.md");
+      if (existing) writeFileSync(target, "existing instructions\n");
+      const write = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
+      rmSync(target, { force: true });
+      execFileSync("mkfifo", [target]);
+      assert.throws(
+        () => applyApprovedAdoptionWrite(workspace, write, write.approvalSha256),
+        /not a regular file|changed before write/,
+      );
+    }
+
+    const directoryWorkspace = temporary("forgerail-adoption-directory-target-");
+    const directoryWrite = planAdoption(root, directoryWorkspace, ["codex"]).proposedWrites[0];
+    mkdirSync(resolve(directoryWorkspace, "AGENTS.md"));
+    assert.throws(
+      () => applyApprovedAdoptionWrite(directoryWorkspace, directoryWrite, directoryWrite.approvalSha256),
+      /not a regular file/,
+    );
+  });
+
   pass("adoption-applies-only-approved-content", () => {
     const workspace = temporary("forgerail-adoption-approved-content-");
     const plan = planAdoption(root, workspace, ["codex", "cursor"]);
@@ -413,6 +437,16 @@ try {
     assert.throws(() => buildBundle(publicRoot, output), /output must not be inside the source tree/);
     assert.equal(existsSync(output), false);
     assert.deepEqual(readdirSync(resolve(publicRoot, "docs")).sort(), before);
+  });
+
+  pass("bundle-rejects-output-inside-private-layout-external-plugin", () => {
+    const privateRoot = privateLayoutFixture(publicLayoutFixture());
+    const pluginRoot = resolve(privateRoot, "..", "forgerail-release-safety");
+    const output = resolve(pluginRoot, "projection");
+    const before = readdirSync(pluginRoot).sort();
+    assert.throws(() => buildBundle(privateRoot, output), /external Plugin source tree/);
+    assert.equal(existsSync(output), false);
+    assert.deepEqual(readdirSync(pluginRoot).sort(), before);
   });
 
   pass("bundle-rejects-duplicate-projection-targets", () => {

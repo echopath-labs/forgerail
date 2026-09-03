@@ -55,18 +55,34 @@ function adoptionTarget(workspace, path) {
   if (typeof path !== "string" || !portableRelativePath.test(path)) throw new Error(`adoption target path is unsafe: ${path}`);
   const root = realpathSync(resolve(workspace));
   let cursor = root;
-  for (const segment of path.split("/")) {
+  const segments = path.split("/");
+  for (const [index, segment] of segments.entries()) {
     const candidate = resolve(cursor, segment);
     if (!confined(root, candidate)) throw new Error(`adoption target escapes workspace: ${path}`);
     const metadata = linkAwareStat(candidate);
     if (metadata !== null) {
       if (metadata.isSymbolicLink()) throw new Error(`adoption target cannot traverse a symbolic link: ${path}`);
+      const final = index === segments.length - 1;
+      if (final && !metadata.isFile()) throw new Error(`adoption target is not a regular file: ${path}`);
+      if (!final && !metadata.isDirectory()) throw new Error(`adoption target ancestor is not a regular directory: ${path}`);
       const observed = realpathSync(candidate);
       if (!confined(root, observed)) throw new Error(`adoption target escapes workspace: ${path}`);
       cursor = observed;
     } else cursor = candidate;
   }
   return cursor;
+}
+
+function readAdoptionTarget(path, label) {
+  let descriptor;
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    const metadata = fstatSync(descriptor);
+    if (!metadata.isFile()) throw new Error(`adoption target is not a regular file: ${label}`);
+    return readFileSync(descriptor, "utf8");
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+  }
 }
 
 export function resolveAdoptionWriteTarget(workspace, path) {
@@ -203,7 +219,7 @@ export function observeAdoptionLevel(workspace, adapters = []) {
   if (existsSync(resolve(root, "FORGERAIL.md"))) return "lightweight-adoption";
   for (const adapter of adapters) {
     const target = adoptionTarget(root, adapter.bindingTarget);
-    if (existsSync(target) && statSync(target).isFile() && read(target).includes(`<!-- ${adapter.managedMarker}:start -->`)) return "lightweight-adoption";
+    if (existsSync(target) && readAdoptionTarget(target, adapter.bindingTarget).includes(`<!-- ${adapter.managedMarker}:start -->`)) return "lightweight-adoption";
   }
   return "plugin-only";
 }
@@ -220,7 +236,7 @@ function proposedWrite(workspace, path, content, managedMarker) {
   const target = adoptionTarget(workspace, path);
   const exists = existsSync(target);
   if (exists && !statSync(target).isFile()) throw new Error(`adoption target is not a file: ${path}`);
-  const prior = exists ? read(target) : null;
+  const prior = exists ? readAdoptionTarget(target, path) : null;
   const start = `<!-- ${managedMarker}:start -->`;
   const end = `<!-- ${managedMarker}:end -->`;
   const hasStart = prior?.includes(start) ?? false;
@@ -248,7 +264,7 @@ function proposedWrite(workspace, path, content, managedMarker) {
 export function renderProposedWrite(workspace, write) {
   const content = approvedContent(write);
   const target = adoptionTarget(workspace, write.path);
-  const prior = existsSync(target) ? read(target) : "";
+  const prior = existsSync(target) ? readAdoptionTarget(target, write.path) : "";
   if (write.operation === "create") return content;
   if (sha256(prior) !== write.baseSha256) throw new Error(`base digest drifted for ${write.path}`);
   if (write.operation === "append-managed-block") return `${prior.replace(/\s*$/, "")}\n\n${content}`;
@@ -286,9 +302,12 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
       if (creating) {
         if (pathStat !== null) throw new Error(`adoption target changed before write: ${approvedWrite.path}`);
       } else {
-        sourceDescriptor = openSync(leaf, constants.O_RDONLY | constants.O_NOFOLLOW);
+        if (pathStat === null || !pathStat.isFile()) {
+          throw new Error(`adoption target is not a regular file: ${approvedWrite.path}`);
+        }
+        sourceDescriptor = openSync(leaf, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
         sourceStat = fstatSync(sourceDescriptor);
-        if (pathStat === null || pathStat.isSymbolicLink() || !sameFile(sourceStat, pathStat)) {
+        if (!sourceStat.isFile() || pathStat.isSymbolicLink() || !sameFile(sourceStat, pathStat)) {
           throw new Error(`adoption target changed before write: ${approvedWrite.path}`);
         }
         const observed = realpathSync(leaf);

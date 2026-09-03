@@ -71,6 +71,7 @@ for (const required of [
   "accepted-status-missing-event-rejected",
   "unknown-status-rejected",
   "documented-statuses-supported",
+  "explicit-paused-status-propagates",
   "documented-operations-approval-mapping",
   "failed-event-status-mismatch-rejected",
   "accepted-event-status-mismatch-rejected",

@@ -165,8 +165,8 @@ export function evaluateOrchestration(input) {
   }
 
   const failed = new Set(input.events.failedWorkItems);
-  const paused = descendants(input.workItems, failed);
-  for (const item of input.workItems) if (item.status === "paused") paused.add(item.id);
+  const explicitPaused = input.workItems.filter((item) => item.status === "paused").map((item) => item.id);
+  const paused = descendants(input.workItems, new Set([...failed, ...explicitPaused]));
   const held = new Set(input.workItems.filter((item) => ["active", "review-required", "paused", "blocked"].includes(item.status)).map((item) => item.id));
   const accepted = new Set(input.events.acceptedWorkItems);
   const preservedAccepted = [...accepted].filter((id) => !paused.has(id)).sort();
