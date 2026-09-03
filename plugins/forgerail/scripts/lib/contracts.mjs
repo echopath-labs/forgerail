@@ -259,11 +259,9 @@ function validateLaunch(value, errors) {
   if (!exactKeys(value, ["schemaVersion", "envelope", "effectiveProfile", "effectivePackManifests", "effectiveRuleSources", "hostAgent", "executionOwner"], [], "launch", errors)) return;
   schemaVersion(value.schemaVersion, "launch", errors);
   validateEnvelope(value.envelope, errors, "launch.envelope");
-  if (exactKeys(value.effectiveProfile, ["workspace", "digest"], [], "launch.effectiveProfile", errors)) {
-    string(value.effectiveProfile.workspace, "launch.effectiveProfile.workspace", errors);
+  if (exactKeys(value.effectiveProfile, ["digest"], [], "launch.effectiveProfile", errors)) {
     string(value.effectiveProfile.digest, "launch.effectiveProfile.digest", errors, digestPattern);
   }
-  if (value.effectiveProfile?.workspace !== value.envelope?.ownerWorkspace) errors.push("launch Effective Profile workspace must match Task Envelope owner workspace");
   if (!object(value.effectivePackManifests)) errors.push("launch.effectivePackManifests must be an object keyed by Pack identity");
   else for (const [id, manifestDigest] of Object.entries(value.effectivePackManifests)) {
     string(id, "launch.effectivePackManifests Pack identity", errors, idPattern);

@@ -1,18 +1,18 @@
 {
-  "name": "production-deployment-requires-independent-approval",
+  "name": "staging-deployment-does-not-require-production-approval",
   "input": {
     "workItems": [
       {
-        "id": "production",
-        "ownerWorkspace": "/workspaces/production",
-        "repository": "production",
-        "branch": "release/production",
+        "id": "staging",
+        "ownerWorkspace": "/workspaces/staging",
+        "repository": "staging",
+        "branch": "release/staging",
         "pr": null,
-        "releaseIdentity": "production",
+        "releaseIdentity": "staging",
         "aggregateWrites": [],
         "dependencies": [],
         "status": "pending",
-        "deploymentEnvironment": "production",
+        "deploymentEnvironment": "staging",
         "requestedOperations": ["deploy"],
         "grantedApprovals": ["release-approval"]
       }
@@ -23,10 +23,8 @@
     "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
   },
   "expected": {
-    "missingApprovals": [
-      { "workItem": "production", "operation": "deploy", "required": "production-change-approval" }
-    ],
-    "waves": [],
+    "missingApprovals": [],
+    "waves": [["staging"]],
     "unresolved": []
   }
 }

@@ -46,7 +46,8 @@ Evaluate each requested action against its exact current gate. In particular:
 
 - push, Draft PR, or remote CI may require `remote-integration-approval`;
 - `ready`, `merge`, `tag`, `publish`, or `release` requires `release-approval` plus any stricter project runbook gate;
-- production `deploy` requires both `release-approval` and an independent `production-change-approval`, plus any stricter project runbook gate;
+- every `deploy` declares `deploymentEnvironment` as `development`, `preview`, `staging`, or `production`;
+- production `deploy` requires both `release-approval` and an independent `production-change-approval`, plus any stricter project runbook gate; non-production deploys require the release gate but not the production-change gate;
 - `deprecate`, `archive`, `delete`, `redirect`, `transfer`, `repository-transfer`, `default-branch`, `ruleset`, or `lifecycle-change` requires `lifecycle-change-approval` or a more specific project gate.
 
 Never infer one row from another. Pack availability, enablement, task dispatch, durable-record approval, and transport delivery grant none of them.

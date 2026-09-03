@@ -11,9 +11,9 @@
     "effectiveProfile": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["workspace", "digest"],
+      "description": "Identity of the validated effective profile. Workspace identity is represented once by envelope.ownerWorkspace.",
+      "required": ["digest"],
       "properties": {
-        "workspace": { "type": "string", "minLength": 1 },
         "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
       }
     },

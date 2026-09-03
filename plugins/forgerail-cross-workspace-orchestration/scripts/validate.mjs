@@ -78,6 +78,7 @@ for (const required of [
   "self-dependency-rejected",
   "dependency-cycle-rejected",
   "production-deployment-requires-independent-approval",
+  "staging-deployment-does-not-require-production-approval",
 ]) if (!results.some(({ name }) => name === required)) errors.push(`missing fixture: ${required}`);
 
 for (const result of results) if (!result.passed) errors.push(`fixture failed: ${result.name}`);

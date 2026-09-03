@@ -12,6 +12,7 @@
         "aggregateWrites": [],
         "dependencies": [],
         "status": "pending",
+        "deploymentEnvironment": "production",
         "requestedOperations": ["push", "draft-pr", "remote-ci", "ready", "merge", "tag", "publish", "deploy", "release", "lifecycle-change", "deprecate", "archive", "delete", "redirect", "transfer", "repository-transfer", "default-branch", "ruleset"],
         "grantedApprovals": []
       }

@@ -117,7 +117,7 @@ export function createLaunchContract(profile, envelope, hostAgent, packManifests
   const launch = {
     schemaVersion: "1.0",
     envelope,
-    effectiveProfile: { workspace: profile.workspace, digest: digest(profile) },
+    effectiveProfile: { digest: digest(profile) },
     effectivePackManifests: Object.fromEntries([...activePacks].sort().flatMap((id) => {
       const manifest = manifests.get(id);
       return manifest ? [[id, digest(manifest)]] : [];

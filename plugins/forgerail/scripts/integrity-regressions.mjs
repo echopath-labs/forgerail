@@ -169,7 +169,8 @@ try {
     assert.ok(missing.errors.some((error) => error.includes("omits required pack")));
     const included = createLaunchContract(resolved.profile, { ...envelope, packs: [pack.id] }, "Codex", [pack]);
     assert.equal(included.valid, true, included.errors.join("; "));
-    assert.equal(included.launch.effectiveProfile.workspace, profileInput.workspace);
+    assert.equal(Object.hasOwn(included.launch.effectiveProfile, "workspace"), false);
+    assert.equal(included.launch.envelope.ownerWorkspace, profileInput.workspace);
     assert.match(included.launch.effectiveProfile.digest, /^[0-9a-f]{64}$/);
     assert.deepEqual(Object.keys(included.launch.effectivePackManifests), [pack.id]);
     assert.match(included.launch.effectivePackManifests[pack.id], /^[0-9a-f]{64}$/);
@@ -251,7 +252,7 @@ try {
     assert.equal(validateContract("host-adapter", { ...adapter, bindingTarget: "C:AGENTS.md" }).valid, false);
   });
 
-  pass("adoption-rejects-non-regular-targets-before-read", () => {
+  if (process.platform !== "win32") pass("adoption-rejects-non-regular-targets-before-read", () => {
     for (const existing of [false, true]) {
       const workspace = temporary(`forgerail-adoption-fifo-${existing ? "existing" : "create"}-`);
       const target = resolve(workspace, "AGENTS.md");
@@ -414,7 +415,7 @@ try {
           writeFileSync(target, "concurrent user change\n");
         },
       }),
-      /target changed during atomic replace/,
+      /target changed before atomic replace/,
     );
     assert.equal(readFileSync(target, "utf8"), "concurrent user change\n");
     assert.equal(readFileSync(prior, "utf8"), "existing instructions\n");
@@ -511,7 +512,7 @@ try {
     assert.throws(() => buildBundle(root, resolve(outputLink, "bundle")), /symbolic links|below the host temporary directory/);
   });
 
-  if (buildBundle) pass("bundle-rejects-non-regular-package-metadata-before-read", () => {
+  if (buildBundle && process.platform !== "win32") pass("bundle-rejects-non-regular-package-metadata-before-read", () => {
     const publicRoot = publicLayoutFixture();
     const packagePath = resolve(publicRoot, "package.json");
     rmSync(packagePath);

@@ -398,17 +398,14 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
     const identity = randomBytes(12).toString("hex");
     const temporary = `.forgerail-${identity}.tmp`;
     let backup;
-    let displaced;
     let sourceDescriptor;
     let temporaryDescriptor;
     let directoryDescriptor;
     let temporaryExists = false;
     let backupExists = false;
-    let displacedExists = false;
     let createdTarget = false;
     let replacementInstalled = false;
     let preserveBackup = false;
-    let preserveDisplaced = false;
     let temporaryStat;
     let sourceStat;
     let content;
@@ -470,29 +467,11 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
           throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
         }
         if (typeof testHooks.beforeReplace === "function") testHooks.beforeReplace();
-        displaced = `.forgerail-${randomBytes(12).toString("hex")}.displaced`;
-        if (linkAwareStat(displaced) !== null) throw new Error(`adoption displaced path already exists: ${approvedWrite.path}`);
-        renameSync(leaf, displaced);
-        displacedExists = true;
-        const displacedStat = lstatSync(displaced);
-        if (
-          displacedStat.isSymbolicLink()
-          || !sameFile(sourceStat, displacedStat)
-          || sha256(readFileSync(displaced, "utf8")) !== approvedWrite.baseSha256
-        ) {
-          try {
-            linkSync(displaced, leaf);
-            unlinkSync(displaced);
-            displacedExists = false;
-            fsyncSync(directoryDescriptor);
-          } catch {
-            preserveBackup = true;
-            preserveDisplaced = true;
-          }
-          throw new Error(`adoption target changed during atomic replace: ${approvedWrite.path}`);
+        const installPathStat = lstatSync(leaf);
+        if (installPathStat.isSymbolicLink() || !sameFile(sourceStat, installPathStat)) {
+          throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
         }
-        linkSync(temporary, leaf);
-        unlinkSync(temporary);
+        renameSync(temporary, leaf);
         temporaryExists = false;
         replacementInstalled = true;
       }
@@ -507,8 +486,6 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         unlinkSync(temporary);
         temporaryExists = false;
       } else {
-        unlinkSync(displaced);
-        displacedExists = false;
         unlinkSync(backup);
         backupExists = false;
         fsyncSync(directoryDescriptor);
@@ -522,30 +499,13 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
           renameSync(leaf, failed);
           const failedStat = lstatSync(failed);
           if (temporaryStat !== undefined && !failedStat.isSymbolicLink() && sameFile(temporaryStat, failedStat)) {
-            linkSync(backup, leaf);
+            renameSync(backup, leaf);
+            backupExists = false;
             unlinkSync(failed);
             replacementInstalled = false;
-            if (displacedExists) {
-              unlinkSync(displaced);
-              displacedExists = false;
-            }
           } else {
-            linkSync(failed, leaf);
-            unlinkSync(failed);
             preserveBackup = true;
-            preserveDisplaced = true;
           }
-          if (directoryDescriptor !== undefined) fsyncSync(directoryDescriptor);
-        } catch {
-          preserveBackup = true;
-          preserveDisplaced = true;
-        }
-      } else if (displacedExists && backupExists) {
-        try {
-          if (linkAwareStat(leaf) !== null) throw new Error(`adoption target occupied during recovery: ${approvedWrite.path}`);
-          linkSync(backup, leaf);
-          unlinkSync(displaced);
-          displacedExists = false;
           if (directoryDescriptor !== undefined) fsyncSync(directoryDescriptor);
         } catch {
           preserveBackup = true;
@@ -567,9 +527,6 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
       }
       if (backupExists && !preserveBackup) {
         try { unlinkSync(backup); } catch {}
-      }
-      if (displacedExists && !preserveDisplaced) {
-        try { unlinkSync(displaced); } catch {}
       }
     }
     });

@@ -6,7 +6,7 @@ const externalApprovalsByOperation = new Map([
   ["merge", ["release-approval"]],
   ["tag", ["release-approval"]],
   ["publish", ["release-approval"]],
-  ["deploy", ["release-approval", "production-change-approval"]],
+  ["deploy", ["release-approval"]],
   ["release", ["release-approval"]],
   ["lifecycle-change", ["lifecycle-change-approval"]],
   ["deprecate", ["lifecycle-change-approval"]],
@@ -20,6 +20,7 @@ const externalApprovalsByOperation = new Map([
 ]);
 const knownOperations = new Set(externalApprovalsByOperation.keys());
 const knownStatuses = new Set(["pending", "active", "review-required", "accepted", "failed", "paused", "blocked"]);
+const knownDeploymentEnvironments = new Set(["development", "preview", "staging", "production"]);
 
 function duplicates(values) {
   const seen = new Set();
@@ -82,6 +83,11 @@ function assertInput(input) {
     if (duplicateOperations.length > 0) throw new Error(`duplicate requested operations for ${item.id}: ${duplicateOperations.join(", ")}`);
     const unknownOperations = item.requestedOperations.filter((operation) => !knownOperations.has(operation));
     if (unknownOperations.length > 0) throw new Error(`unknown requested operations for ${item.id}: ${unknownOperations.join(", ")}`);
+    if (item.requestedOperations.includes("deploy")) {
+      if (!knownDeploymentEnvironments.has(item.deploymentEnvironment)) throw new Error(`deploy work item requires an explicit deploymentEnvironment for ${item.id}`);
+    } else if (item.deploymentEnvironment !== undefined) {
+      throw new Error(`deploymentEnvironment requires deploy operation for ${item.id}`);
+    }
   }
   const cycle = dependencyCycle(input.workItems);
   if (cycle) throw new Error(`work item dependency cycle: ${cycle.join(" -> ")}`);
@@ -191,6 +197,9 @@ export function evaluateOrchestration(input) {
     for (const operation of item.requestedOperations) {
       for (const required of externalApprovalsByOperation.get(operation) ?? []) {
         if (!granted.has(required)) missingApprovals.push({ workItem: item.id, operation, required });
+      }
+      if (operation === "deploy" && item.deploymentEnvironment === "production" && !granted.has("production-change-approval")) {
+        missingApprovals.push({ workItem: item.id, operation, required: "production-change-approval" });
       }
     }
   }
