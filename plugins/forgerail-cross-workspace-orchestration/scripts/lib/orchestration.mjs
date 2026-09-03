@@ -207,14 +207,17 @@ export function evaluateOrchestration(input) {
   const failed = new Set(input.events.failedWorkItems);
   const explicitPaused = input.workItems.filter((item) => item.status === "paused").map((item) => item.id);
   const paused = descendants(input.workItems, new Set([...failed, ...explicitPaused]));
-  const held = new Set(input.workItems.filter((item) => ["active", "review-required", "paused", "blocked"].includes(item.status)).map((item) => item.id));
+  const heldRoots = new Set([
+    ...input.workItems.filter((item) => ["active", "review-required", "paused", "blocked"].includes(item.status)).map((item) => item.id),
+    ...conflicts.flatMap(({ workItems }) => workItems),
+    ...missingApprovals.map(({ workItem }) => workItem),
+  ]);
+  const held = descendants(input.workItems, heldRoots);
   const accepted = new Set(input.events.acceptedWorkItems);
   const preservedAccepted = [...accepted].filter((id) => !paused.has(id)).sort();
   const blocked = new Set([
     ...paused,
     ...held,
-    ...conflicts.flatMap(({ workItems }) => workItems),
-    ...missingApprovals.map(({ workItem }) => workItem),
   ]);
   const scheduling = buildWaves(input.workItems, blocked);
 

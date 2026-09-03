@@ -32,7 +32,7 @@ npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --h
 npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex --host claude-code --host cursor
 ```
 
-每个 proposal 必须展示当前与目标层级、准确路径和内容、基线摘要、所需确认、验证步骤、支持状态与明确不执行的动作。ForgeRail 有意不提供 `apply-adoption` 命令。Agent 应先展示 proposal，等待人类判断。Node 集成必须把已批准的 `approvalSha256` 与可变 proposal 分开保存，并在应用时重新核验 canonical workspace 路径与已打开目录身份；同一路径下替换成另一个目录会使批准失效。随后只写入获批路径，在新任务中验证发现结果，并返回 Host Binding Receipt。
+每个 proposal 必须展示当前与目标层级、准确路径和内容、基线摘要、所需确认、验证步骤、支持状态与明确不执行的动作。ForgeRail 有意不提供 `apply-adoption` 命令。Agent 应先展示 proposal，等待人类判断。Node 集成必须把已批准的 `approvalSha256` 与可变 proposal 分开保存，并在应用时重新核验 canonical workspace 路径与已打开目录身份；即使摘要格式有效，apply 也只接受 `create`、`append-managed-block`、`replace-managed-block` 三种操作。同一路径下替换成另一个目录会使批准失效。若替换既有 binding 后的 post-install 校验失败，ForgeRail 只在目标缺失或仍指向已安装候选时原子恢复保留的原 inode；无法安全恢复时保留 recovery evidence，并回抛原始失败。随后只写入获批路径，在新任务中验证发现结果，并返回 Host Binding Receipt。
 
 ## Level 2 — Persisted Governance
 

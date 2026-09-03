@@ -12,11 +12,11 @@
 
 运行 Core、完整性回归、Shadow comparison、release source、Directory、一次性消费者与外部 Pack 验证。仍满足 alpha.4 显式约束的 alpha.3 Profile、Pack、Task Envelope 与 Return Receipt 必须继续通过；Launch Contract 与 Adoption Plan 已有意收紧，必须重新生成后再交给 alpha.4 validator。非法标识符、日期、路径、重复身份、缺少必需 Pack、畸形 receipt、逃逸 adoption target、不安全 bundle source 与矛盾 orchestration event 必须 fail closed。
 
-每一条 Adoption 候选写入都携带 `approvalSha256`，绑定 canonical workspace 身份与完整可执行元数据：路径、操作、基线摘要、内容摘要、内容与 managed marker。集成方必须把人类已批准的摘要与可变候选分开保存，并在应用写入时显式传入；ForgeRail 只校验并使用一次不可变字段快照，因此跨工作区重放、accessor 漂移或普通元数据漂移都会在选择目标路径或发生修改之前失败。替换既有 managed binding 时使用同目录原子 rename，并以 hard link 保留恢复入口，因此不会主动制造目标路径缺失的时间窗。四位年份（包括 `0000` 至 `0099`）按字面解释，不再触发 JavaScript 旧式的 1900 年偏移。
+每一条 Adoption 候选写入都携带 `approvalSha256`，绑定 canonical workspace 身份与完整可执行元数据：路径、操作、基线摘要、内容摘要、内容与 managed marker。集成方必须把人类已批准的摘要与可变候选分开保存，并在应用写入时显式传入；ForgeRail 只校验并使用一次不可变字段快照，且只接受 `create`、`append-managed-block`、`replace-managed-block` 三种操作，因此跨工作区重放、accessor 漂移、非法操作重放或普通元数据漂移都会在目标修改之前失败。替换既有 managed binding 时使用同目录原子 rename，并以 hard link 保留恢复入口，因此不会主动制造目标路径缺失的时间窗；若已安装 leaf 消失，可恢复原 binding 且不会遮蔽原始错误。四位年份（包括 `0000` 至 `0099`）按字面解释，不再触发 JavaScript 旧式的 1900 年偏移。
 
 相对 alpha.3 的兼容性收紧必须明确：contract 标识符至少包含两个字符且首字符必须为字母或数字；每个 Launch Contract 必须携带已验证的 `effectiveProfile` 摘要以及当前 active Pack manifest 的规范身份摘要，工作区身份仅在 `envelope.ownerWorkspace` 出现一次；每个 required active Pack 必须存在可用 manifest，并由 task envelope 显式包含。这些是 fail-closed 修正，不是未说明的兼容性回归。
 
-source-repository projection builder 仅供维护者使用，不得进入 npm 包或公共 CLI。公共投影必须可重复、排除私有过程证据，并保留公共 main 的文档基线。
+source-repository projection builder 仅供维护者使用，不得进入 npm 包或公共 CLI。公共投影必须要求 `package.json.files` 是显式数组、保持可重复、排除私有过程证据，并保留公共 main 的文档基线。
 
 ## 独立发布门
 

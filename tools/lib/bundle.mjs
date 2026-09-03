@@ -237,7 +237,8 @@ function packagePayload(boundRoot) {
   const root = boundRoot.path;
   const packageJsonBytes = readRegularFileBelowBoundRoot(boundRoot, "package.json", "package.json").bytes;
   const packageJson = JSON.parse(packageJsonBytes.toString("utf8"));
-  const entries = Array.isArray(packageJson.files) ? packageJson.files : [];
+  if (!Array.isArray(packageJson.files)) throw new Error("package.json files must be an array");
+  const entries = packageJson.files;
   const payload = ["package.json"];
   const packageLock = resolve(root, "package-lock.json");
   if (existsSync(packageLock)) {

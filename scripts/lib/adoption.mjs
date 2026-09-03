@@ -23,6 +23,7 @@ import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path
 import { validateContract } from "./contracts.mjs";
 
 const levels = ["plugin-only", "lightweight-adoption", "persisted-governance"];
+const adoptionOperations = new Set(["create", "append-managed-block", "replace-managed-block"]);
 const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*(?:^|[\\/])\.\.(?:[\\/]|$))[^\\]+$/;
 
 function sha256(value) {
@@ -189,6 +190,9 @@ function verifyApprovedWrite(write, approvedWriteDigest, workspaceSha256) {
     || snapshot.workspaceSha256 !== workspaceSha256
   ) {
     throw new Error("approved write digest does not match the proposed write");
+  }
+  if (!adoptionOperations.has(snapshot.operation)) {
+    throw new Error(`approved adoption operation is unsupported: ${snapshot.operation}`);
   }
   return snapshot;
 }
@@ -477,8 +481,8 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
       }
       if (typeof testHooks.afterInstall === "function") testHooks.afterInstall();
       verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
-      const installed = lstatSync(leaf);
-      if (installed.isSymbolicLink() || !sameFile(temporaryStat, installed)) {
+      const installed = linkAwareStat(leaf);
+      if (installed === null || installed.isSymbolicLink() || !sameFile(temporaryStat, installed)) {
         throw new Error(`adoption target identity mismatch after write: ${approvedWrite.path}`);
       }
       fsyncSync(directoryDescriptor);
@@ -495,10 +499,14 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
     } catch (error) {
       if (replacementInstalled && backupExists) {
         try {
-          const failed = `.forgerail-${randomBytes(12).toString("hex")}.failed`;
-          renameSync(leaf, failed);
-          const failedStat = lstatSync(failed);
-          if (temporaryStat !== undefined && !failedStat.isSymbolicLink() && sameFile(temporaryStat, failedStat)) {
+          const installed = linkAwareStat(leaf);
+          if (installed === null) {
+            renameSync(backup, leaf);
+            backupExists = false;
+            replacementInstalled = false;
+          } else if (temporaryStat !== undefined && !installed.isSymbolicLink() && sameFile(temporaryStat, installed)) {
+            const failed = `.forgerail-${randomBytes(12).toString("hex")}.failed`;
+            renameSync(leaf, failed);
             renameSync(backup, leaf);
             backupExists = false;
             unlinkSync(failed);
@@ -509,7 +517,6 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
           if (directoryDescriptor !== undefined) fsyncSync(directoryDescriptor);
         } catch {
           preserveBackup = true;
-          preserveDisplaced = true;
         }
       } else if (createdTarget) {
         try {

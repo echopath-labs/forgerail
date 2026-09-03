@@ -15,12 +15,13 @@ import {
   rmSync,
   symlinkSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve, win32 } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { applyApprovedAdoptionWrite, planAdoption, renderProposedWrite, resolveAdoptionWriteTarget } from "./lib/adoption.mjs";
+import { adoptionWriteApprovalDigest, applyApprovedAdoptionWrite, planAdoption, renderProposedWrite, resolveAdoptionWriteTarget } from "./lib/adoption.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
 import { readJson, validateContract } from "./lib/contracts.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
@@ -333,6 +334,19 @@ try {
     assert.equal(pathReads, 1);
   });
 
+  pass("adoption-rejects-approved-but-unsupported-operations", () => {
+    const workspace = temporary("forgerail-adoption-unsupported-operation-");
+    writeFileSync(resolve(workspace, "AGENTS.md"), "existing instructions\n");
+    const approved = clone(planAdoption(root, workspace, ["codex"]).proposedWrites[0]);
+    approved.operation = "delete";
+    approved.approvalSha256 = adoptionWriteApprovalDigest(approved);
+    assert.throws(
+      () => applyApprovedAdoptionWrite(workspace, approved, approved.approvalSha256),
+      /operation is unsupported/,
+    );
+    assert.equal(readFileSync(resolve(workspace, "AGENTS.md"), "utf8"), "existing instructions\n");
+  });
+
   pass("adoption-binds-approved-workspace-directory-identity", () => {
     const workspace = temporary("forgerail-adoption-workspace-identity-");
     const approved = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
@@ -419,6 +433,21 @@ try {
     );
     assert.equal(readFileSync(target, "utf8"), "concurrent user change\n");
     assert.equal(readFileSync(prior, "utf8"), "existing instructions\n");
+    assert.equal(readdirSync(workspace).some((name) => name.startsWith(".forgerail-")), false);
+  });
+
+  pass("adoption-restores-original-binding-when-installed-leaf-disappears", () => {
+    const workspace = temporary("forgerail-adoption-restore-missing-installed-");
+    const target = resolve(workspace, "AGENTS.md");
+    writeFileSync(target, "existing instructions\n");
+    const approved = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
+    assert.throws(
+      () => applyApprovedAdoptionWrite(workspace, approved, approved.approvalSha256, {
+        afterInstall() { unlinkSync(target); },
+      }),
+      /target identity mismatch after write/,
+    );
+    assert.equal(readFileSync(target, "utf8"), "existing instructions\n");
     assert.equal(readdirSync(workspace).some((name) => name.startsWith(".forgerail-")), false);
   });
 
@@ -520,6 +549,20 @@ try {
     const output = resolve(temporary("forgerail-package-fifo-output-parent-"), "bundle");
     assert.throws(() => buildBundle(publicRoot, output), /not a regular file/);
     assert.equal(existsSync(output), false);
+  });
+
+  if (buildBundle) pass("bundle-requires-an-explicit-package-publication-allowlist", () => {
+    for (const files of [undefined, "scripts/"]) {
+      const publicRoot = publicLayoutFixture();
+      const packagePath = resolve(publicRoot, "package.json");
+      const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
+      if (files === undefined) delete packageJson.files;
+      else packageJson.files = files;
+      writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+      const output = resolve(temporary("forgerail-missing-package-allowlist-output-parent-"), "bundle");
+      assert.throws(() => buildBundle(publicRoot, output), /package\.json files must be an array/);
+      assert.equal(existsSync(output), false);
+    }
   });
 
   if (buildBundle) pass("bundle-rejects-symlinked-allowlisted-ancestors-before-read", () => {
