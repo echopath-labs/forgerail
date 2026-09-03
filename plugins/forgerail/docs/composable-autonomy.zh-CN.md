@@ -144,7 +144,7 @@ ForgeRail 的 ecosystem contract 将 OpenDomain、OpenSpec 与 EchoPath 建模�
 
 ## 9. 跨产品对象边界
 
-ForgeRail 自有对象遵守 canonical serialization、stable ordering、digest、sanitized exposure、idempotency、unknown-field 与 version negotiation；跨产品对象只能被引用或适配，不能取得 ForgeRail Core 的所有权。
+ForgeRail 当前只对已经实现并有验证覆盖的对象提供各自的 schema、字段级校验、特定 digest、sanitized exposure 与 unknown-field fail-closed 行为；这不能推导为系统级 canonical serialization、stable ordering、统一 digest、idempotency 或 version negotiation 已经完成。上述通用协议仍属于后续任务。跨产品对象只能被引用或适配，不能取得 ForgeRail Core 的所有权。
 
 ### 9.1 Task Envelope 与 Delegation Envelope
 

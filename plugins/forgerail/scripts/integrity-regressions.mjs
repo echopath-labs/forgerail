@@ -10,6 +10,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -216,7 +217,7 @@ try {
     const driftOutside = resolve(temporary("forgerail-dangling-drift-outside-"), "missing-AGENTS.md");
     symlinkSync(driftOutside, resolve(driftWorkspace, "AGENTS.md"));
     assert.throws(() => renderProposedWrite(driftWorkspace, plan.proposedWrites[0]), /symbolic link/);
-    assert.throws(() => applyApprovedAdoptionWrite(driftWorkspace, plan.proposedWrites[0], plan.proposedWrites[0].approvalSha256), /symbolic link/);
+    assert.throws(() => applyApprovedAdoptionWrite(driftWorkspace, plan.proposedWrites[0], plan.proposedWrites[0].approvalSha256), /symbolic link|changed before write/);
     assert.equal(existsSync(driftOutside), false);
   });
 
@@ -239,7 +240,7 @@ try {
     mkdirSync(resolve(directoryWorkspace, "AGENTS.md"));
     assert.throws(
       () => applyApprovedAdoptionWrite(directoryWorkspace, directoryWrite, directoryWrite.approvalSha256),
-      /not a regular file/,
+      /not a regular file|changed before write/,
     );
   });
 
@@ -301,6 +302,21 @@ try {
     assert.equal(pathReads, 1);
   });
 
+  pass("adoption-binds-approved-workspace-directory-identity", () => {
+    const workspace = temporary("forgerail-adoption-workspace-identity-");
+    const approved = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
+    const originalWorkspace = `${workspace}-approved-inode`;
+    renameSync(workspace, originalWorkspace);
+    mkdirSync(workspace);
+
+    assert.throws(
+      () => applyApprovedAdoptionWrite(workspace, approved, approved.approvalSha256),
+      /approved write digest does not match|workspace directory identity changed/,
+    );
+    assert.deepEqual(readdirSync(workspace), []);
+    assert.deepEqual(readdirSync(originalWorkspace), []);
+  });
+
   pass("adoption-creates-bounded-parents-and-replaces-atomically", () => {
     const cursorWorkspace = temporary("forgerail-adoption-cursor-");
     const multiHost = planAdoption(root, cursorWorkspace, ["codex", "cursor"]);
@@ -341,6 +357,10 @@ try {
   });
 
   pass("bundle-private-public-layouts-are-deterministic-and-safe", () => {
+    const bundleImplementation = readFileSync(resolve(root, "tools/lib/bundle.mjs"), "utf8");
+    assert.match(bundleImplementation, /O_NOFOLLOW/);
+    assert.match(bundleImplementation, /readFileSync\(descriptor\)/);
+    assert.doesNotMatch(bundleImplementation, /copyFileSync/);
     const privateRoot = privateLayoutFixture();
     const privateOutput = resolve(temporary("forgerail-private-output-parent-"), "bundle");
     const privateSecondOutput = resolve(temporary("forgerail-private-output-parent-"), "bundle");

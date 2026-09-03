@@ -93,6 +93,56 @@ function sameFile(left, right) {
   return left.dev === right.dev && left.ino === right.ino;
 }
 
+function workspaceIdentitySha256(root, metadata) {
+  return sha256(JSON.stringify({
+    schemaVersion: "1.0",
+    canonicalPath: root,
+    device: String(metadata.dev),
+    inode: String(metadata.ino),
+  }));
+}
+
+function openBoundWorkspace(workspace) {
+  const root = realpathSync(resolve(workspace));
+  let descriptor;
+  try {
+    descriptor = openSync(root, constants.O_RDONLY | constants.O_NOFOLLOW | (constants.O_DIRECTORY ?? 0));
+    const metadata = fstatSync(descriptor, { bigint: true });
+    const pathMetadata = lstatSync(root, { bigint: true });
+    if (!metadata.isDirectory() || pathMetadata.isSymbolicLink() || !sameFile(metadata, pathMetadata)) {
+      throw new Error("workspace directory identity changed while binding approval");
+    }
+    return {
+      root,
+      descriptor,
+      metadata,
+      workspaceSha256: workspaceIdentitySha256(root, metadata),
+    };
+  } catch (error) {
+    if (descriptor !== undefined) closeSync(descriptor);
+    throw error;
+  }
+}
+
+function verifyBoundWorkspacePath(binding) {
+  const descriptorMetadata = fstatSync(binding.descriptor, { bigint: true });
+  let pathMetadata;
+  try {
+    pathMetadata = lstatSync(binding.root, { bigint: true });
+  } catch {
+    throw new Error("approved workspace directory identity changed before write");
+  }
+  if (
+    !descriptorMetadata.isDirectory()
+    || pathMetadata.isSymbolicLink()
+    || !sameFile(binding.metadata, descriptorMetadata)
+    || !sameFile(binding.metadata, pathMetadata)
+    || workspaceIdentitySha256(binding.root, descriptorMetadata) !== binding.workspaceSha256
+  ) {
+    throw new Error("approved workspace directory identity changed before write");
+  }
+}
+
 function snapshotAdoptionWrite(write) {
   return Object.freeze({
     workspaceSha256: write.workspaceSha256,
@@ -152,7 +202,7 @@ function removeCreatedParents(root, created) {
   }
 }
 
-function withBoundAdoptionParent(root, path, operation) {
+function withBoundAdoptionParent(root, path, workspaceMetadata, operation) {
   const parentPath = dirname(path);
   const segments = parentPath === "." ? [] : parentPath.split("/");
   const originalDirectory = process.cwd();
@@ -160,6 +210,10 @@ function withBoundAdoptionParent(root, path, operation) {
   let failed = false;
   try {
     process.chdir(root);
+    const enteredWorkspace = lstatSync(".", { bigint: true });
+    if (!enteredWorkspace.isDirectory() || !sameFile(workspaceMetadata, enteredWorkspace)) {
+      throw new Error("approved workspace directory identity changed before write");
+    }
     for (const segment of segments) {
       let metadata = linkAwareStat(segment);
       let directoryCreated = false;
@@ -231,8 +285,7 @@ function templateName(adapterId, strategy) {
   throw new Error(`no binding template for host adapter: ${adapterId}`);
 }
 
-function proposedWrite(workspace, path, content, managedMarker) {
-  const workspaceSha256 = sha256(realpathSync(resolve(workspace)));
+function proposedWrite(workspace, workspaceSha256, path, content, managedMarker) {
   const target = adoptionTarget(workspace, path);
   const exists = existsSync(target);
   if (exists && !statSync(target).isFile()) throw new Error(`adoption target is not a file: ${path}`);
@@ -262,9 +315,13 @@ function proposedWrite(workspace, path, content, managedMarker) {
 }
 
 export function renderProposedWrite(workspace, write) {
-  const content = approvedContent(write);
   const target = adoptionTarget(workspace, write.path);
   const prior = existsSync(target) ? readAdoptionTarget(target, write.path) : "";
+  return renderApprovedWriteContent(write, prior);
+}
+
+function renderApprovedWriteContent(write, prior) {
+  const content = approvedContent(write);
   if (write.operation === "create") return content;
   if (sha256(prior) !== write.baseSha256) throw new Error(`base digest drifted for ${write.path}`);
   if (write.operation === "append-managed-block") return `${prior.replace(/\s*$/, "")}\n\n${content}`;
@@ -277,11 +334,13 @@ export function renderProposedWrite(workspace, write) {
 }
 
 export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest) {
-  const root = realpathSync(resolve(workspace));
-  const approvedWrite = verifyApprovedWrite(write, approvedWriteDigest, sha256(root));
-  const content = renderProposedWrite(root, approvedWrite);
-  const creating = approvedWrite.operation === "create";
-  return withBoundAdoptionParent(root, approvedWrite.path, (leaf) => {
+  const binding = openBoundWorkspace(workspace);
+  try {
+    const { root } = binding;
+    const approvedWrite = verifyApprovedWrite(write, approvedWriteDigest, binding.workspaceSha256);
+    verifyBoundWorkspacePath(binding);
+    const creating = approvedWrite.operation === "create";
+    return withBoundAdoptionParent(root, approvedWrite.path, binding.metadata, (leaf) => {
     const boundParent = realpathSync(".");
     if (!confined(root, boundParent)) throw new Error(`adoption target parent moved outside workspace: ${approvedWrite.path}`);
     const identity = randomBytes(12).toString("hex");
@@ -297,10 +356,12 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
     let preserveBackup = false;
     let temporaryStat;
     let sourceStat;
+    let content;
     try {
       const pathStat = linkAwareStat(leaf);
       if (creating) {
         if (pathStat !== null) throw new Error(`adoption target changed before write: ${approvedWrite.path}`);
+        content = renderApprovedWriteContent(approvedWrite, "");
       } else {
         if (pathStat === null || !pathStat.isFile()) {
           throw new Error(`adoption target is not a regular file: ${approvedWrite.path}`);
@@ -313,7 +374,7 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         const observed = realpathSync(leaf);
         if (!confined(root, observed)) throw new Error(`adoption target escapes workspace before write: ${approvedWrite.path}`);
         const current = readFileSync(sourceDescriptor, "utf8");
-        if (sha256(current) !== approvedWrite.baseSha256) throw new Error(`base digest drifted for ${approvedWrite.path}`);
+        content = renderApprovedWriteContent(approvedWrite, current);
       }
 
       const mode = creating ? 0o644 : sourceStat.mode & 0o777;
@@ -399,13 +460,18 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         try { unlinkSync(backup); } catch {}
       }
     }
-  });
+    });
+  } finally {
+    closeSync(binding.descriptor);
+  }
 }
 
 export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "lightweight-adoption") {
   const root = resolve(workspace);
   if (!existsSync(root) || !statSync(root).isDirectory()) throw new Error("workspace must be an existing directory");
-  const realRoot = realpathSync(root);
+  const binding = openBoundWorkspace(root);
+  const realRoot = binding.root;
+  try {
   if (!levels.includes(proposedLevel)) throw new Error(`unknown adoption level: ${proposedLevel}`);
   if (proposedLevel === "persisted-governance") throw new Error("persisted-governance is evidence-gated and deferred in ForgeRail alpha.1");
   if (!Array.isArray(hostIds) || hostIds.length === 0) throw new Error("at least one explicit --host is required");
@@ -427,14 +493,14 @@ export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "li
     const adapter = selected[0];
     if (!adapter.bindingModes.includes("managed-block")) throw new Error(`${adapter.id} does not support a managed-block binding`);
     const content = read(resolve(pluginRoot, "templates/bindings", templateName(adapter.id, strategy)));
-    writes.push(proposedWrite(realRoot, adapter.bindingTarget, content, adapter.managedMarker));
+    writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker));
   } else if (strategy === "shared-contract-with-thin-bindings") {
     const contract = read(resolve(pluginRoot, "templates/FORGERAIL.md")).replace("{{HOSTS}}", selected.map((adapter) => adapter.displayName).join(", "));
-    writes.push(proposedWrite(realRoot, "FORGERAIL.md", contract, "forgerail:adoption-contract:v1"));
+    writes.push(proposedWrite(realRoot, binding.workspaceSha256, "FORGERAIL.md", contract, "forgerail:adoption-contract:v1"));
     for (const adapter of selected) {
       if (!adapter.bindingModes.includes("thin-reference")) throw new Error(`${adapter.id} does not support a thin-reference binding`);
       const content = read(resolve(pluginRoot, "templates/bindings", templateName(adapter.id, strategy)));
-      writes.push(proposedWrite(realRoot, adapter.bindingTarget, content, adapter.managedMarker));
+      writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker));
     }
   }
   const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hosts: hostIds, writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
@@ -467,4 +533,7 @@ export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "li
   const validation = validateContract("adoption-plan", plan);
   if (!validation.valid) throw new Error(`generated adoption plan is invalid: ${validation.errors.join("; ")}`);
   return plan;
+  } finally {
+    closeSync(binding.descriptor);
+  }
 }

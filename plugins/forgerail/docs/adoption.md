@@ -32,7 +32,7 @@ npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --h
 npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex --host claude-code --host cursor
 ```
 
-Every proposal must show the current and proposed level, exact target paths and content, base digests, each write's `approvalSha256`, required confirmation, verification steps, support status, and non-actions. ForgeRail deliberately has no `apply-adoption` command. The Agent shows the proposal and waits for a human decision. Node-based integrations must retain the approved `approvalSha256` separately from the mutable proposal, then pass it as the third argument to `applyApprovedAdoptionWrite()` from `scripts/lib/adoption.mjs` so the canonical workspace identity, destination, operation, marker, content, confinement, no-follow open, file identity and base digest are revalidated against one immutable snapshot at write time. The Agent verifies discovery in a new task and returns a Host Binding Receipt.
+Every proposal must show the current and proposed level, exact target paths and content, base digests, each write's `approvalSha256`, required confirmation, verification steps, support status, and non-actions. ForgeRail deliberately has no `apply-adoption` command. The Agent shows the proposal and waits for a human decision. Node-based integrations must retain the approved `approvalSha256` separately from the mutable proposal, then pass it as the third argument to `applyApprovedAdoptionWrite()` from `scripts/lib/adoption.mjs` so the canonical workspace path plus opened directory identity, destination, operation, marker, content, confinement, no-follow open, file identity and base digest are revalidated against one immutable snapshot at write time. Replacing the directory at the same path invalidates the approval. The Agent verifies discovery in a new task and returns a Host Binding Receipt.
 
 ## Level 2 — Persisted Governance
 
@@ -42,7 +42,7 @@ ForgeRail does not create `.forgerail/` at this level today. A future design mus
 
 ## Host support
 
-| Host | Native target | Alpha.3 status | Verification boundary |
+| Host | Native target | Alpha.4 status | Verification boundary |
 | --- | --- | --- | --- |
 | Codex | `AGENTS.md` | `supported` | New Codex task discovers all four main Skills and the approved binding is in scope |
 | Claude Code | `CLAUDE.md` | `profile-only` | Target and thin binding are modeled; end-to-end activation is not claimed |

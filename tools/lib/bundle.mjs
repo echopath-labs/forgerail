@@ -1,16 +1,20 @@
 import { createHash } from "node:crypto";
 import {
   chmodSync,
-  copyFileSync,
+  closeSync,
+  constants,
   existsSync,
+  fstatSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
   readFileSync,
   readdirSync,
   realpathSync,
   renameSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, relative, resolve, sep } from "node:path";
@@ -55,6 +59,23 @@ function regularFile(path, label) {
   if (metadata.isSymbolicLink()) throw new Error(`bundle source must not be a symbolic link: ${label}`);
   if (!metadata.isFile()) throw new Error(`bundle source is not a regular file: ${label}`);
   return metadata;
+}
+
+function sameFile(left, right) {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
+function readRegularFileNoFollow(path, label, observedMetadata) {
+  let descriptor;
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    const metadata = fstatSync(descriptor);
+    if (!metadata.isFile()) throw new Error(`bundle source is not a regular file: ${label}`);
+    if (!sameFile(metadata, observedMetadata)) throw new Error(`bundle source identity changed before copy: ${label}`);
+    return { bytes: readFileSync(descriptor), metadata };
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+  }
 }
 
 function regularFileBelow(root, path, label) {
@@ -244,21 +265,26 @@ export function buildBundle(rootInput, output) {
   try {
     for (const projection of projections) {
       if (!safeRelativePath(projection.target)) throw new Error(`bundle target path is not allowed: ${projection.target}`);
-      const metadata = regularFile(projection.source, projection.sourceIdentity);
+      const observedMetadata = regularFile(projection.source, projection.sourceIdentity);
       const destination = resolve(staging, projection.target);
       if (!confined(staging, destination)) throw new Error(`bundle target escapes staging directory: ${projection.target}`);
       mkdirSync(dirname(destination), { recursive: true });
-      copyFileSync(projection.source, destination);
+      const { bytes, metadata } = readRegularFileNoFollow(
+        projection.source,
+        projection.sourceIdentity,
+        observedMetadata,
+      );
       const mode = (metadata.mode & 0o111) === 0 ? 0o644 : 0o755;
+      writeFileSync(destination, bytes, { flag: "wx", mode });
       chmodSync(destination, mode);
-      const bytes = readFileSync(destination);
+      const stagedBytes = readFileSync(destination);
       inventory.push({
         path: projection.target,
         source: projection.sourceIdentity,
         type: "file",
         mode: mode.toString(8).padStart(3, "0"),
-        bytes: bytes.length,
-        sha256: createHash("sha256").update(bytes).digest("hex"),
+        bytes: stagedBytes.length,
+        sha256: createHash("sha256").update(stagedBytes).digest("hex"),
       });
     }
     renameSync(staging, target);

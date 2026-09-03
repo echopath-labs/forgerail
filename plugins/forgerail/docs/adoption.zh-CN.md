@@ -32,7 +32,7 @@ npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --h
 npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex --host claude-code --host cursor
 ```
 
-每个 proposal 必须展示当前与目标层级、准确路径和内容、基线摘要、所需确认、验证步骤、支持状态与明确不执行的动作。ForgeRail 有意不提供 `apply-adoption` 命令。Agent 应先展示 proposal，等待人类判断，只写入获批路径，在新任务中验证发现结果，并返回 Host Binding Receipt。
+每个 proposal 必须展示当前与目标层级、准确路径和内容、基线摘要、所需确认、验证步骤、支持状态与明确不执行的动作。ForgeRail 有意不提供 `apply-adoption` 命令。Agent 应先展示 proposal，等待人类判断。Node 集成必须把已批准的 `approvalSha256` 与可变 proposal 分开保存，并在应用时重新核验 canonical workspace 路径与已打开目录身份；同一路径下替换成另一个目录会使批准失效。随后只写入获批路径，在新任务中验证发现结果，并返回 Host Binding Receipt。
 
 ## Level 2 — Persisted Governance
 
@@ -42,7 +42,7 @@ ForgeRail 目前不会创建 `.forgerail/`。未来设计必须先定义 ownersh
 
 ## 宿主支持
 
-| 宿主 | 原生目标 | Alpha.3 状态 | 验证边界 |
+| 宿主 | 原生目标 | Alpha.4 状态 | 验证边界 |
 | --- | --- | --- | --- |
 | Codex | `AGENTS.md` | `supported` | 新 Codex 任务发现全部四个主 Skills，且已批准绑定处于作用域内 |
 | Claude Code | `CLAUDE.md` | `profile-only` | 已建模目标与薄绑定，不声称端到端激活已验证 |
