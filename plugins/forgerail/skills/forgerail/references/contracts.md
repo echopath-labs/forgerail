@@ -16,7 +16,7 @@ Task authorization expires with the task. Never promote it into workspace policy
 
 ## Launch Contract
 
-Give the host Agent the Envelope plus the effective rule sources. Specify outcomes and boundaries, not unnecessary implementation steps.
+Give the host Agent the resolved Envelope plus the effective rule sources. In the Launch Contract, `envelope.packs` is an identity-to-canonical-manifest-digest map rather than the Task Envelope's pre-resolution id list. This makes every requested Pack self-bound for schema-only consumers; `effectivePackManifests` retains the complete active Pack set. Specify outcomes and boundaries, not unnecessary implementation steps.
 
 ## Return Receipt
 

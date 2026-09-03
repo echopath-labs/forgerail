@@ -10,6 +10,7 @@ No shipping changes yet.
 - Reject duplicate Profile, Pack and cross-workspace identities; bind Launch Contracts to the validated Effective Profile and every required active Pack.
 - Harden Adoption and source-repository projection construction against symlink traversal, sensitive files, unsupported file types, partial output and non-deterministic inventory modes.
 - Restore failed Adoption replacements with one atomic rename, reject sensitive projection filenames case-insensitively, and reserve projection outputs without replacing concurrent directories.
+- Materialize every projection descendant through retained no-follow output-directory identities, and represent requested Launch Contract Packs as a schema-native identity-to-manifest-digest map.
 - Bind each approved Adoption write to its canonical workspace and complete executable metadata using one immutable apply-time snapshot, atomically replace an existing managed binding without a missing-target window, and preserve literal four-digit years including `0000` through `0099`.
 - Make Shadow comparison independent from its expected phrases and fail non-zero when coverage is missing.
 - Reject unknown orchestration operations, dependencies and conflicting terminal events; handle malformed receipts and package metadata without crashes or private absolute paths.

@@ -40,6 +40,7 @@ function findExisting(candidates) {
 
 const packageJson = json("package.json");
 const packageLock = json("package-lock.json");
+const launchContractSchema = json("contracts/launch-contract.schema.json");
 const publicCli = read("scripts/forgerail.mjs");
 const packCache = mkdtempSync(resolve(tmpdir(), "forgerail-pack-cache-"));
 const packEnvironment = Object.fromEntries(
@@ -72,6 +73,12 @@ record("npm-next-tag", packageJson.publishConfig?.tag === "next", packageJson.pu
 record("no-public-bundle-builder-command", !publicCli.includes('command === "build-bundle"'), "source-repository maintainer tool only");
 record("npm-pack-dry-run", packResult.status === 0 && packedFiles.length > 0, packResult.status === 0 ? `${packedFiles.length} files` : packResult.stderr.trim());
 record("bundle-builder-source-only", existsSync(resolve(root, "tools/lib/bundle.mjs")) && !packedFiles.includes("tools/lib/bundle.mjs"), "tools/lib/bundle.mjs");
+record(
+  "launch-requested-pack-schema-native-binding",
+  launchContractSchema.properties?.envelope?.properties?.packs?.type === "object"
+    && launchContractSchema.properties?.envelope?.properties?.packs?.additionalProperties?.pattern === "^[0-9a-f]{64}$",
+  launchContractSchema.properties?.envelope?.properties?.packs ?? null,
+);
 record(
   "prepublish-gate",
   ["npm test", "npm run test:integrity", "npm run test:shadow", "npm run test:release", "npm run test:consumer", "npm run test:directory"].every((command) => packageJson.scripts?.prepublishOnly?.includes(command)),

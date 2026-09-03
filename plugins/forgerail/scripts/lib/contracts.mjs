@@ -222,7 +222,7 @@ function validateProfile(value, errors) {
   }
 }
 
-function validateEnvelope(value, errors, label = "envelope") {
+function validateEnvelope(value, errors, label = "envelope", packsMode = "ids") {
   const keys = ["schemaVersion", "taskId", "intent", "nonGoals", "ownerWorkspace", "allowedOperations", "prohibitedOperations", "packs", "approvalGates", "validation", "returnContract"];
   if (!exactKeys(value, keys, [], label, errors)) return;
   schemaVersion(value.schemaVersion, label, errors);
@@ -232,7 +232,15 @@ function validateEnvelope(value, errors, label = "envelope") {
   string(value.ownerWorkspace, `${label}.ownerWorkspace`, errors);
   strings(value.allowedOperations, `${label}.allowedOperations`, errors, { unique: true });
   strings(value.prohibitedOperations, `${label}.prohibitedOperations`, errors, { unique: true });
-  strings(value.packs, `${label}.packs`, errors, { pattern: idPattern, unique: true });
+  if (packsMode === "manifest-map") {
+    if (!object(value.packs)) errors.push(`${label}.packs must be an object keyed by requested Pack identity`);
+    else for (const [id, manifestDigest] of Object.entries(value.packs)) {
+      string(id, `${label}.packs Pack identity`, errors, idPattern);
+      string(manifestDigest, `${label}.packs.${id}`, errors, digestPattern);
+    }
+  } else {
+    strings(value.packs, `${label}.packs`, errors, { pattern: idPattern, unique: true });
+  }
   strings(value.approvalGates, `${label}.approvalGates`, errors, { pattern: idPattern, unique: true });
   strings(value.validation, `${label}.validation`, errors);
   if (value.returnContract !== "forgerail-return-receipt-v1") errors.push(`${label}.returnContract is invalid`);
@@ -258,7 +266,7 @@ function validateProfileCandidate(value, errors) {
 function validateLaunch(value, errors) {
   if (!exactKeys(value, ["schemaVersion", "envelope", "effectiveProfile", "effectivePackManifests", "effectiveRuleSources", "hostAgent", "executionOwner"], [], "launch", errors)) return;
   schemaVersion(value.schemaVersion, "launch", errors);
-  validateEnvelope(value.envelope, errors, "launch.envelope");
+  validateEnvelope(value.envelope, errors, "launch.envelope", "manifest-map");
   if (exactKeys(value.effectiveProfile, ["digest"], [], "launch.effectiveProfile", errors)) {
     string(value.effectiveProfile.digest, "launch.effectiveProfile.digest", errors, digestPattern);
   }
@@ -267,10 +275,10 @@ function validateLaunch(value, errors) {
     string(id, "launch.effectivePackManifests Pack identity", errors, idPattern);
     string(manifestDigest, `launch.effectivePackManifests.${id}`, errors, digestPattern);
   }
-  if (object(value.effectivePackManifests) && Array.isArray(value.envelope?.packs)) {
-    for (const id of value.envelope.packs) {
-      if (!Object.hasOwn(value.effectivePackManifests, id)) {
-        errors.push(`launch.effectivePackManifests is missing requested Pack identity: ${id}`);
+  if (object(value.effectivePackManifests) && object(value.envelope?.packs)) {
+    for (const [id, manifestDigest] of Object.entries(value.envelope.packs)) {
+      if (value.effectivePackManifests[id] !== manifestDigest) {
+        errors.push(`launch.effectivePackManifests does not match requested Pack identity: ${id}`);
       }
     }
   }

@@ -175,17 +175,31 @@ try {
     assert.match(included.launch.effectiveProfile.digest, /^[0-9a-f]{64}$/);
     assert.deepEqual(Object.keys(included.launch.effectivePackManifests), [pack.id]);
     assert.match(included.launch.effectivePackManifests[pack.id], /^[0-9a-f]{64}$/);
+    assert.deepEqual(included.launch.envelope.packs, {
+      [pack.id]: included.launch.effectivePackManifests[pack.id],
+    });
     const omittedManifest = clone(included.launch);
     delete omittedManifest.effectivePackManifests[pack.id];
     const omittedManifestValidation = validateContract("launch", omittedManifest);
     assert.equal(omittedManifestValidation.valid, false);
-    assert.ok(omittedManifestValidation.errors.some((error) => error.includes(`missing requested Pack identity: ${pack.id}`)));
+    assert.ok(omittedManifestValidation.errors.some((error) => error.includes(`does not match requested Pack identity: ${pack.id}`)));
+    const missingRequestedDigest = clone(included.launch);
+    missingRequestedDigest.envelope.packs[pack.id] = null;
+    assert.equal(validateContract("launch", missingRequestedDigest).valid, false);
     const changedPack = { ...pack, purpose: `${pack.purpose} Changed.` };
     const changedManifest = createLaunchContract(resolved.profile, { ...envelope, packs: [pack.id] }, "Codex", [changedPack]);
     assert.equal(changedManifest.valid, true, changedManifest.errors.join("; "));
     assert.notEqual(changedManifest.launch.effectivePackManifests[pack.id], included.launch.effectivePackManifests[pack.id]);
     const workspaceMismatch = createLaunchContract(resolved.profile, { ...envelope, ownerWorkspace: "other", packs: [pack.id] }, "Codex", [pack]);
     assert.equal(workspaceMismatch.valid, false);
+  });
+
+  pass("launch-schema-binds-requested-pack-identities-with-their-digests", () => {
+    const schema = readJson(resolve(root, "contracts/launch-contract.schema.json"));
+    const packs = schema.properties?.envelope?.properties?.packs;
+    assert.equal(packs?.type, "object");
+    assert.equal(packs?.propertyNames?.pattern, "^[a-z][a-z0-9-]+$");
+    assert.equal(packs?.additionalProperties?.pattern, "^[0-9a-f]{64}$");
   });
 
   pass("malformed-receipt-fails-closed", () => {
@@ -645,6 +659,21 @@ try {
     );
     assert.equal(existsSync(output), true);
     assert.deepEqual(readdirSync(output), []);
+  });
+
+  if (buildBundle) pass("bundle-rejects-symlinked-descendants-inside-the-reserved-output", () => {
+    const publicRoot = publicLayoutFixture();
+    const parent = temporary("forgerail-reserved-output-descendant-parent-");
+    const escaped = temporary("forgerail-reserved-output-descendant-escaped-");
+    const output = resolve(parent, "bundle");
+    assert.throws(
+      () => buildBundle(publicRoot, output, {
+        afterOutputReservation() { symlinkSync(escaped, resolve(output, "docs")); },
+      }),
+      /output ancestor is not a bound directory/,
+    );
+    assert.equal(existsSync(output), false);
+    assert.deepEqual(readdirSync(escaped), []);
   });
 
   if (buildBundle) pass("bundle-rejects-output-inside-source-before-staging", () => {

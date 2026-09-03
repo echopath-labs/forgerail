@@ -114,14 +114,18 @@ export function createLaunchContract(profile, envelope, hostAgent, packManifests
   }
   for (const pack of envelope.packs ?? []) if (!activePacks.has(pack)) errors.push(`task requests inactive pack: ${pack}`);
   for (const pack of requiredPacks) if (!(envelope.packs ?? []).includes(pack)) errors.push(`task omits required pack: ${pack}`);
+  const effectivePackManifests = Object.fromEntries([...activePacks].sort().flatMap((id) => {
+    const manifest = manifests.get(id);
+    return manifest ? [[id, digest(manifest)]] : [];
+  }));
+  const requestedPackManifests = Object.fromEntries((envelope.packs ?? []).sort().flatMap((id) => (
+    Object.hasOwn(effectivePackManifests, id) ? [[id, effectivePackManifests[id]]] : []
+  )));
   const launch = {
     schemaVersion: "1.0",
-    envelope,
+    envelope: { ...envelope, packs: requestedPackManifests },
     effectiveProfile: { digest: digest(profile) },
-    effectivePackManifests: Object.fromEntries([...activePacks].sort().flatMap((id) => {
-      const manifest = manifests.get(id);
-      return manifest ? [[id, digest(manifest)]] : [];
-    })),
+    effectivePackManifests,
     effectiveRuleSources: [...new Set(["ForgeRail Core", ...(profile.rules ?? []).map((rule) => rule.source)])],
     hostAgent,
     executionOwner: "host-agent",

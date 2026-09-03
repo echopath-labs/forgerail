@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import {
-  chmodSync,
   closeSync,
   constants,
   existsSync,
+  fchmodSync,
   fstatSync,
   lstatSync,
   mkdirSync,
@@ -366,6 +366,85 @@ function verifyBoundOutputParent(binding) {
   }
 }
 
+function writeRegularFileBelowBoundRoot(boundRoot, relativeTarget, bytes, mode) {
+  if (!safeRelativePath(relativeTarget)) {
+    throw new Error(`bundle target path is not allowed: ${relativeTarget}`);
+  }
+  const segments = relativeTarget.split("/");
+  const leaf = segments.pop();
+  const originalDirectory = process.cwd();
+  const directories = [];
+  let fileDescriptor;
+  try {
+    verifyBoundDirectoryRoot(boundRoot);
+    process.chdir(boundRoot.path);
+    const enteredRoot = lstatSync(".", { bigint: true });
+    if (!enteredRoot.isDirectory() || !sameFile(enteredRoot, boundRoot.identity)) {
+      throw new Error("bundle output root identity changed before materialization");
+    }
+
+    let visibleDirectory = boundRoot.path;
+    for (const segment of segments) {
+      try {
+        mkdirSync(segment, { mode: 0o700 });
+      } catch (error) {
+        if (error?.code !== "EEXIST") throw error;
+      }
+      const observed = lstatSync(segment, { bigint: true });
+      if (observed.isSymbolicLink() || !observed.isDirectory()) {
+        throw new Error(`bundle output ancestor is not a bound directory: ${relativeTarget}`);
+      }
+      const descriptor = openSync(
+        segment,
+        constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_DIRECTORY ?? 0),
+      );
+      const opened = fstatSync(descriptor, { bigint: true });
+      if (!opened.isDirectory() || !sameFile(observed, opened)) {
+        closeSync(descriptor);
+        throw new Error(`bundle output ancestor identity changed before materialization: ${relativeTarget}`);
+      }
+      process.chdir(segment);
+      const entered = lstatSync(".", { bigint: true });
+      if (!entered.isDirectory() || !sameFile(opened, entered)) {
+        closeSync(descriptor);
+        throw new Error(`bundle output ancestor identity changed before materialization: ${relativeTarget}`);
+      }
+      visibleDirectory = resolve(visibleDirectory, segment);
+      directories.push({ path: visibleDirectory, descriptor, identity: opened });
+    }
+
+    fileDescriptor = openSync(
+      leaf,
+      constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | (constants.O_NOFOLLOW ?? 0),
+      mode,
+    );
+    fchmodSync(fileDescriptor, mode);
+    writeFileSync(fileDescriptor, bytes);
+    const installed = fstatSync(fileDescriptor, { bigint: true });
+    if (!installed.isFile() || installed.size !== BigInt(bytes.length)) {
+      throw new Error(`bundle output file identity changed during materialization: ${relativeTarget}`);
+    }
+    const visibleFile = lstatSync(leaf, { bigint: true });
+    if (visibleFile.isSymbolicLink() || !visibleFile.isFile() || !sameFile(visibleFile, installed)) {
+      throw new Error(`bundle output file identity changed during materialization: ${relativeTarget}`);
+    }
+    for (const directory of directories) {
+      const retained = fstatSync(directory.descriptor, { bigint: true });
+      const visible = lstatSync(directory.path, { bigint: true });
+      if (!retained.isDirectory() || visible.isSymbolicLink() || !visible.isDirectory()
+          || !sameFile(retained, directory.identity) || !sameFile(visible, directory.identity)) {
+        throw new Error(`bundle output ancestor identity changed during materialization: ${relativeTarget}`);
+      }
+    }
+    verifyBoundDirectoryRoot(boundRoot);
+    return { bytes, metadata: installed };
+  } finally {
+    if (fileDescriptor !== undefined) closeSync(fileDescriptor);
+    process.chdir(originalDirectory);
+    for (const directory of directories.reverse()) closeSync(directory.descriptor);
+  }
+}
+
 export function buildBundle(rootInput, output, testHooks = {}) {
   const root = realpathSync(resolve(rootInput));
   const requestedTarget = resolve(output);
@@ -455,23 +534,19 @@ export function buildBundle(rootInput, output, testHooks = {}) {
       mkdirSync(targetName, { mode: 0o700 });
       targetReserved = true;
       targetBinding = bindDirectoryRoot(target, "bundle output");
+      if (typeof testHooks.afterOutputReservation === "function") testHooks.afterOutputReservation();
 
       for (const { projection, bytes, metadata } of materialized) {
         verifyBoundDirectoryRoot(targetBinding);
-        const destination = resolve(target, projection.target);
-        if (!confined(target, destination)) throw new Error(`bundle target escapes reserved output directory: ${projection.target}`);
-        mkdirSync(dirname(destination), { recursive: true });
         const mode = (metadata.mode & 0o111n) === 0n ? 0o644 : 0o755;
-        writeFileSync(destination, bytes, { flag: "wx", mode });
-        chmodSync(destination, mode);
-        const stagedBytes = readFileSync(destination);
+        const staged = writeRegularFileBelowBoundRoot(targetBinding, projection.target, bytes, mode);
         inventory.push({
           path: projection.target,
           source: projection.sourceIdentity,
           type: "file",
           mode: mode.toString(8).padStart(3, "0"),
-          bytes: stagedBytes.length,
-          sha256: createHash("sha256").update(stagedBytes).digest("hex"),
+          bytes: staged.bytes.length,
+          sha256: createHash("sha256").update(staged.bytes).digest("hex"),
         });
       }
       for (const boundRoot of boundRoots) verifyBoundDirectoryRoot(boundRoot);
