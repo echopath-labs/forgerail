@@ -65,11 +65,45 @@ function sameFile(left, right) {
   return left.dev === right.dev && left.ino === right.ino;
 }
 
-function withBoundDirectoryPath(path, label, operation) {
+function bindDirectoryRoot(path, label) {
   const target = resolve(path);
+  const observed = lstatSync(target, { bigint: true });
+  if (observed.isSymbolicLink() || !observed.isDirectory()) {
+    throw new Error(`bundle source root is not a regular directory: ${label}`);
+  }
+  const descriptor = openSync(
+    target,
+    constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_DIRECTORY ?? 0),
+  );
+  const opened = fstatSync(descriptor, { bigint: true });
+  if (!opened.isDirectory() || !sameFile(observed, opened)) {
+    closeSync(descriptor);
+    throw new Error(`bundle source root identity changed before build: ${label}`);
+  }
+  return { path: target, label, descriptor, identity: opened };
+}
+
+function verifyBoundDirectoryRoot(boundRoot) {
+  const retained = fstatSync(boundRoot.descriptor, { bigint: true });
+  let current;
+  try {
+    current = lstatSync(boundRoot.path, { bigint: true });
+  } catch {
+    throw new Error(`bundle source root identity changed during build: ${boundRoot.label}`);
+  }
+  if (!retained.isDirectory() || current.isSymbolicLink() || !current.isDirectory()
+      || !sameFile(retained, boundRoot.identity) || !sameFile(current, boundRoot.identity)) {
+    throw new Error(`bundle source root identity changed during build: ${boundRoot.label}`);
+  }
+}
+
+function withBoundDirectoryPath(boundRoot, path, label, operation) {
+  const target = resolve(path);
+  if (!confined(boundRoot.path, target)) throw new Error(`bundle source path is not allowed: ${label}`);
   const originalDirectory = process.cwd();
   const descriptors = [];
   try {
+    verifyBoundDirectoryRoot(boundRoot);
     const volumeRoot = parse(target).root;
     process.chdir(volumeRoot);
     const rootDescriptor = openSync(
@@ -77,7 +111,11 @@ function withBoundDirectoryPath(path, label, operation) {
       constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_DIRECTORY ?? 0),
     );
     descriptors.push(rootDescriptor);
+    if (volumeRoot === boundRoot.path && !sameFile(fstatSync(rootDescriptor, { bigint: true }), boundRoot.identity)) {
+      throw new Error(`bundle source root identity changed during build: ${boundRoot.label}`);
+    }
 
+    let cursor = volumeRoot;
     for (const segment of relative(volumeRoot, target).split(sep).filter(Boolean)) {
       const observed = lstatSync(segment, { bigint: true });
       if (observed.isSymbolicLink() || !observed.isDirectory()) {
@@ -99,22 +137,28 @@ function withBoundDirectoryPath(path, label, operation) {
         throw new Error(`bundle source ancestor identity changed before read: ${label}`);
       }
       descriptors.push(descriptor);
+      cursor = resolve(cursor, segment);
+      if (cursor === boundRoot.path && !sameFile(opened, boundRoot.identity)) {
+        throw new Error(`bundle source root identity changed during build: ${boundRoot.label}`);
+      }
     }
-    return operation();
+    const result = operation();
+    verifyBoundDirectoryRoot(boundRoot);
+    return result;
   } finally {
     process.chdir(originalDirectory);
     for (const descriptor of descriptors.reverse()) closeSync(descriptor);
   }
 }
 
-function readRegularFileBelowBoundRoot(root, path, label) {
-  const source = resolve(root, path);
-  if (!confined(root, source)) throw new Error(`bundle source path is not allowed: ${label}`);
-  const relativePath = relative(root, source);
+function readRegularFileBelowBoundRoot(boundRoot, path, label) {
+  const source = resolve(boundRoot.path, path);
+  if (!confined(boundRoot.path, source)) throw new Error(`bundle source path is not allowed: ${label}`);
+  const relativePath = relative(boundRoot.path, source);
   if (!safeRelativePath(relativePath.split(sep).join("/"))) {
     throw new Error(`bundle source path is not allowed: ${label}`);
   }
-  return withBoundDirectoryPath(dirname(source), label, () => {
+  return withBoundDirectoryPath(boundRoot, dirname(source), label, () => {
     const leaf = basename(source);
     const observed = lstatSync(leaf, { bigint: true });
     if (observed.isSymbolicLink()) throw new Error(`bundle source must not be a symbolic link: ${label}`);
@@ -180,8 +224,9 @@ function below(base, prefix, result = []) {
   return result;
 }
 
-function packagePayload(root) {
-  const packageJsonBytes = readRegularFileBelowBoundRoot(root, "package.json", "package.json").bytes;
+function packagePayload(boundRoot) {
+  const root = boundRoot.path;
+  const packageJsonBytes = readRegularFileBelowBoundRoot(boundRoot, "package.json", "package.json").bytes;
   const packageJson = JSON.parse(packageJsonBytes.toString("utf8"));
   const entries = Array.isArray(packageJson.files) ? packageJson.files : [];
   const payload = ["package.json"];
@@ -210,7 +255,8 @@ function packagePayload(root) {
   return [...new Set(payload)].sort(compare);
 }
 
-function externalPayload(root) {
+function externalPayload(boundRoot) {
+  const root = boundRoot.path;
   const payload = [];
   for (const entry of externalFiles) {
     const source = resolve(root, entry);
@@ -268,7 +314,7 @@ function outputParent(target) {
   return cursor;
 }
 
-export function buildBundle(rootInput, output) {
+export function buildBundle(rootInput, output, testHooks = {}) {
   const root = realpathSync(resolve(rootInput));
   const requestedTarget = resolve(output);
   if (existsSync(requestedTarget)) throw new Error("output already exists");
@@ -277,94 +323,105 @@ export function buildBundle(rootInput, output) {
   if (!confined(parent, target)) throw new Error("output escapes its parent directory");
   if (confined(root, target)) throw new Error("output must not be inside the source tree");
 
-  const layout = sourceLayout(root);
-  regularFileBelow(root, layout.catalog, "marketplace catalog");
-  const payload = packagePayload(root);
-  const externalPluginRoots = externalPluginNames.map((name) => {
-    const pluginRoot = layout.externalRoots[name];
-    if (!existsSync(pluginRoot)) throw new Error(`external Plugin source is missing: ${name}`);
-    const pluginBase = confined(root, pluginRoot) ? root : confined(dirname(root), pluginRoot) ? dirname(root) : null;
-    if (!pluginBase) {
-      throw new Error(`external Plugin source escapes supported roots: ${name}`);
-    }
-    const realPluginRoot = regularDirectoryBelow(pluginBase, pluginRoot, `external Plugin ${name}`);
-    if (!confined(pluginBase, realPluginRoot)) throw new Error(`external Plugin source escapes supported roots: ${name}`);
-    return { name, root: realPluginRoot };
-  });
-  if (externalPluginRoots.some((plugin) => confined(plugin.root, target))) {
-    throw new Error("output must not be inside an external Plugin source tree");
-  }
-  const externalPlugins = externalPluginRoots.map((plugin) => ({
-    ...plugin,
-    files: externalPayload(plugin.root),
-  }));
-
-  const projections = [
-    {
-      sourceRoot: root,
-      sourcePath: relative(root, layout.catalog),
-      sourceIdentity: "marketplace/.agents/plugins/marketplace.json",
-      target: ".agents/plugins/marketplace.json",
-    },
-    ...payload.flatMap((path) => [
-      { sourceRoot: root, sourcePath: path, sourceIdentity: path, target: path },
-      { sourceRoot: root, sourcePath: path, sourceIdentity: path, target: `plugins/forgerail/${path}` },
-    ]),
-    ...externalPlugins.flatMap((plugin) => plugin.files.map((path) => ({
-      sourceRoot: plugin.root,
-      sourcePath: path,
-      sourceIdentity: `../${plugin.name}/${path}`,
-      target: `plugins/${plugin.name}/${path}`,
-    }))),
-  ].sort((left, right) => compare(left.target, right.target));
-
-  const targets = new Set();
-  for (const projection of projections) {
-    if (targets.has(projection.target)) throw new Error(`duplicate bundle target: ${projection.target}`);
-    targets.add(projection.target);
-  }
-
-  const staging = mkdtempSync(resolve(parent, ".forgerail-bundle-"));
-  const inventory = [];
+  const boundRoots = [];
+  const rootBinding = bindDirectoryRoot(root, "ForgeRail Core");
+  boundRoots.push(rootBinding);
   try {
-    for (const projection of projections) {
-      if (!safeRelativePath(projection.target)) throw new Error(`bundle target path is not allowed: ${projection.target}`);
-      const destination = resolve(staging, projection.target);
-      if (!confined(staging, destination)) throw new Error(`bundle target escapes staging directory: ${projection.target}`);
-      mkdirSync(dirname(destination), { recursive: true });
-      const { bytes, metadata } = readRegularFileBelowBoundRoot(
-        projection.sourceRoot,
-        projection.sourcePath,
-        projection.sourceIdentity,
-      );
-      const mode = (metadata.mode & 0o111n) === 0n ? 0o644 : 0o755;
-      writeFileSync(destination, bytes, { flag: "wx", mode });
-      chmodSync(destination, mode);
-      const stagedBytes = readFileSync(destination);
-      inventory.push({
-        path: projection.target,
-        source: projection.sourceIdentity,
-        type: "file",
-        mode: mode.toString(8).padStart(3, "0"),
-        bytes: stagedBytes.length,
-        sha256: createHash("sha256").update(stagedBytes).digest("hex"),
-      });
+    const layout = sourceLayout(root);
+    regularFileBelow(root, layout.catalog, "marketplace catalog");
+    const payload = packagePayload(rootBinding);
+    const externalPluginRoots = externalPluginNames.map((name) => {
+      const pluginRoot = layout.externalRoots[name];
+      if (!existsSync(pluginRoot)) throw new Error(`external Plugin source is missing: ${name}`);
+      const pluginBase = confined(root, pluginRoot) ? root : confined(dirname(root), pluginRoot) ? dirname(root) : null;
+      if (!pluginBase) {
+        throw new Error(`external Plugin source escapes supported roots: ${name}`);
+      }
+      const realPluginRoot = regularDirectoryBelow(pluginBase, pluginRoot, `external Plugin ${name}`);
+      if (!confined(pluginBase, realPluginRoot)) throw new Error(`external Plugin source escapes supported roots: ${name}`);
+      const binding = bindDirectoryRoot(realPluginRoot, `external Plugin ${name}`);
+      boundRoots.push(binding);
+      return { name, root: realPluginRoot, binding };
+    });
+    if (externalPluginRoots.some((plugin) => confined(plugin.root, target))) {
+      throw new Error("output must not be inside an external Plugin source tree");
     }
-    renameSync(staging, target);
-  } catch (error) {
-    rmSync(staging, { recursive: true, force: true });
-    throw error;
-  }
+    const externalPlugins = externalPluginRoots.map((plugin) => ({
+      ...plugin,
+      files: externalPayload(plugin.binding),
+    }));
 
-  const digest = createHash("sha256").update(`${JSON.stringify(inventory)}\n`).digest("hex");
-  return {
-    schemaVersion: "1.0",
-    productId: "forgerail",
-    projection: "marketplace-root-plus-nested-plugin",
-    fileCount: inventory.length,
-    totalBytes: inventory.reduce((sum, item) => sum + item.bytes, 0),
-    digest,
-    receiptDigest: createHash("sha256").update(`forgerail\n${digest}\n${inventory.length}\n`).digest("hex"),
-    files: inventory,
-  };
+    const projections = [
+      {
+        sourceRoot: rootBinding,
+        sourcePath: relative(root, layout.catalog),
+        sourceIdentity: "marketplace/.agents/plugins/marketplace.json",
+        target: ".agents/plugins/marketplace.json",
+      },
+      ...payload.flatMap((path) => [
+        { sourceRoot: rootBinding, sourcePath: path, sourceIdentity: path, target: path },
+        { sourceRoot: rootBinding, sourcePath: path, sourceIdentity: path, target: `plugins/forgerail/${path}` },
+      ]),
+      ...externalPlugins.flatMap((plugin) => plugin.files.map((path) => ({
+        sourceRoot: plugin.binding,
+        sourcePath: path,
+        sourceIdentity: `../${plugin.name}/${path}`,
+        target: `plugins/${plugin.name}/${path}`,
+      }))),
+    ].sort((left, right) => compare(left.target, right.target));
+
+    const targets = new Set();
+    for (const projection of projections) {
+      if (targets.has(projection.target)) throw new Error(`duplicate bundle target: ${projection.target}`);
+      targets.add(projection.target);
+    }
+    if (typeof testHooks.afterSourceEnumeration === "function") testHooks.afterSourceEnumeration();
+
+    const staging = mkdtempSync(resolve(parent, ".forgerail-bundle-"));
+    const inventory = [];
+    try {
+      for (const projection of projections) {
+        if (!safeRelativePath(projection.target)) throw new Error(`bundle target path is not allowed: ${projection.target}`);
+        const destination = resolve(staging, projection.target);
+        if (!confined(staging, destination)) throw new Error(`bundle target escapes staging directory: ${projection.target}`);
+        mkdirSync(dirname(destination), { recursive: true });
+        const { bytes, metadata } = readRegularFileBelowBoundRoot(
+          projection.sourceRoot,
+          projection.sourcePath,
+          projection.sourceIdentity,
+        );
+        const mode = (metadata.mode & 0o111n) === 0n ? 0o644 : 0o755;
+        writeFileSync(destination, bytes, { flag: "wx", mode });
+        chmodSync(destination, mode);
+        const stagedBytes = readFileSync(destination);
+        inventory.push({
+          path: projection.target,
+          source: projection.sourceIdentity,
+          type: "file",
+          mode: mode.toString(8).padStart(3, "0"),
+          bytes: stagedBytes.length,
+          sha256: createHash("sha256").update(stagedBytes).digest("hex"),
+        });
+      }
+      for (const boundRoot of boundRoots) verifyBoundDirectoryRoot(boundRoot);
+      renameSync(staging, target);
+    } catch (error) {
+      rmSync(staging, { recursive: true, force: true });
+      throw error;
+    }
+
+    const digest = createHash("sha256").update(`${JSON.stringify(inventory)}\n`).digest("hex");
+    return {
+      schemaVersion: "1.0",
+      productId: "forgerail",
+      projection: "marketplace-root-plus-nested-plugin",
+      fileCount: inventory.length,
+      totalBytes: inventory.reduce((sum, item) => sum + item.bytes, 0),
+      digest,
+      receiptDigest: createHash("sha256").update(`forgerail\n${digest}\n${inventory.length}\n`).digest("hex"),
+      files: inventory,
+    };
+  } finally {
+    for (const boundRoot of boundRoots.reverse()) closeSync(boundRoot.descriptor);
+  }
 }

@@ -101,6 +101,7 @@ run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", priorTarba
 const rolledBack = JSON.parse(readFileSync(resolve(installedPackageRoot, "package.json"), "utf8")).version === "0.1.0-alpha.0";
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball]);
 const reinstallValidation = JSON.parse(run(cli, ["validate"]));
+const installedIntegrity = JSON.parse(run("npm", ["run", "test:integrity", "--silent"], installedPackageRoot));
 run("npm", ["uninstall", "--no-audit", "--no-fund", packageName]);
 
 const result = {
@@ -122,11 +123,14 @@ const result = {
   noPersistedGovernance: !existsSync(resolve(target, ".forgerail")),
   launch: launch.valid && launch.launch.executionOwner === "host-agent",
   reinstall: reinstallValidation.valid,
+  installedIntegrity: installedIntegrity.valid
+    && installedIntegrity.assertions.includes("source-only-bundle-regressions-not-installed")
+    && installedIntegrity.assertions.includes("source-only-shadow-regressions-not-installed"),
   upgrade: upgraded,
   rollback: rolledBack,
   uninstall: !existsSync(installedPackageRoot),
   disposableRoot: "[disposable]",
 };
-result.passed = result.priorInstall && result.install && result.binaryShim && result.diagnosis && result.targetUnchangedByDiagnosis && result.adoptionPlan && result.targetUnchangedByPlanner && result.explicitApprovedWrite && result.equivalentNewTaskDiscovery && result.bindingReceipt && result.noPersistedGovernance && result.launch && result.upgrade && result.rollback && result.reinstall && result.uninstall;
+result.passed = result.priorInstall && result.install && result.binaryShim && result.diagnosis && result.targetUnchangedByDiagnosis && result.adoptionPlan && result.targetUnchangedByPlanner && result.explicitApprovedWrite && result.equivalentNewTaskDiscovery && result.bindingReceipt && result.noPersistedGovernance && result.launch && result.upgrade && result.rollback && result.reinstall && result.installedIntegrity && result.uninstall;
 console.log(JSON.stringify(result, null, 2));
 if (!result.passed) process.exitCode = 1;

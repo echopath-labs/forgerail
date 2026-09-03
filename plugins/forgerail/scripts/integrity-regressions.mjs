@@ -17,15 +17,17 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { applyApprovedAdoptionWrite, planAdoption, renderProposedWrite } from "./lib/adoption.mjs";
-import { buildBundle } from "../tools/lib/bundle.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
 import { readJson, validateContract } from "./lib/contracts.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
-import { evaluateShadowComparison } from "./shadow-comparison.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const bundleModulePath = resolve(root, "tools/lib/bundle.mjs");
+const buildBundle = existsSync(bundleModulePath)
+  ? (await import(pathToFileURL(bundleModulePath).href)).buildBundle
+  : null;
 const workspaceRoot = isPrivateLayout(root) ? resolve(root, "../..") : root;
 const fixtureRoot = resolve(root, "scripts/fixtures/contracts");
 const externalPluginNames = [
@@ -34,6 +36,12 @@ const externalPluginNames = [
   "forgerail-release-safety",
   "forgerail-thread-closure",
 ];
+const hasExternalPackSources = externalPluginNames.every((name) =>
+  existsSync(resolve(root, "plugins", name)) || existsSync(resolve(root, "..", name)),
+);
+const evaluateShadowComparison = hasExternalPackSources
+  ? (await import(pathToFileURL(resolve(root, "scripts/shadow-comparison.mjs")).href)).evaluateShadowComparison
+  : null;
 const assertions = [];
 const temporaryRoots = [];
 
@@ -159,6 +167,12 @@ try {
     assert.equal(included.valid, true, included.errors.join("; "));
     assert.equal(included.launch.effectiveProfile.workspace, profileInput.workspace);
     assert.match(included.launch.effectiveProfile.digest, /^[0-9a-f]{64}$/);
+    assert.deepEqual(included.launch.effectivePackManifests.map(({ id }) => id), [pack.id]);
+    assert.match(included.launch.effectivePackManifests[0].digest, /^[0-9a-f]{64}$/);
+    const changedPack = { ...pack, purpose: `${pack.purpose} Changed.` };
+    const changedManifest = createLaunchContract(resolved.profile, { ...envelope, packs: [pack.id] }, "Codex", [changedPack]);
+    assert.equal(changedManifest.valid, true, changedManifest.errors.join("; "));
+    assert.notEqual(changedManifest.launch.effectivePackManifests[0].digest, included.launch.effectivePackManifests[0].digest);
     const workspaceMismatch = createLaunchContract(resolved.profile, { ...envelope, ownerWorkspace: "other", packs: [pack.id] }, "Codex", [pack]);
     assert.equal(workspaceMismatch.valid, false);
   });
@@ -349,14 +363,16 @@ try {
     }
   });
 
-  pass("shadow-mutation-fails-coverage", () => {
+  if (evaluateShadowComparison) pass("shadow-mutation-fails-coverage", () => {
     assert.equal(evaluateShadowComparison().behaviorCoverageReady, true);
     const mutated = evaluateShadowComparison({ "dirty-worktree-preservation": "" });
     assert.equal(mutated.behaviorCoverageReady, false);
     assert.ok(mutated.unresolved.includes("dirty-worktree-preservation"));
   });
 
-  pass("bundle-private-public-layouts-are-deterministic-and-safe", () => {
+  if (!evaluateShadowComparison) assertions.push("source-only-shadow-regressions-not-installed");
+
+  if (buildBundle) pass("bundle-private-public-layouts-are-deterministic-and-safe", () => {
     const bundleImplementation = readFileSync(resolve(root, "tools/lib/bundle.mjs"), "utf8");
     assert.match(bundleImplementation, /O_NOFOLLOW/);
     assert.match(bundleImplementation, /O_DIRECTORY/);
@@ -420,7 +436,7 @@ try {
     assert.throws(() => buildBundle(root, resolve(outputLink, "bundle")), /symbolic links|below the host temporary directory/);
   });
 
-  pass("bundle-rejects-non-regular-package-metadata-before-read", () => {
+  if (buildBundle) pass("bundle-rejects-non-regular-package-metadata-before-read", () => {
     const publicRoot = publicLayoutFixture();
     const packagePath = resolve(publicRoot, "package.json");
     rmSync(packagePath);
@@ -430,7 +446,7 @@ try {
     assert.equal(existsSync(output), false);
   });
 
-  pass("bundle-rejects-symlinked-allowlisted-ancestors-before-read", () => {
+  if (buildBundle) pass("bundle-rejects-symlinked-allowlisted-ancestors-before-read", () => {
     const publicRoot = publicLayoutFixture();
     const scriptsRoot = resolve(publicRoot, "scripts");
     const replacementRoot = resolve(publicRoot, "scripts-source");
@@ -442,7 +458,7 @@ try {
     assert.equal(existsSync(output), false);
   });
 
-  pass("bundle-rejects-symlinked-external-plugin-roots", () => {
+  if (buildBundle) pass("bundle-rejects-symlinked-external-plugin-roots", () => {
     for (const kind of ["root", "ancestor"]) {
       const publicRoot = publicLayoutFixture();
       if (kind === "root") {
@@ -464,7 +480,7 @@ try {
     }
   });
 
-  pass("bundle-rejects-environment-and-npmrc-filename-families", () => {
+  if (buildBundle) pass("bundle-rejects-environment-and-npmrc-filename-families", () => {
     for (const path of ["scripts/.env.local", "docs/.env.production", "scripts/.npmrc.backup"]) {
       const publicRoot = publicLayoutFixture();
       writeFileSync(resolve(publicRoot, path), "PRIVATE_VALUE=should-not-project\n");
@@ -474,7 +490,7 @@ try {
     }
   });
 
-  pass("bundle-rejects-output-inside-source-before-staging", () => {
+  if (buildBundle) pass("bundle-rejects-output-inside-source-before-staging", () => {
     const publicRoot = publicLayoutFixture();
     const output = resolve(publicRoot, "docs/projection");
     const before = readdirSync(resolve(publicRoot, "docs")).sort();
@@ -483,7 +499,7 @@ try {
     assert.deepEqual(readdirSync(resolve(publicRoot, "docs")).sort(), before);
   });
 
-  pass("bundle-rejects-output-inside-private-layout-external-plugin", () => {
+  if (buildBundle) pass("bundle-rejects-output-inside-private-layout-external-plugin", () => {
     const privateRoot = privateLayoutFixture(publicLayoutFixture());
     const pluginRoot = resolve(privateRoot, "..", "forgerail-release-safety");
     const output = resolve(pluginRoot, "projection");
@@ -493,7 +509,7 @@ try {
     assert.deepEqual(readdirSync(pluginRoot).sort(), before);
   });
 
-  pass("bundle-rejects-duplicate-projection-targets", () => {
+  if (buildBundle) pass("bundle-rejects-duplicate-projection-targets", () => {
     for (const extra of [".agents/", "plugins/"]) {
       const publicRoot = publicLayoutFixture();
       const packagePath = resolve(publicRoot, "package.json");
@@ -505,6 +521,26 @@ try {
       assert.equal(existsSync(output), false);
     }
   });
+
+  if (buildBundle) pass("bundle-keeps-source-root-bound-for-entire-build", () => {
+    const ownerRoot = temporary("forgerail-root-replacement-owner-");
+    const publicRoot = resolve(ownerRoot, "forgerail");
+    cpSync(publicLayoutFixture(), publicRoot, { recursive: true, dereference: false });
+    const originalRoot = resolve(ownerRoot, "forgerail-original");
+    const output = resolve(temporary("forgerail-root-replacement-output-parent-"), "bundle");
+    assert.throws(
+      () => buildBundle(publicRoot, output, {
+        afterSourceEnumeration() {
+          renameSync(publicRoot, originalRoot);
+          cpSync(originalRoot, publicRoot, { recursive: true, dereference: false });
+        },
+      }),
+      /source root identity changed during build/,
+    );
+    assert.equal(existsSync(output), false);
+  });
+
+  if (!buildBundle) assertions.push("source-only-bundle-regressions-not-installed");
 
   console.log(JSON.stringify({ valid: true, assertions, mutations: [], externalSideEffects: [] }, null, 2));
 } finally {

@@ -31,6 +31,34 @@ function duplicates(values) {
   return [...result].sort();
 }
 
+function dependencyCycle(items) {
+  const itemsById = new Map(items.map((item) => [item.id, item]));
+  const visited = new Set();
+  const active = new Set();
+  const path = [];
+
+  function visit(id) {
+    if (active.has(id)) return [...path.slice(path.indexOf(id)), id];
+    if (visited.has(id)) return null;
+    active.add(id);
+    path.push(id);
+    for (const dependency of itemsById.get(id).dependencies) {
+      const cycle = visit(dependency);
+      if (cycle) return cycle;
+    }
+    path.pop();
+    active.delete(id);
+    visited.add(id);
+    return null;
+  }
+
+  for (const id of [...itemsById.keys()].sort()) {
+    const cycle = visit(id);
+    if (cycle) return cycle;
+  }
+  return null;
+}
+
 function assertInput(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("orchestration input must be an object");
   if (!Array.isArray(input.workItems)) throw new Error("orchestration workItems must be an array");
@@ -55,6 +83,8 @@ function assertInput(input) {
     const unknownOperations = item.requestedOperations.filter((operation) => !knownOperations.has(operation));
     if (unknownOperations.length > 0) throw new Error(`unknown requested operations for ${item.id}: ${unknownOperations.join(", ")}`);
   }
+  const cycle = dependencyCycle(input.workItems);
+  if (cycle) throw new Error(`work item dependency cycle: ${cycle.join(" -> ")}`);
   if (!input.events || !Array.isArray(input.events.failedWorkItems) || !Array.isArray(input.events.acceptedWorkItems)) throw new Error("orchestration events are malformed");
   for (const [eventName, ids] of Object.entries(input.events)) {
     const repeated = duplicates(ids);

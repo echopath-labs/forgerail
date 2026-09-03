@@ -4,7 +4,7 @@
   "title": "ForgeRail Launch Contract",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "envelope", "effectiveProfile", "effectiveRuleSources", "hostAgent", "executionOwner"],
+  "required": ["schemaVersion", "envelope", "effectiveProfile", "effectivePackManifests", "effectiveRuleSources", "hostAgent", "executionOwner"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "envelope": { "$ref": "task-envelope.schema.json" },
@@ -15,6 +15,18 @@
       "properties": {
         "workspace": { "type": "string", "minLength": 1 },
         "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "effectivePackManifests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "digest"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+          "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
       }
     },
     "effectiveRuleSources": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },

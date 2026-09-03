@@ -256,7 +256,7 @@ function validateProfileCandidate(value, errors) {
 }
 
 function validateLaunch(value, errors) {
-  if (!exactKeys(value, ["schemaVersion", "envelope", "effectiveProfile", "effectiveRuleSources", "hostAgent", "executionOwner"], [], "launch", errors)) return;
+  if (!exactKeys(value, ["schemaVersion", "envelope", "effectiveProfile", "effectivePackManifests", "effectiveRuleSources", "hostAgent", "executionOwner"], [], "launch", errors)) return;
   schemaVersion(value.schemaVersion, "launch", errors);
   validateEnvelope(value.envelope, errors, "launch.envelope");
   if (exactKeys(value.effectiveProfile, ["workspace", "digest"], [], "launch.effectiveProfile", errors)) {
@@ -264,6 +264,19 @@ function validateLaunch(value, errors) {
     string(value.effectiveProfile.digest, "launch.effectiveProfile.digest", errors, digestPattern);
   }
   if (value.effectiveProfile?.workspace !== value.envelope?.ownerWorkspace) errors.push("launch Effective Profile workspace must match Task Envelope owner workspace");
+  if (!Array.isArray(value.effectivePackManifests)) errors.push("launch.effectivePackManifests must be an array");
+  else {
+    const ids = [];
+    for (const [index, manifest] of value.effectivePackManifests.entries()) {
+      const label = `launch.effectivePackManifests[${index}]`;
+      if (!exactKeys(manifest, ["id", "digest"], [], label, errors)) continue;
+      string(manifest.id, `${label}.id`, errors, idPattern);
+      string(manifest.digest, `${label}.digest`, errors, digestPattern);
+      ids.push(manifest.id);
+    }
+    if (new Set(ids).size !== ids.length) errors.push("launch.effectivePackManifests must not contain duplicate Pack identities");
+    if (JSON.stringify(ids) !== JSON.stringify([...ids].sort())) errors.push("launch.effectivePackManifests must be sorted by Pack identity");
+  }
   strings(value.effectiveRuleSources, "launch.effectiveRuleSources", errors, { min: 1, unique: true });
   string(value.hostAgent, "launch.hostAgent", errors);
   if (value.executionOwner !== "host-agent") errors.push("launch.executionOwner must equal host-agent");
