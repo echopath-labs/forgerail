@@ -17,7 +17,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, relative, resolve, sep } from "node:path";
+import { basename, dirname, parse, relative, resolve, sep } from "node:path";
 
 const externalPluginNames = [
   "forgerail-cross-workspace-orchestration",
@@ -65,17 +65,74 @@ function sameFile(left, right) {
   return left.dev === right.dev && left.ino === right.ino;
 }
 
-function readRegularFileNoFollow(path, label, observedMetadata) {
-  let descriptor;
+function withBoundDirectoryPath(path, label, operation) {
+  const target = resolve(path);
+  const originalDirectory = process.cwd();
+  const descriptors = [];
   try {
-    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-    const metadata = fstatSync(descriptor);
-    if (!metadata.isFile()) throw new Error(`bundle source is not a regular file: ${label}`);
-    if (!sameFile(metadata, observedMetadata)) throw new Error(`bundle source identity changed before copy: ${label}`);
-    return { bytes: readFileSync(descriptor), metadata };
+    const volumeRoot = parse(target).root;
+    process.chdir(volumeRoot);
+    const rootDescriptor = openSync(
+      ".",
+      constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_DIRECTORY ?? 0),
+    );
+    descriptors.push(rootDescriptor);
+
+    for (const segment of relative(volumeRoot, target).split(sep).filter(Boolean)) {
+      const observed = lstatSync(segment, { bigint: true });
+      if (observed.isSymbolicLink() || !observed.isDirectory()) {
+        throw new Error(`bundle source ancestor is not a bound directory: ${label}`);
+      }
+      const descriptor = openSync(
+        segment,
+        constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_DIRECTORY ?? 0),
+      );
+      const opened = fstatSync(descriptor, { bigint: true });
+      if (!opened.isDirectory() || !sameFile(observed, opened)) {
+        closeSync(descriptor);
+        throw new Error(`bundle source ancestor identity changed before read: ${label}`);
+      }
+      process.chdir(segment);
+      const entered = lstatSync(".", { bigint: true });
+      if (!entered.isDirectory() || !sameFile(opened, entered)) {
+        closeSync(descriptor);
+        throw new Error(`bundle source ancestor identity changed before read: ${label}`);
+      }
+      descriptors.push(descriptor);
+    }
+    return operation();
   } finally {
-    if (descriptor !== undefined) closeSync(descriptor);
+    process.chdir(originalDirectory);
+    for (const descriptor of descriptors.reverse()) closeSync(descriptor);
   }
+}
+
+function readRegularFileBelowBoundRoot(root, path, label) {
+  const source = resolve(root, path);
+  if (!confined(root, source)) throw new Error(`bundle source path is not allowed: ${label}`);
+  const relativePath = relative(root, source);
+  if (!safeRelativePath(relativePath.split(sep).join("/"))) {
+    throw new Error(`bundle source path is not allowed: ${label}`);
+  }
+  return withBoundDirectoryPath(dirname(source), label, () => {
+    const leaf = basename(source);
+    const observed = lstatSync(leaf, { bigint: true });
+    if (observed.isSymbolicLink()) throw new Error(`bundle source must not be a symbolic link: ${label}`);
+    if (!observed.isFile()) throw new Error(`bundle source is not a regular file: ${label}`);
+    let descriptor;
+    try {
+      descriptor = openSync(
+        leaf,
+        constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | constants.O_NONBLOCK,
+      );
+      const metadata = fstatSync(descriptor, { bigint: true });
+      if (!metadata.isFile()) throw new Error(`bundle source is not a regular file: ${label}`);
+      if (!sameFile(metadata, observed)) throw new Error(`bundle source identity changed before read: ${label}`);
+      return { bytes: readFileSync(descriptor), metadata };
+    } finally {
+      if (descriptor !== undefined) closeSync(descriptor);
+    }
+  });
 }
 
 function regularFileBelow(root, path, label) {
@@ -124,7 +181,8 @@ function below(base, prefix, result = []) {
 }
 
 function packagePayload(root) {
-  const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
+  const packageJsonBytes = readRegularFileBelowBoundRoot(root, "package.json", "package.json").bytes;
+  const packageJson = JSON.parse(packageJsonBytes.toString("utf8"));
   const entries = Array.isArray(packageJson.files) ? packageJson.files : [];
   const payload = ["package.json"];
   const packageLock = resolve(root, "package-lock.json");
@@ -242,13 +300,19 @@ export function buildBundle(rootInput, output) {
   }));
 
   const projections = [
-    { source: layout.catalog, sourceIdentity: "marketplace/.agents/plugins/marketplace.json", target: ".agents/plugins/marketplace.json" },
+    {
+      sourceRoot: root,
+      sourcePath: relative(root, layout.catalog),
+      sourceIdentity: "marketplace/.agents/plugins/marketplace.json",
+      target: ".agents/plugins/marketplace.json",
+    },
     ...payload.flatMap((path) => [
-      { source: resolve(root, path), sourceIdentity: path, target: path },
-      { source: resolve(root, path), sourceIdentity: path, target: `plugins/forgerail/${path}` },
+      { sourceRoot: root, sourcePath: path, sourceIdentity: path, target: path },
+      { sourceRoot: root, sourcePath: path, sourceIdentity: path, target: `plugins/forgerail/${path}` },
     ]),
     ...externalPlugins.flatMap((plugin) => plugin.files.map((path) => ({
-      source: resolve(plugin.root, path),
+      sourceRoot: plugin.root,
+      sourcePath: path,
       sourceIdentity: `../${plugin.name}/${path}`,
       target: `plugins/${plugin.name}/${path}`,
     }))),
@@ -265,16 +329,15 @@ export function buildBundle(rootInput, output) {
   try {
     for (const projection of projections) {
       if (!safeRelativePath(projection.target)) throw new Error(`bundle target path is not allowed: ${projection.target}`);
-      const observedMetadata = regularFile(projection.source, projection.sourceIdentity);
       const destination = resolve(staging, projection.target);
       if (!confined(staging, destination)) throw new Error(`bundle target escapes staging directory: ${projection.target}`);
       mkdirSync(dirname(destination), { recursive: true });
-      const { bytes, metadata } = readRegularFileNoFollow(
-        projection.source,
+      const { bytes, metadata } = readRegularFileBelowBoundRoot(
+        projection.sourceRoot,
+        projection.sourcePath,
         projection.sourceIdentity,
-        observedMetadata,
       );
-      const mode = (metadata.mode & 0o111) === 0 ? 0o644 : 0o755;
+      const mode = (metadata.mode & 0o111n) === 0n ? 0o644 : 0o755;
       writeFileSync(destination, bytes, { flag: "wx", mode });
       chmodSync(destination, mode);
       const stagedBytes = readFileSync(destination);

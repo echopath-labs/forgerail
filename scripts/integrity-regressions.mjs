@@ -359,6 +359,8 @@ try {
   pass("bundle-private-public-layouts-are-deterministic-and-safe", () => {
     const bundleImplementation = readFileSync(resolve(root, "tools/lib/bundle.mjs"), "utf8");
     assert.match(bundleImplementation, /O_NOFOLLOW/);
+    assert.match(bundleImplementation, /O_DIRECTORY/);
+    assert.match(bundleImplementation, /process\.chdir\(segment\)/);
     assert.match(bundleImplementation, /readFileSync\(descriptor\)/);
     assert.doesNotMatch(bundleImplementation, /copyFileSync/);
     const privateRoot = privateLayoutFixture();
@@ -416,6 +418,28 @@ try {
     const outputLink = resolve(temporary("forgerail-output-link-parent-"), "outside");
     symlinkSync(escapedParentTarget, outputLink);
     assert.throws(() => buildBundle(root, resolve(outputLink, "bundle")), /symbolic links|below the host temporary directory/);
+  });
+
+  pass("bundle-rejects-non-regular-package-metadata-before-read", () => {
+    const publicRoot = publicLayoutFixture();
+    const packagePath = resolve(publicRoot, "package.json");
+    rmSync(packagePath);
+    execFileSync("mkfifo", [packagePath]);
+    const output = resolve(temporary("forgerail-package-fifo-output-parent-"), "bundle");
+    assert.throws(() => buildBundle(publicRoot, output), /not a regular file/);
+    assert.equal(existsSync(output), false);
+  });
+
+  pass("bundle-rejects-symlinked-allowlisted-ancestors-before-read", () => {
+    const publicRoot = publicLayoutFixture();
+    const scriptsRoot = resolve(publicRoot, "scripts");
+    const replacementRoot = resolve(publicRoot, "scripts-source");
+    cpSync(scriptsRoot, replacementRoot, { recursive: true, dereference: false });
+    rmSync(scriptsRoot, { recursive: true, force: true });
+    symlinkSync(replacementRoot, scriptsRoot);
+    const output = resolve(temporary("forgerail-symlinked-allowlisted-output-parent-"), "bundle");
+    assert.throws(() => buildBundle(publicRoot, output), /symbolic link|bound directory/);
+    assert.equal(existsSync(output), false);
   });
 
   pass("bundle-rejects-symlinked-external-plugin-roots", () => {
