@@ -23,62 +23,70 @@ function externalSkill(plugin, skill = plugin) {
 const rulesets = externalSkill("forgerail-github-rulesets");
 const releaseSafety = externalSkill("forgerail-release-safety");
 const threadClosure = externalSkill("forgerail-thread-closure");
-const agwEvidence = frozen.behaviorAssertions;
+const expectedAgwEvidence = Object.freeze({
+  featureBranchRecords: ["smallest child workspace", "durable records", "git status"],
+  dirtyWorktreePreservation: ["Preserve user changes"],
+  existingRecordHabit: ["existing durable record system"],
+  workspaceHealth: ["Workspace Health Review"],
+  githubRulesets: ["project-specific workflow or safety checklist"],
+  releaseSafety: ["project-specific release or operations checklist"],
+  threadClosure: ["machine-readable closeout"],
+});
 
 const scenarioDefinitions = [
   {
     id: "feature-branch-records",
-    agwEvidence: agwEvidence.featureBranchRecords,
+    agwEvidence: expectedAgwEvidence.featureBranchRecords,
     forgerailEvidence: ["smallest owner workspace", "Task Envelope", "existing habits"],
     source: `${core}\n${diagnosis}`,
     status: "covered",
   },
   {
     id: "dirty-worktree-preservation",
-    agwEvidence: agwEvidence.dirtyWorktreePreservation,
+    agwEvidence: expectedAgwEvidence.dirtyWorktreePreservation,
     forgerailEvidence: ["preserve unrelated user changes", "dirty-worktree state"],
     source: core,
     status: "covered",
   },
   {
     id: "markdown-existing-habit",
-    agwEvidence: agwEvidence.existingRecordHabit,
+    agwEvidence: expectedAgwEvidence.existingRecordHabit,
     forgerailEvidence: ["existing habits", "OpenSpec may be a preferred example"],
     source: diagnosis,
     status: "covered",
   },
   {
     id: "workspace-health",
-    agwEvidence: agwEvidence.workspaceHealth,
+    agwEvidence: expectedAgwEvidence.workspaceHealth,
     forgerailEvidence: ["first built-in ForgeRail Capability Pack", "Analyze First"],
     source: health,
     status: "covered-with-follow-up",
   },
   {
     id: "github-rulesets-read-first",
-    agwEvidence: agwEvidence.githubRulesets,
+    agwEvidence: expectedAgwEvidence.githubRulesets,
     forgerailEvidence: ["read-only diagnosis", "Stop until the user explicitly approves"],
     source: rulesets,
     status: "covered",
   },
   {
     id: "release-safety-project-runbook",
-    agwEvidence: agwEvidence.releaseSafety,
+    agwEvidence: expectedAgwEvidence.releaseSafety,
     forgerailEvidence: ["project-owned release runbook", "does not contain publish, deploy"],
     source: releaseSafety,
     status: "covered",
   },
   {
     id: "evidence-first-thread-closure",
-    agwEvidence: agwEvidence.threadClosure,
+    agwEvidence: expectedAgwEvidence.threadClosure,
     forgerailEvidence: ["Keep closeout incomplete", "Do not implement follow-up work"],
     source: `${core}\n${threadClosure}`,
     status: "covered",
   },
 ];
 
-export function evaluateShadowComparison(overrides = {}) {
-  const baselineSource = JSON.stringify(frozen);
+export function evaluateShadowComparison(overrides = {}, baseline = frozen) {
+  const baselineSource = JSON.stringify(baseline);
   const scenarios = scenarioDefinitions.map((definition) => {
     const source = overrides[definition.id] ?? definition.source;
     const scenario = { ...definition };

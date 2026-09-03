@@ -173,6 +173,11 @@ try {
     assert.match(included.launch.effectiveProfile.digest, /^[0-9a-f]{64}$/);
     assert.deepEqual(Object.keys(included.launch.effectivePackManifests), [pack.id]);
     assert.match(included.launch.effectivePackManifests[pack.id], /^[0-9a-f]{64}$/);
+    const omittedManifest = clone(included.launch);
+    delete omittedManifest.effectivePackManifests[pack.id];
+    const omittedManifestValidation = validateContract("launch", omittedManifest);
+    assert.equal(omittedManifestValidation.valid, false);
+    assert.ok(omittedManifestValidation.errors.some((error) => error.includes(`missing requested Pack identity: ${pack.id}`)));
     const changedPack = { ...pack, purpose: `${pack.purpose} Changed.` };
     const changedManifest = createLaunchContract(resolved.profile, { ...envelope, packs: [pack.id] }, "Codex", [changedPack]);
     assert.equal(changedManifest.valid, true, changedManifest.errors.join("; "));
@@ -396,6 +401,26 @@ try {
     assert.equal(statSync(target).mode & 0o777, 0o664);
   });
 
+  pass("adoption-does-not-overwrite-concurrent-leaf-replacement", () => {
+    const workspace = temporary("forgerail-adoption-concurrent-leaf-");
+    const target = resolve(workspace, "AGENTS.md");
+    const prior = resolve(workspace, "AGENTS.md.concurrent-prior");
+    writeFileSync(target, "existing instructions\n");
+    const approved = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
+    assert.throws(
+      () => applyApprovedAdoptionWrite(workspace, approved, approved.approvalSha256, {
+        beforeReplace() {
+          renameSync(target, prior);
+          writeFileSync(target, "concurrent user change\n");
+        },
+      }),
+      /target changed during atomic replace/,
+    );
+    assert.equal(readFileSync(target, "utf8"), "concurrent user change\n");
+    assert.equal(readFileSync(prior, "utf8"), "existing instructions\n");
+    assert.equal(readdirSync(workspace).some((name) => name.startsWith(".forgerail-")), false);
+  });
+
   pass("invalid-pack-collections-fail-closed-with-structured-errors", () => {
     for (const [field, value] of [["dependencies", {}], ["dependencies", null], ["conflicts", "other-pack"]]) {
       const malformed = { ...clone(pack), [field]: value };
@@ -413,6 +438,11 @@ try {
     const mutated = evaluateShadowComparison({ "dirty-worktree-preservation": "" });
     assert.equal(mutated.behaviorCoverageReady, false);
     assert.ok(mutated.unresolved.includes("dirty-worktree-preservation"));
+    const weakenedBaseline = clone(readJson(resolve(root, "docs/agw-frozen-baseline.json")));
+    weakenedBaseline.behaviorAssertions.dirtyWorktreePreservation = [];
+    const missingBaselineEvidence = evaluateShadowComparison({}, weakenedBaseline);
+    assert.equal(missingBaselineEvidence.behaviorCoverageReady, false);
+    assert.ok(missingBaselineEvidence.unresolved.includes("dirty-worktree-preservation"));
   });
 
   if (!evaluateShadowComparison) assertions.push("source-only-shadow-regressions-not-installed");

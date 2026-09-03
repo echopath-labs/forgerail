@@ -1,0 +1,31 @@
+{
+  "name": "production-deployment-requires-independent-approval",
+  "input": {
+    "workItems": [
+      {
+        "id": "production",
+        "ownerWorkspace": "/workspaces/production",
+        "repository": "production",
+        "branch": "release/production",
+        "pr": null,
+        "releaseIdentity": "production",
+        "aggregateWrites": [],
+        "dependencies": [],
+        "status": "pending",
+        "requestedOperations": ["deploy"],
+        "grantedApprovals": ["release-approval"]
+      }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "openspec",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": {
+    "missingApprovals": [
+      { "workItem": "production", "operation": "deploy", "required": "production-change-approval" }
+    ],
+    "waves": [],
+    "unresolved": []
+  }
+}

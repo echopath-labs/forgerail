@@ -269,6 +269,13 @@ function validateLaunch(value, errors) {
     string(id, "launch.effectivePackManifests Pack identity", errors, idPattern);
     string(manifestDigest, `launch.effectivePackManifests.${id}`, errors, digestPattern);
   }
+  if (object(value.effectivePackManifests) && Array.isArray(value.envelope?.packs)) {
+    for (const id of value.envelope.packs) {
+      if (!Object.hasOwn(value.effectivePackManifests, id)) {
+        errors.push(`launch.effectivePackManifests is missing requested Pack identity: ${id}`);
+      }
+    }
+  }
   strings(value.effectiveRuleSources, "launch.effectiveRuleSources", errors, { min: 1, unique: true });
   string(value.hostAgent, "launch.hostAgent", errors);
   if (value.executionOwner !== "host-agent") errors.push("launch.executionOwner must equal host-agent");

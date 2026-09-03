@@ -32,7 +32,7 @@ Otherwise use ForgeRail Core for one task or keep the work serial. Multiple fold
 - Allow one writer for each shared canonical or aggregate source.
 - Allow one concurrent writer for the same repository + branch, PR, or release identity.
 - Serialize product-internal dependency edges; parallelize only independent cross-product stages.
-- Keep `remote-integration-approval`, `release-approval`, and `lifecycle-change-approval` independent and non-transitive.
+- Keep `remote-integration-approval`, `release-approval`, `production-change-approval`, and `lifecycle-change-approval` independent and non-transitive. A production deployment requires both its release gate and its independent production-change gate.
 - Do not expand an active task when priorities change; stop new dispatch and recompute pending waves.
 - Preserve accepted independent receipts during partial failure. Pause the failure and its dependency descendants.
 - Treat transport delivery as evidence of delivery, never as master acceptance.

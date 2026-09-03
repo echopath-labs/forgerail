@@ -1,24 +1,24 @@
-const externalApprovalByOperation = new Map([
-  ["push", "remote-integration-approval"],
-  ["draft-pr", "remote-integration-approval"],
-  ["remote-ci", "remote-integration-approval"],
-  ["ready", "release-approval"],
-  ["merge", "release-approval"],
-  ["tag", "release-approval"],
-  ["publish", "release-approval"],
-  ["deploy", "release-approval"],
-  ["release", "release-approval"],
-  ["lifecycle-change", "lifecycle-change-approval"],
-  ["deprecate", "lifecycle-change-approval"],
-  ["archive", "lifecycle-change-approval"],
-  ["delete", "lifecycle-change-approval"],
-  ["redirect", "lifecycle-change-approval"],
-  ["transfer", "lifecycle-change-approval"],
-  ["repository-transfer", "lifecycle-change-approval"],
-  ["default-branch", "lifecycle-change-approval"],
-  ["ruleset", "lifecycle-change-approval"],
+const externalApprovalsByOperation = new Map([
+  ["push", ["remote-integration-approval"]],
+  ["draft-pr", ["remote-integration-approval"]],
+  ["remote-ci", ["remote-integration-approval"]],
+  ["ready", ["release-approval"]],
+  ["merge", ["release-approval"]],
+  ["tag", ["release-approval"]],
+  ["publish", ["release-approval"]],
+  ["deploy", ["release-approval", "production-change-approval"]],
+  ["release", ["release-approval"]],
+  ["lifecycle-change", ["lifecycle-change-approval"]],
+  ["deprecate", ["lifecycle-change-approval"]],
+  ["archive", ["lifecycle-change-approval"]],
+  ["delete", ["lifecycle-change-approval"]],
+  ["redirect", ["lifecycle-change-approval"]],
+  ["transfer", ["lifecycle-change-approval"]],
+  ["repository-transfer", ["lifecycle-change-approval"]],
+  ["default-branch", ["lifecycle-change-approval"]],
+  ["ruleset", ["lifecycle-change-approval"]],
 ]);
-const knownOperations = new Set(externalApprovalByOperation.keys());
+const knownOperations = new Set(externalApprovalsByOperation.keys());
 const knownStatuses = new Set(["pending", "active", "review-required", "accepted", "failed", "paused", "blocked"]);
 
 function duplicates(values) {
@@ -189,8 +189,9 @@ export function evaluateOrchestration(input) {
   for (const item of input.workItems) {
     const granted = new Set(item.grantedApprovals);
     for (const operation of item.requestedOperations) {
-      const required = externalApprovalByOperation.get(operation);
-      if (required && !granted.has(required)) missingApprovals.push({ workItem: item.id, operation, required });
+      for (const required of externalApprovalsByOperation.get(operation) ?? []) {
+        if (!granted.has(required)) missingApprovals.push({ workItem: item.id, operation, required });
+      }
     }
   }
 

@@ -31,6 +31,7 @@
       { "workItem": "operations", "operation": "tag", "required": "release-approval" },
       { "workItem": "operations", "operation": "publish", "required": "release-approval" },
       { "workItem": "operations", "operation": "deploy", "required": "release-approval" },
+      { "workItem": "operations", "operation": "deploy", "required": "production-change-approval" },
       { "workItem": "operations", "operation": "release", "required": "release-approval" },
       { "workItem": "operations", "operation": "lifecycle-change", "required": "lifecycle-change-approval" },
       { "workItem": "operations", "operation": "deprecate", "required": "lifecycle-change-approval" },

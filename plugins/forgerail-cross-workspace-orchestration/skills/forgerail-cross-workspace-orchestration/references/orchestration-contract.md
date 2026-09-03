@@ -45,7 +45,8 @@ A delivered handoff remains `review-required` until the master validates it. Mis
 Evaluate each requested action against its exact current gate. In particular:
 
 - push, Draft PR, or remote CI may require `remote-integration-approval`;
-- `ready`, `merge`, `tag`, `publish`, `deploy`, or `release` requires `release-approval` plus any stricter project runbook gate;
+- `ready`, `merge`, `tag`, `publish`, or `release` requires `release-approval` plus any stricter project runbook gate;
+- production `deploy` requires both `release-approval` and an independent `production-change-approval`, plus any stricter project runbook gate;
 - `deprecate`, `archive`, `delete`, `redirect`, `transfer`, `repository-transfer`, `default-branch`, `ruleset`, or `lifecycle-change` requires `lifecycle-change-approval` or a more specific project gate.
 
 Never infer one row from another. Pack availability, enablement, task dispatch, durable-record approval, and transport delivery grant none of them.

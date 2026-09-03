@@ -77,6 +77,7 @@ for (const required of [
   "accepted-event-status-mismatch-rejected",
   "self-dependency-rejected",
   "dependency-cycle-rejected",
+  "production-deployment-requires-independent-approval",
 ]) if (!results.some(({ name }) => name === required)) errors.push(`missing fixture: ${required}`);
 
 for (const result of results) if (!result.passed) errors.push(`fixture failed: ${result.name}`);
