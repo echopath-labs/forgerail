@@ -7,7 +7,6 @@ import {
   fstatSync,
   lstatSync,
   mkdirSync,
-  mkdtempSync,
   openSync,
   readFileSync,
   readdirSync,
@@ -50,10 +49,11 @@ function confined(base, candidate) {
 }
 
 function deniedFileName(name) {
-  return deniedNames.has(name)
-    || [...deniedNames].some((denied) => name.startsWith(`${denied}.`))
-    || name.endsWith(".pem")
-    || name.endsWith(".key");
+  const normalized = name.toLowerCase();
+  return deniedNames.has(normalized)
+    || [...deniedNames].some((denied) => normalized.startsWith(`${denied}.`))
+    || normalized.endsWith(".pem")
+    || normalized.endsWith(".key");
 }
 
 function safeRelativePath(path) {
@@ -436,20 +436,31 @@ export function buildBundle(rootInput, output, testHooks = {}) {
     if (typeof testHooks.afterSourceEnumeration === "function") testHooks.afterSourceEnumeration();
     verifyBoundOutputParent(outputBinding);
 
-    const staging = mkdtempSync(".forgerail-bundle-");
+    let targetBinding;
     const inventory = [];
-    let installed = false;
+    let targetReserved = false;
     try {
-      for (const projection of projections) {
+      const materialized = projections.map((projection) => {
         if (!safeRelativePath(projection.target)) throw new Error(`bundle target path is not allowed: ${projection.target}`);
-        const destination = resolve(staging, projection.target);
-        if (!confined(staging, destination)) throw new Error(`bundle target escapes staging directory: ${projection.target}`);
-        mkdirSync(dirname(destination), { recursive: true });
         const { bytes, metadata } = readRegularFileBelowBoundRoot(
           projection.sourceRoot,
           projection.sourcePath,
           projection.sourceIdentity,
         );
+        return { projection, bytes, metadata };
+      });
+      for (const boundRoot of boundRoots) verifyBoundDirectoryRoot(boundRoot);
+      verifyBoundOutputParent(outputBinding);
+      if (typeof testHooks.beforeOutputReservation === "function") testHooks.beforeOutputReservation();
+      mkdirSync(targetName, { mode: 0o700 });
+      targetReserved = true;
+      targetBinding = bindDirectoryRoot(target, "bundle output");
+
+      for (const { projection, bytes, metadata } of materialized) {
+        verifyBoundDirectoryRoot(targetBinding);
+        const destination = resolve(target, projection.target);
+        if (!confined(target, destination)) throw new Error(`bundle target escapes reserved output directory: ${projection.target}`);
+        mkdirSync(dirname(destination), { recursive: true });
         const mode = (metadata.mode & 0o111n) === 0n ? 0o644 : 0o755;
         writeFileSync(destination, bytes, { flag: "wx", mode });
         chmodSync(destination, mode);
@@ -464,15 +475,23 @@ export function buildBundle(rootInput, output, testHooks = {}) {
         });
       }
       for (const boundRoot of boundRoots) verifyBoundDirectoryRoot(boundRoot);
+      verifyBoundDirectoryRoot(targetBinding);
       verifyBoundOutputParent(outputBinding);
-      if (existsSync(targetName)) throw new Error("output appeared during build");
-      renameSync(staging, targetName);
-      installed = true;
       verifyBoundOutputParent(outputBinding);
     } catch (error) {
-      rmSync(staging, { recursive: true, force: true });
-      if (installed) rmSync(targetName, { recursive: true, force: true });
+      if (targetReserved) {
+        try {
+          const current = lstatSync(target, { bigint: true });
+          if (targetBinding !== undefined && sameFile(current, targetBinding.identity)) {
+            closeSync(targetBinding.descriptor);
+            targetBinding = undefined;
+            rmSync(target, { recursive: true, force: true });
+          }
+        } catch {}
+      }
       throw error;
+    } finally {
+      if (targetBinding !== undefined) closeSync(targetBinding.descriptor);
     }
 
     const digest = createHash("sha256").update(`${JSON.stringify(inventory)}\n`).digest("hex");

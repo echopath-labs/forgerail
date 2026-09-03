@@ -16,7 +16,7 @@ Each proposed Adoption write carries an `approvalSha256` over its canonical work
 
 The intentional alpha.3 compatibility tightenings are explicit: contract identifiers now require at least two characters and a leading alphanumeric character; every Launch Contract requires the validated `effectiveProfile` digest plus canonical identities for its active Pack manifests, while workspace identity appears only once at `envelope.ownerWorkspace`; and every required active Pack must have an available manifest and be included by the task envelope. These are fail-closed corrections, not silent compatibility regressions.
 
-The source-repository projection builder is a maintainer tool and must not enter the npm package or public CLI. Public projection requires an explicit array-valued `package.json.files` publication allowlist, must be repeatable, exclude private process evidence and preserve the exact public-main documentation baseline.
+The source-repository projection builder is a maintainer tool and must not enter the npm package or public CLI. Public projection requires an explicit array-valued `package.json.files` publication allowlist, must be repeatable, reject sensitive filename families case-insensitively, reserve a new output directory without replacing a concurrent target, exclude private process evidence and preserve the exact public-main documentation baseline.
 
 ## Separate release gate
 

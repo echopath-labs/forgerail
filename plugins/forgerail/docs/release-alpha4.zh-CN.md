@@ -16,7 +16,7 @@
 
 相对 alpha.3 的兼容性收紧必须明确：contract 标识符至少包含两个字符且首字符必须为字母或数字；每个 Launch Contract 必须携带已验证的 `effectiveProfile` 摘要以及当前 active Pack manifest 的规范身份摘要，工作区身份仅在 `envelope.ownerWorkspace` 出现一次；每个 required active Pack 必须存在可用 manifest，并由 task envelope 显式包含。这些是 fail-closed 修正，不是未说明的兼容性回归。
 
-source-repository projection builder 仅供维护者使用，不得进入 npm 包或公共 CLI。公共投影必须要求 `package.json.files` 是显式数组、保持可重复、排除私有过程证据，并保留公共 main 的文档基线。
+source-repository projection builder 仅供维护者使用，不得进入 npm 包或公共 CLI。公共投影必须要求 `package.json.files` 是显式数组、保持可重复、以不区分大小写的方式拒绝敏感文件名族、先独占保留新输出目录且不得替换并发出现的目标、排除私有过程证据，并保留公共 main 的文档基线。
 
 ## 独立发布门
 

@@ -505,11 +505,8 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
             backupExists = false;
             replacementInstalled = false;
           } else if (temporaryStat !== undefined && !installed.isSymbolicLink() && sameFile(temporaryStat, installed)) {
-            const failed = `.forgerail-${randomBytes(12).toString("hex")}.failed`;
-            renameSync(leaf, failed);
             renameSync(backup, leaf);
             backupExists = false;
-            unlinkSync(failed);
             replacementInstalled = false;
           } else {
             preserveBackup = true;

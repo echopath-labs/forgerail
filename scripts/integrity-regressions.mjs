@@ -451,6 +451,23 @@ try {
     assert.equal(readdirSync(workspace).some((name) => name.startsWith(".forgerail-")), false);
   });
 
+  pass("adoption-restores-original-binding-with-one-rename", () => {
+    const workspace = temporary("forgerail-adoption-atomic-restore-");
+    const target = resolve(workspace, "AGENTS.md");
+    writeFileSync(target, "existing instructions\n");
+    const approved = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
+    assert.throws(
+      () => applyApprovedAdoptionWrite(workspace, approved, approved.approvalSha256, {
+        afterInstall() { throw new Error("forced post-install failure"); },
+      }),
+      /forced post-install failure/,
+    );
+    assert.equal(readFileSync(target, "utf8"), "existing instructions\n");
+    assert.equal(readdirSync(workspace).some((name) => name.startsWith(".forgerail-")), false);
+    const implementation = readFileSync(resolve(root, "scripts/lib/adoption.mjs"), "utf8");
+    assert.doesNotMatch(implementation, /renameSync\(leaf, failed\)/);
+  });
+
   pass("invalid-pack-collections-fail-closed-with-structured-errors", () => {
     for (const [field, value] of [["dependencies", {}], ["dependencies", null], ["conflicts", "other-pack"]]) {
       const malformed = { ...clone(pack), [field]: value };
@@ -600,13 +617,34 @@ try {
   });
 
   if (buildBundle) pass("bundle-rejects-environment-and-npmrc-filename-families", () => {
-    for (const path of ["scripts/.env.local", "docs/.env.production", "scripts/.npmrc.backup"]) {
+    for (const path of [
+      "scripts/.env.local",
+      "docs/.env.production",
+      "scripts/.npmrc.backup",
+      "scripts/SECRET.KEY",
+      "docs/config.PEM",
+      "scripts/.ENV.production",
+    ]) {
       const publicRoot = publicLayoutFixture();
       writeFileSync(resolve(publicRoot, path), "PRIVATE_VALUE=should-not-project\n");
       const output = resolve(temporary("forgerail-sensitive-name-output-parent-"), "bundle");
       assert.throws(() => buildBundle(publicRoot, output), /path is not allowed/);
       assert.equal(existsSync(output), false);
     }
+  });
+
+  if (buildBundle) pass("bundle-reserves-output-without-replacing-a-concurrent-directory", () => {
+    const publicRoot = publicLayoutFixture();
+    const parent = temporary("forgerail-concurrent-output-parent-");
+    const output = resolve(parent, "bundle");
+    assert.throws(
+      () => buildBundle(publicRoot, output, {
+        beforeOutputReservation() { mkdirSync(output); },
+      }),
+      /EEXIST|file already exists/,
+    );
+    assert.equal(existsSync(output), true);
+    assert.deepEqual(readdirSync(output), []);
   });
 
   if (buildBundle) pass("bundle-rejects-output-inside-source-before-staging", () => {
