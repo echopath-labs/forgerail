@@ -45,7 +45,7 @@ const packStates = ["available", "recommended", "enabled", "required", "blocked"
 const idPattern = /^[a-z][a-z0-9-]+$/;
 const ruleIdPattern = /^[a-z][a-z0-9.-]+$/;
 const taskIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]+$/;
-const relativePathPattern = /^(?![\\/])(?![a-zA-Z]:[\\/])(?!.*(?:^|[\\/])\.\.(?:[\\/]|$))[^\\]+$/;
+const relativePathPattern = /^(?![\\/])(?![a-zA-Z]:)(?!.*(?:^|[\\/])\.\.(?:[\\/]|$))[^\\]+$/;
 const commitPattern = /^[0-9a-f]{40}$/;
 const digestPattern = /^[0-9a-f]{64}$/;
 const authorityClasses = ["agent_review", "automated_validation", "peer_review", "ownership_approval", "security_approval", "release_approval", "environment_approval"];
@@ -264,18 +264,10 @@ function validateLaunch(value, errors) {
     string(value.effectiveProfile.digest, "launch.effectiveProfile.digest", errors, digestPattern);
   }
   if (value.effectiveProfile?.workspace !== value.envelope?.ownerWorkspace) errors.push("launch Effective Profile workspace must match Task Envelope owner workspace");
-  if (!Array.isArray(value.effectivePackManifests)) errors.push("launch.effectivePackManifests must be an array");
-  else {
-    const ids = [];
-    for (const [index, manifest] of value.effectivePackManifests.entries()) {
-      const label = `launch.effectivePackManifests[${index}]`;
-      if (!exactKeys(manifest, ["id", "digest"], [], label, errors)) continue;
-      string(manifest.id, `${label}.id`, errors, idPattern);
-      string(manifest.digest, `${label}.digest`, errors, digestPattern);
-      ids.push(manifest.id);
-    }
-    if (new Set(ids).size !== ids.length) errors.push("launch.effectivePackManifests must not contain duplicate Pack identities");
-    if (JSON.stringify(ids) !== JSON.stringify([...ids].sort())) errors.push("launch.effectivePackManifests must be sorted by Pack identity");
+  if (!object(value.effectivePackManifests)) errors.push("launch.effectivePackManifests must be an object keyed by Pack identity");
+  else for (const [id, manifestDigest] of Object.entries(value.effectivePackManifests)) {
+    string(id, "launch.effectivePackManifests Pack identity", errors, idPattern);
+    string(manifestDigest, `launch.effectivePackManifests.${id}`, errors, digestPattern);
   }
   strings(value.effectiveRuleSources, "launch.effectiveRuleSources", errors, { min: 1, unique: true });
   string(value.hostAgent, "launch.hostAgent", errors);

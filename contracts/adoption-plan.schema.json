@@ -23,7 +23,7 @@
         "properties": {
           "adapterId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
           "status": { "enum": ["supported", "profile-only"] },
-          "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\\\]+$" },
+          "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\\\]+$" },
           "verificationMode": { "enum": ["new-task-discovery", "profile-only"] }
         }
       }
@@ -36,7 +36,7 @@
         "required": ["workspaceSha256", "path", "operation", "baseSha256", "contentSha256", "content", "managedMarker", "approvalSha256"],
         "properties": {
           "workspaceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-          "path": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:[\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\\\]+$" },
+          "path": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^\\\\]+$" },
           "operation": { "enum": ["create", "append-managed-block", "replace-managed-block"] },
           "baseSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
           "contentSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },

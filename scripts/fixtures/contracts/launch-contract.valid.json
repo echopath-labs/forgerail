@@ -17,7 +17,7 @@
     "workspace": "fixture-workspace",
     "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
   },
-  "effectivePackManifests": [],
+  "effectivePackManifests": {},
   "effectiveRuleSources": ["AGENTS.md", "ForgeRail Core"],
   "hostAgent": "Codex",
   "executionOwner": "host-agent"

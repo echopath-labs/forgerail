@@ -118,10 +118,10 @@ export function createLaunchContract(profile, envelope, hostAgent, packManifests
     schemaVersion: "1.0",
     envelope,
     effectiveProfile: { workspace: profile.workspace, digest: digest(profile) },
-    effectivePackManifests: [...activePacks].sort().flatMap((id) => {
+    effectivePackManifests: Object.fromEntries([...activePacks].sort().flatMap((id) => {
       const manifest = manifests.get(id);
-      return manifest ? [{ id, digest: digest(manifest) }] : [];
-    }),
+      return manifest ? [[id, digest(manifest)]] : [];
+    })),
     effectiveRuleSources: [...new Set(["ForgeRail Core", ...(profile.rules ?? []).map((rule) => rule.source)])],
     hostAgent,
     executionOwner: "host-agent",

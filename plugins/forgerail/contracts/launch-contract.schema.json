@@ -18,16 +18,9 @@
       }
     },
     "effectivePackManifests": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "digest"],
-        "properties": {
-          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
-          "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
-        }
-      }
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]+$" },
+      "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
     },
     "effectiveRuleSources": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
     "hostAgent": { "type": "string", "minLength": 1 },

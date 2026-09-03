@@ -20,7 +20,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, resolve, win32 } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { applyApprovedAdoptionWrite, planAdoption, renderProposedWrite } from "./lib/adoption.mjs";
+import { applyApprovedAdoptionWrite, planAdoption, renderProposedWrite, resolveAdoptionWriteTarget } from "./lib/adoption.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
 import { readJson, validateContract } from "./lib/contracts.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
@@ -171,12 +171,12 @@ try {
     assert.equal(included.valid, true, included.errors.join("; "));
     assert.equal(included.launch.effectiveProfile.workspace, profileInput.workspace);
     assert.match(included.launch.effectiveProfile.digest, /^[0-9a-f]{64}$/);
-    assert.deepEqual(included.launch.effectivePackManifests.map(({ id }) => id), [pack.id]);
-    assert.match(included.launch.effectivePackManifests[0].digest, /^[0-9a-f]{64}$/);
+    assert.deepEqual(Object.keys(included.launch.effectivePackManifests), [pack.id]);
+    assert.match(included.launch.effectivePackManifests[pack.id], /^[0-9a-f]{64}$/);
     const changedPack = { ...pack, purpose: `${pack.purpose} Changed.` };
     const changedManifest = createLaunchContract(resolved.profile, { ...envelope, packs: [pack.id] }, "Codex", [changedPack]);
     assert.equal(changedManifest.valid, true, changedManifest.errors.join("; "));
-    assert.notEqual(changedManifest.launch.effectivePackManifests[0].digest, included.launch.effectivePackManifests[0].digest);
+    assert.notEqual(changedManifest.launch.effectivePackManifests[pack.id], included.launch.effectivePackManifests[pack.id]);
     const workspaceMismatch = createLaunchContract(resolved.profile, { ...envelope, ownerWorkspace: "other", packs: [pack.id] }, "Codex", [pack]);
     assert.equal(workspaceMismatch.valid, false);
   });
@@ -237,6 +237,13 @@ try {
     assert.throws(() => renderProposedWrite(driftWorkspace, plan.proposedWrites[0]), /symbolic link/);
     assert.throws(() => applyApprovedAdoptionWrite(driftWorkspace, plan.proposedWrites[0], plan.proposedWrites[0].approvalSha256), /symbolic link|changed before write/);
     assert.equal(existsSync(driftOutside), false);
+  });
+
+  pass("adoption-rejects-windows-drive-relative-targets", () => {
+    const workspace = temporary("forgerail-adoption-drive-relative-");
+    assert.throws(() => resolveAdoptionWriteTarget(workspace, "C:AGENTS.md"), /unsafe/);
+    const adapter = readJson(resolve(root, "adapters/codex.json"));
+    assert.equal(validateContract("host-adapter", { ...adapter, bindingTarget: "C:AGENTS.md" }).valid, false);
   });
 
   pass("adoption-rejects-non-regular-targets-before-read", () => {

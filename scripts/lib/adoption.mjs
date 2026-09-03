@@ -19,11 +19,11 @@ import {
   unlinkSync,
   writeSync,
 } from "node:fs";
-import { basename, dirname, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { validateContract } from "./contracts.mjs";
 
 const levels = ["plugin-only", "lightweight-adoption", "persisted-governance"];
-const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:[\\/])(?!.*(?:^|[\\/])\.\.(?:[\\/]|$))[^\\]+$/;
+const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*(?:^|[\\/])\.\.(?:[\\/]|$))[^\\]+$/;
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -41,7 +41,13 @@ function adapterFiles(pluginRoot) {
 
 function confined(root, target) {
   const value = relative(root, target);
-  return value === "" || (value !== ".." && !value.startsWith(`..${sep}`) && !value.startsWith("/"));
+  return value === "" || (
+    !isAbsolute(value)
+    && !/^[a-zA-Z]:/.test(value)
+    && value !== ".."
+    && !value.startsWith(`..${sep}`)
+    && !value.startsWith("/")
+  );
 }
 
 function linkAwareStat(path) {
