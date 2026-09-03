@@ -326,19 +326,64 @@ function outputParent(target) {
   return cursor;
 }
 
+function bindOutputParent(path) {
+  const observed = lstatSync(path, { bigint: true });
+  if (observed.isSymbolicLink() || !observed.isDirectory()) {
+    throw new Error("output parent must be a bound directory");
+  }
+  const descriptor = openSync(
+    path,
+    constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_DIRECTORY ?? 0),
+  );
+  const opened = fstatSync(descriptor, { bigint: true });
+  if (!opened.isDirectory() || !sameFile(observed, opened)) {
+    closeSync(descriptor);
+    throw new Error("output parent identity changed before build");
+  }
+  return { path, descriptor, identity: opened };
+}
+
+function verifyBoundOutputParent(binding) {
+  const retained = fstatSync(binding.descriptor, { bigint: true });
+  let current;
+  try {
+    current = lstatSync(binding.path, { bigint: true });
+  } catch {
+    throw new Error("output parent identity changed during build");
+  }
+  const entered = lstatSync(".", { bigint: true });
+  if (
+    !retained.isDirectory()
+    || current.isSymbolicLink()
+    || !current.isDirectory()
+    || !entered.isDirectory()
+    || !sameFile(binding.identity, retained)
+    || !sameFile(binding.identity, current)
+    || !sameFile(binding.identity, entered)
+  ) {
+    throw new Error("output parent identity changed during build");
+  }
+}
+
 export function buildBundle(rootInput, output, testHooks = {}) {
   const root = realpathSync(resolve(rootInput));
   const requestedTarget = resolve(output);
   if (existsSync(requestedTarget)) throw new Error("output already exists");
   const parent = outputParent(requestedTarget);
-  const target = resolve(parent, basename(requestedTarget));
+  const targetName = basename(requestedTarget);
+  const target = resolve(parent, targetName);
   if (!confined(parent, target)) throw new Error("output escapes its parent directory");
   if (confined(root, target)) throw new Error("output must not be inside the source tree");
 
   const boundRoots = [];
-  const rootBinding = bindDirectoryRoot(root, "ForgeRail Core");
-  boundRoots.push(rootBinding);
+  const originalDirectory = process.cwd();
+  const outputBinding = bindOutputParent(parent);
   try {
+    process.chdir(parent);
+    verifyBoundOutputParent(outputBinding);
+    if (existsSync(targetName)) throw new Error("output already exists");
+    const rootBinding = bindDirectoryRoot(root, "ForgeRail Core");
+    boundRoots.push(rootBinding);
     const layout = sourceLayout(root);
     regularFileBelow(root, layout.catalog, "marketplace catalog");
     const payload = packagePayload(rootBinding);
@@ -388,9 +433,11 @@ export function buildBundle(rootInput, output, testHooks = {}) {
       targets.add(projection.target);
     }
     if (typeof testHooks.afterSourceEnumeration === "function") testHooks.afterSourceEnumeration();
+    verifyBoundOutputParent(outputBinding);
 
-    const staging = mkdtempSync(resolve(parent, ".forgerail-bundle-"));
+    const staging = mkdtempSync(".forgerail-bundle-");
     const inventory = [];
+    let installed = false;
     try {
       for (const projection of projections) {
         if (!safeRelativePath(projection.target)) throw new Error(`bundle target path is not allowed: ${projection.target}`);
@@ -416,9 +463,14 @@ export function buildBundle(rootInput, output, testHooks = {}) {
         });
       }
       for (const boundRoot of boundRoots) verifyBoundDirectoryRoot(boundRoot);
-      renameSync(staging, target);
+      verifyBoundOutputParent(outputBinding);
+      if (existsSync(targetName)) throw new Error("output appeared during build");
+      renameSync(staging, targetName);
+      installed = true;
+      verifyBoundOutputParent(outputBinding);
     } catch (error) {
       rmSync(staging, { recursive: true, force: true });
+      if (installed) rmSync(targetName, { recursive: true, force: true });
       throw error;
     }
 
@@ -435,5 +487,7 @@ export function buildBundle(rootInput, output, testHooks = {}) {
     };
   } finally {
     for (const boundRoot of boundRoots.reverse()) closeSync(boundRoot.descriptor);
+    process.chdir(originalDirectory);
+    closeSync(outputBinding.descriptor);
   }
 }

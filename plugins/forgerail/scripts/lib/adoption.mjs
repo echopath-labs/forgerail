@@ -3,6 +3,7 @@ import {
   closeSync,
   constants,
   existsSync,
+  fchmodSync,
   fstatSync,
   fsyncSync,
   linkSync,
@@ -429,6 +430,7 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         mode,
       );
       temporaryExists = true;
+      fchmodSync(temporaryDescriptor, mode);
       writeAll(temporaryDescriptor, content);
       fsyncSync(temporaryDescriptor);
       temporaryStat = fstatSync(temporaryDescriptor);

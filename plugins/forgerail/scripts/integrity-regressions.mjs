@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -13,6 +14,7 @@ import {
   renameSync,
   rmSync,
   symlinkSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -372,6 +374,21 @@ try {
     assert.equal(readdirSync(existingWorkspace).some((name) => name.startsWith(".forgerail-") && (name.endsWith(".tmp") || name.endsWith(".bak"))), false);
   });
 
+  pass("adoption-preserves-existing-binding-mode-across-umask", () => {
+    const workspace = temporary("forgerail-adoption-mode-");
+    const target = resolve(workspace, "AGENTS.md");
+    writeFileSync(target, "existing instructions\n");
+    chmodSync(target, 0o664);
+    const approved = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
+    const priorUmask = process.umask(0o077);
+    try {
+      applyApprovedAdoptionWrite(workspace, approved, approved.approvalSha256);
+    } finally {
+      process.umask(priorUmask);
+    }
+    assert.equal(statSync(target).mode & 0o777, 0o664);
+  });
+
   pass("invalid-pack-collections-fail-closed-with-structured-errors", () => {
     for (const [field, value] of [["dependencies", {}], ["dependencies", null], ["conflicts", "other-pack"]]) {
       const malformed = { ...clone(pack), [field]: value };
@@ -578,6 +595,27 @@ try {
       /source root identity changed during build/,
     );
     assert.equal(existsSync(output), false);
+  });
+
+  if (buildBundle) pass("bundle-keeps-output-parent-bound-through-install", () => {
+    const publicRoot = publicLayoutFixture();
+    const ownerRoot = temporary("forgerail-output-parent-owner-");
+    const outputParent = resolve(ownerRoot, "approved-parent");
+    const movedParent = resolve(ownerRoot, "moved-parent");
+    const output = resolve(outputParent, "bundle");
+    mkdirSync(outputParent);
+    assert.throws(
+      () => buildBundle(publicRoot, output, {
+        afterSourceEnumeration() {
+          renameSync(outputParent, movedParent);
+          symlinkSync(resolve(publicRoot, "docs"), outputParent);
+        },
+      }),
+      /output parent identity changed during build/,
+    );
+    assert.equal(existsSync(resolve(publicRoot, "docs/bundle")), false);
+    assert.equal(existsSync(resolve(movedParent, "bundle")), false);
+    assert.equal(readdirSync(movedParent).some((name) => name.startsWith(".forgerail-bundle-")), false);
   });
 
   if (!buildBundle) assertions.push("source-only-bundle-regressions-not-installed");

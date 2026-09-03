@@ -10,7 +10,7 @@
 
 ## 完整性与兼容性证明
 
-运行 Core、完整性回归、Shadow comparison、release source、Directory、一次性消费者与外部 Pack 验证。有效的 alpha.3 contract 必须继续通过；非法标识符、日期、路径、重复身份、缺少必需 Pack、畸形 receipt、逃逸 adoption target、不安全 bundle source 与矛盾 orchestration event 必须 fail closed。
+运行 Core、完整性回归、Shadow comparison、release source、Directory、一次性消费者与外部 Pack 验证。仍满足 alpha.4 显式约束的 alpha.3 Profile、Pack、Task Envelope 与 Return Receipt 必须继续通过；Launch Contract 与 Adoption Plan 已有意收紧，必须重新生成后再交给 alpha.4 validator。非法标识符、日期、路径、重复身份、缺少必需 Pack、畸形 receipt、逃逸 adoption target、不安全 bundle source 与矛盾 orchestration event 必须 fail closed。
 
 每一条 Adoption 候选写入都携带 `approvalSha256`，绑定 canonical workspace 身份与完整可执行元数据：路径、操作、基线摘要、内容摘要、内容与 managed marker。集成方必须把人类已批准的摘要与可变候选分开保存，并在应用写入时显式传入；ForgeRail 只校验并使用一次不可变字段快照，因此跨工作区重放、accessor 漂移或普通元数据漂移都会在选择目标路径或发生修改之前失败。替换既有 managed binding 时使用同目录原子 rename，并以 hard link 保留恢复入口，因此不会主动制造目标路径缺失的时间窗。四位年份（包括 `0000` 至 `0099`）按字面解释，不再触发 JavaScript 旧式的 1900 年偏移。
 
