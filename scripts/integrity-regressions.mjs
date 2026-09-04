@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   chmodSync,
@@ -21,7 +21,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, resolve, win32 } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { adoptionWriteApprovalDigest, applyApprovedAdoptionWrite, planAdoption, renderProposedWrite, resolveAdoptionWriteTarget } from "./lib/adoption.mjs";
+import { adoptionWriteApprovalDigest, applyApprovedAdoptionWrite, loadHostAdapters, planAdoption, renderProposedWrite, resolveAdoptionWriteTarget } from "./lib/adoption.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
 import { readJson, validateContract } from "./lib/contracts.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
@@ -40,6 +40,20 @@ const externalPluginNames = [
   "forgerail-github-rulesets",
   "forgerail-release-safety",
   "forgerail-thread-closure",
+];
+const nonPortableHostPaths = [
+  "Straße.md",
+  "Σ.md",
+  "FORGERAIL.md.",
+  "AGENTS.md.",
+  "CON",
+  "CON.md",
+  "NUL.txt",
+  "AUX",
+  "COM1.md",
+  "dir/PRN.txt",
+  "dir/name.",
+  "dir/...",
 ];
 const hasExternalPackSources = externalPluginNames.every((name) =>
   existsSync(resolve(root, "plugins", name)) || existsSync(resolve(root, "..", name)),
@@ -141,7 +155,7 @@ try {
 
   pass("windows-and-parent-paths-rejected", () => {
     const adapter = clone(readJson(resolve(fixtureRoot, "host-adapter.codex.valid.json")));
-    for (const path of ["..\\outside", "C:\\outside", "\\\\server\\share", "dir//AGENTS.md", "dir/./AGENTS.md", "dir/"]) {
+    for (const path of ["..\\outside", "C:\\outside", "\\\\server\\share", "dir//AGENTS.md", "dir/./AGENTS.md", "dir/", ...nonPortableHostPaths]) {
       adapter.bindingTarget = path;
       assert.equal(validateContract("host-adapter", adapter).valid, false, path);
     }
@@ -149,7 +163,7 @@ try {
 
   pass("adoption-rejects-noncanonical-relative-path-segments", () => {
     const workspace = temporary("forgerail-adoption-noncanonical-path-");
-    for (const path of ["dir//AGENTS.md", "dir/./AGENTS.md", "dir/"]) {
+    for (const path of ["dir//AGENTS.md", "dir/./AGENTS.md", "dir/", ...nonPortableHostPaths]) {
       assert.throws(() => resolveAdoptionWriteTarget(workspace, path), /unsafe/, path);
     }
   });
@@ -259,6 +273,270 @@ try {
       assert.ok(result.gaps.includes("package-metadata-malformed"));
       assert.equal(result.evidence.find(({ id }) => id === "package-metadata")?.value.reason, "invalid-root-shape");
       assert.equal(JSON.stringify(result).includes(workspace), false);
+    }
+  });
+
+  pass("diagnosis-rejects-linked-host-and-package-content", () => {
+    const workspace = temporary("forgerail-diagnosis-linked-inputs-");
+    const outside = temporary("forgerail-diagnosis-linked-outside-");
+    writeFileSync(resolve(outside, "package.json"), JSON.stringify({ scripts: { outsideSentinel: "do-not-observe" } }));
+    writeFileSync(resolve(outside, "AGENTS.md"), "<!-- forgerail:binding:codex:v1:start -->\noutside\n<!-- forgerail:binding:codex:v1:end -->\n");
+    mkdirSync(resolve(outside, "docs"));
+    writeFileSync(resolve(outside, "docs/decision.md"), "# outside\n");
+    symlinkSync(resolve(outside, "package.json"), resolve(workspace, "package.json"));
+    symlinkSync(resolve(outside, "AGENTS.md"), resolve(workspace, "AGENTS.md"));
+    symlinkSync(resolve(outside, "docs"), resolve(workspace, "docs"));
+    const result = diagnoseWorkspace(workspace, root);
+    assert.ok(result.gaps.includes("package-metadata-unavailable"));
+    assert.ok(result.gaps.includes("host-binding-unavailable:codex"));
+    assert.equal(result.adoption.currentLevel, "plugin-only");
+    assert.equal(JSON.stringify(result).includes("outsideSentinel"), false);
+    assert.equal(result.inheritedHabits.some(({ source }) => source === "docs/"), false);
+    const codex = result.evidence.find(({ id }) => id === "host-adapters").value.find(({ id }) => id === "codex");
+    assert.equal(codex.observed, true);
+    assert.equal(codex.readState, "unsafe-symbolic-link");
+  });
+
+  pass("diagnosis-requires-a-bounded-markdown-record", () => {
+    const empty = temporary("forgerail-diagnosis-empty-records-");
+    mkdirSync(resolve(empty, "docs/adr"), { recursive: true });
+    const emptyResult = diagnoseWorkspace(empty, root);
+    assert.equal(emptyResult.inheritedHabits.some(({ type }) => type === "markdown-adr"), false);
+    mkdirSync(resolve(empty, "docs/adr/fake.md"));
+    assert.equal(diagnoseWorkspace(empty, root).inheritedHabits.some(({ type }) => type === "markdown-adr"), false);
+    const outside = resolve(temporary("forgerail-diagnosis-markdown-outside-"), "outside.md");
+    writeFileSync(outside, "# Outside\n");
+    symlinkSync(outside, resolve(empty, "docs/adr/linked.md"));
+    assert.equal(diagnoseWorkspace(empty, root).inheritedHabits.some(({ type }) => type === "markdown-adr"), false);
+    writeFileSync(resolve(empty, "docs/adr/0001-decision.md"), "# Decision\n");
+    const populatedResult = diagnoseWorkspace(empty, root);
+    assert.equal(populatedResult.inheritedHabits.some(({ type, source }) => type === "markdown-adr" && source === "docs/adr/"), true);
+  });
+
+  pass("diagnosis-bounds-regular-file-content", () => {
+    const workspace = temporary("forgerail-diagnosis-oversized-");
+    writeFileSync(resolve(workspace, "package.json"), " ".repeat(4 * 1024 * 1024 + 1));
+    const result = diagnoseWorkspace(workspace, root);
+    assert.ok(result.gaps.includes("package-metadata-unavailable"));
+    assert.equal(result.evidence.find(({ id }) => id === "package-metadata")?.value.reason, "oversized");
+    assert.equal(JSON.stringify(result).includes(workspace), false);
+  });
+
+  if (process.platform !== "win32") pass("diagnosis-rejects-fifos-without-blocking", () => {
+    for (const target of ["package.json", "AGENTS.md"]) {
+      const workspace = temporary(`forgerail-diagnosis-fifo-${target === "package.json" ? "package" : "host"}-`);
+      execFileSync("mkfifo", [resolve(workspace, target)]);
+      const execution = spawnSync(process.execPath, [
+        resolve(root, "scripts/forgerail.mjs"),
+        "diagnose",
+        "--workspace",
+        workspace,
+      ], { encoding: "utf8", timeout: 2_000 });
+      assert.equal(execution.error, undefined, execution.error?.message);
+      assert.equal(execution.status, 0, execution.stderr);
+      const result = JSON.parse(execution.stdout);
+      const expectedGap = target === "package.json" ? "package-metadata-unavailable" : "host-binding-unavailable:codex";
+      assert.ok(result.gaps.includes(expectedGap));
+    }
+  });
+
+  pass("host-registry-owns-future-adapter-diagnosis-and-templates", () => {
+    const pluginRoot = temporary("forgerail-future-adapter-plugin-");
+    cpSync(resolve(root, "adapters"), resolve(pluginRoot, "adapters"), { recursive: true });
+    cpSync(resolve(root, "templates"), resolve(pluginRoot, "templates"), { recursive: true });
+    const adapter = {
+      schemaVersion: "1.0",
+      id: "nova",
+      displayName: "Nova Agent",
+      status: "profile-only",
+      instructionDiscovery: "explicit-only",
+      skillDiscovery: "unknown",
+      bindingTarget: "NOVA.md",
+      detectionTargets: ["NOVA.md"],
+      bindingModes: ["thin-reference"],
+      bindingTemplates: { "thin-reference": "bindings/nova-thin.md" },
+      unmanagedBindingPolicy: "append-managed-block",
+      managedMarker: "forgerail:binding:nova:v1",
+      activationBoundary: "host-specific-verification-required",
+      verification: { mode: "profile-only", expectedSkills: [] },
+      limitations: ["Synthetic future-adapter regression."],
+    };
+    writeFileSync(resolve(pluginRoot, "adapters/nova.json"), `${JSON.stringify(adapter, null, 2)}\n`);
+    writeFileSync(resolve(pluginRoot, "templates/bindings/nova-thin.md"), "<!-- forgerail:binding:nova:v1:start -->\nFollow `FORGERAIL.md`.\n<!-- forgerail:binding:nova:v1:end -->\n");
+    const workspace = temporary("forgerail-future-adapter-workspace-");
+    writeFileSync(resolve(workspace, "NOVA.md"), "Nova instructions\n");
+    const plan = planAdoption(pluginRoot, workspace);
+    assert.deepEqual(Object.keys(plan.hostSelection.hosts), ["nova"]);
+    assert.equal(plan.proposedWrites.some(({ path }) => path === "NOVA.md"), true);
+    assert.equal(plan.proposedWrites.find(({ path }) => path === "NOVA.md")?.operation, "append-managed-block");
+    const diagnosis = diagnoseWorkspace(workspace, pluginRoot);
+    const hosts = diagnosis.evidence.find(({ id }) => id === "host-adapters").value;
+    assert.equal(hosts.some(({ id, target, observed }) => id === "nova" && target === "NOVA.md" && observed), true);
+  });
+
+  pass("host-registry-reports-missing-id-by-file", () => {
+    const pluginRoot = temporary("forgerail-missing-adapter-id-");
+    cpSync(resolve(root, "adapters"), resolve(pluginRoot, "adapters"), { recursive: true });
+    cpSync(resolve(root, "templates"), resolve(pluginRoot, "templates"), { recursive: true });
+    const path = resolve(pluginRoot, "adapters/codex.json");
+    const adapter = readJson(path);
+    delete adapter.id;
+    writeFileSync(path, `${JSON.stringify(adapter, null, 2)}\n`);
+    const registry = loadHostAdapters(pluginRoot);
+    assert.equal(registry.valid, false);
+    assert.equal(registry.errors.some((error) => error.startsWith("codex.json:")), true);
+    assert.equal(registry.errors.some((error) => error.includes("ReferenceError")), false);
+  });
+
+  pass("host-registry-reports-malformed-json-by-file", () => {
+    const pluginRoot = temporary("forgerail-malformed-adapter-json-");
+    cpSync(resolve(root, "adapters"), resolve(pluginRoot, "adapters"), { recursive: true });
+    cpSync(resolve(root, "templates"), resolve(pluginRoot, "templates"), { recursive: true });
+    writeFileSync(resolve(pluginRoot, "adapters/codex.json"), "{ malformed\n");
+    const registry = loadHostAdapters(pluginRoot);
+    assert.equal(registry.valid, false);
+    assert.ok(registry.errors.includes("codex.json: host adapter is not valid JSON"));
+  });
+
+  pass("host-registry-rejects-uncomposable-targets-and-template-markers", () => {
+    const makeRoot = (name) => {
+      const pluginRoot = temporary(name);
+      cpSync(resolve(root, "adapters"), resolve(pluginRoot, "adapters"), { recursive: true });
+      cpSync(resolve(root, "templates"), resolve(pluginRoot, "templates"), { recursive: true });
+      return pluginRoot;
+    };
+    const base = {
+      schemaVersion: "1.0",
+      id: "nova",
+      displayName: "Nova Agent",
+      status: "profile-only",
+      instructionDiscovery: "explicit-only",
+      skillDiscovery: "unknown",
+      bindingTarget: "NOVA.md",
+      detectionTargets: ["NOVA.md"],
+      bindingModes: ["thin-reference"],
+      bindingTemplates: { "thin-reference": "bindings/nova-thin.md" },
+      unmanagedBindingPolicy: "append-managed-block",
+      managedMarker: "forgerail:binding:nova:v1",
+      activationBoundary: "host-specific-verification-required",
+      verification: { mode: "profile-only", expectedSkills: [] },
+      limitations: ["Synthetic registry composability regression."],
+    };
+    for (const [target, expected] of [["AGENTS.md", "adapter"], ["agents.md", "adapter"], [".cursor", "adapter"], ["FORGERAIL.md", "reserved"], ["forgerail.md", "reserved"]]) {
+      const pluginRoot = makeRoot(`forgerail-colliding-adapter-${expected}-`);
+      writeFileSync(resolve(pluginRoot, "templates/bindings/nova-thin.md"), "<!-- forgerail:binding:nova:v1:start -->\nFollow `FORGERAIL.md`.\n<!-- forgerail:binding:nova:v1:end -->\n");
+      writeFileSync(resolve(pluginRoot, "adapters/nova.json"), `${JSON.stringify({ ...base, bindingTarget: target }, null, 2)}\n`);
+      const registry = loadHostAdapters(pluginRoot);
+      assert.equal(registry.valid, false);
+      assert.equal(registry.errors.some((error) => error.includes(expected === "adapter" ? "binding target conflicts with" : "reserved shared contract")), true);
+    }
+    const markerRoot = makeRoot("forgerail-wrong-template-marker-");
+    writeFileSync(resolve(markerRoot, "adapters/nova.json"), `${JSON.stringify({
+      ...base,
+      bindingTemplates: { "thin-reference": "bindings/codex-thin.md" },
+    }, null, 2)}\n`);
+    const markerRegistry = loadHostAdapters(markerRoot);
+    assert.equal(markerRegistry.valid, false);
+    assert.equal(markerRegistry.errors.some((error) => error.includes("exactly one ordered forgerail:binding:nova:v1 boundary")), true);
+    for (const path of nonPortableHostPaths) {
+      for (const adapter of [
+        { ...base, bindingTarget: path },
+        { ...base, detectionTargets: [path] },
+        { ...base, bindingTemplates: { "thin-reference": path } },
+      ]) {
+        const invalidRoot = makeRoot("forgerail-nonportable-adapter-path-");
+        writeFileSync(resolve(invalidRoot, "adapters/nova.json"), `${JSON.stringify(adapter, null, 2)}\n`);
+        const invalidRegistry = loadHostAdapters(invalidRoot);
+        assert.equal(invalidRegistry.valid, false, path);
+        assert.equal(invalidRegistry.errors.some((error) => error.includes("invalid format")), true, path);
+      }
+    }
+  });
+
+  pass("host-schema-expresses-runtime-status-semantics", () => {
+    const hostSchema = readJson(resolve(root, "contracts/host-adapter.schema.json"));
+    const planSchema = readJson(resolve(root, "contracts/adoption-plan.schema.json"));
+    const supported = hostSchema.allOf.find((rule) => rule.if?.properties?.status?.const === "supported");
+    const profileOnly = hostSchema.allOf.find((rule) => rule.if?.properties?.status?.const === "profile-only");
+    assert.equal(hostSchema.properties.bindingModes.contains.const, "thin-reference");
+    assert.equal(supported.then.properties.activationBoundary.const, "new-task-required");
+    assert.equal(supported.then.properties.verification.properties.mode.const, "new-task-discovery");
+    assert.equal(supported.then.properties.verification.properties.expectedSkills.minItems, 1);
+    assert.equal(profileOnly.then.properties.activationBoundary.const, "host-specific-verification-required");
+    assert.equal(profileOnly.then.properties.verification.properties.mode.const, "profile-only");
+    assert.equal(profileOnly.then.properties.verification.properties.expectedSkills.maxItems, 0);
+    const schemaPathPatterns = [
+      hostSchema.properties.bindingTarget.pattern,
+      hostSchema.properties.detectionTargets.items.pattern,
+      hostSchema.properties.bindingTemplates.properties["managed-block"].pattern,
+      hostSchema.properties.bindingTemplates.properties["thin-reference"].pattern,
+      planSchema.properties.hostSelection.properties.hosts.additionalProperties.properties.bindingTarget.pattern,
+      planSchema.properties.proposedWrites.items.properties.path.pattern,
+    ].map((pattern) => new RegExp(pattern));
+    for (const pattern of schemaPathPatterns) {
+      assert.equal(pattern.test(".cursor/rules/forgerail.mdc"), true);
+      for (const path of nonPortableHostPaths) assert.equal(pattern.test(path), false, path);
+    }
+    const validPlan = readJson(resolve(fixtureRoot, "adoption-plan.single-host.valid.json"));
+    for (const path of nonPortableHostPaths) {
+      const invalidHost = clone(validPlan);
+      invalidHost.hostSelection.hosts.codex.bindingTarget = path;
+      assert.equal(validateContract("adoption-plan", invalidHost).valid, false, path);
+      const invalidWrite = clone(validPlan);
+      invalidWrite.proposedWrites[0].path = path;
+      invalidWrite.proposedWrites[0].approvalSha256 = adoptionWriteApprovalDigest(invalidWrite.proposedWrites[0]);
+      assert.equal(validateContract("adoption-plan", invalidWrite).valid, false, path);
+    }
+    const planHostRules = planSchema.properties.hostSelection.properties.hosts.additionalProperties.allOf;
+    assert.equal(planHostRules.find((rule) => rule.if?.properties?.status?.const === "supported").then.properties.verificationMode.const, "new-task-discovery");
+    assert.equal(planHostRules.find((rule) => rule.if?.properties?.status?.const === "profile-only").then.properties.verificationMode.const, "profile-only");
+    const invalidPlan = clone(readJson(resolve(fixtureRoot, "adoption-plan.single-host.valid.json")));
+    invalidPlan.hostSelection.hosts.codex.verificationMode = "profile-only";
+    assert.equal(validateContract("adoption-plan", invalidPlan).valid, false);
+  });
+
+  pass("host-registry-requires-one-template-per-binding-mode", () => {
+    const adapter = clone(readJson(resolve(fixtureRoot, "host-adapter.codex.valid.json")));
+    delete adapter.bindingTemplates["managed-block"];
+    assert.equal(validateContract("host-adapter", adapter).valid, false);
+    adapter.bindingTemplates["managed-block"] = "../outside.md";
+    assert.equal(validateContract("host-adapter", adapter).valid, false);
+    adapter.bindingTemplates["managed-block"] = "bindings/codex-compact.md";
+    adapter.unmanagedBindingPolicy = "unknown";
+    assert.equal(validateContract("host-adapter", adapter).valid, false);
+    adapter.unmanagedBindingPolicy = "append-managed-block";
+    adapter.bindingModes = ["managed-block"];
+    delete adapter.bindingTemplates["thin-reference"];
+    const managedOnly = validateContract("host-adapter", adapter);
+    assert.equal(managedOnly.valid, false);
+    assert.ok(managedOnly.errors.includes("hostAdapter must support thin-reference for all-Host adoption"));
+  });
+
+  pass("adoption-cli-rejects-missing-option-values", () => {
+    const workspace = temporary("forgerail-adoption-cli-options-");
+    writeFileSync(resolve(workspace, "AGENTS.md"), "Codex instructions\n");
+    for (const [option, argv] of [
+      ["--host", ["adoption-plan", "--workspace", workspace, "--host"]],
+      ["--host", ["adoption-plan", "--workspace", workspace, "--host", "--selection", "all-available"]],
+      ["--selection", ["adoption-plan", "--workspace", workspace, "--selection"]],
+    ]) {
+      const execution = spawnSync(process.execPath, [resolve(root, "scripts/forgerail.mjs"), ...argv], { encoding: "utf8" });
+      assert.equal(execution.status, 1);
+      assert.match(execution.stderr, new RegExp(`${option} requires a value`));
+    }
+  });
+
+  pass("adoption-cli-rejects-unknown-and-equals-style-options", () => {
+    const workspace = temporary("forgerail-adoption-cli-unknown-options-");
+    writeFileSync(resolve(workspace, "AGENTS.md"), "Codex instructions\n");
+    for (const argv of [
+      ["adoption-plan", "--workspace", workspace, "--host=codex"],
+      ["adoption-plan", "--workspace", workspace, "--selection=all-available"],
+      ["adoption-plan", "--workspace", workspace, "--hosst", "codex"],
+    ]) {
+      const execution = spawnSync(process.execPath, [resolve(root, "scripts/forgerail.mjs"), ...argv], { encoding: "utf8" });
+      assert.equal(execution.status, 1);
+      assert.match(execution.stderr, /option values must be provided separately|unknown option/);
     }
   });
 
@@ -522,6 +800,18 @@ try {
     assert.equal(readFileSync(resolve(existingWorkspace, "AGENTS.md"), "utf8"), expected);
     assert.equal(receipt.contentSha256, createHash("sha256").update(expected).digest("hex"));
     assert.equal(readdirSync(existingWorkspace).some((name) => name.startsWith(".forgerail-") && (name.endsWith(".tmp") || name.endsWith(".bak"))), false);
+  });
+
+  pass("adoption-preserves-registry-owned-unmanaged-binding-policy", () => {
+    const workspace = temporary("forgerail-adoption-unmanaged-cursor-");
+    mkdirSync(resolve(workspace, ".cursor/rules"), { recursive: true });
+    const target = resolve(workspace, ".cursor/rules/forgerail.mdc");
+    writeFileSync(target, "existing Cursor rules\n");
+    assert.throws(
+      () => planAdoption(root, workspace, ["cursor"]),
+      /already exists without a ForgeRail managed marker/,
+    );
+    assert.equal(readFileSync(target, "utf8"), "existing Cursor rules\n");
   });
 
   pass("adoption-rejects-duplicate-managed-boundaries", () => {

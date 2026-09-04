@@ -171,6 +171,9 @@ for (const path of [
   "adapters/cursor.json",
   "templates/FORGERAIL.md",
   "templates/bindings/codex-compact.md",
+  "templates/bindings/codex-thin.md",
+  "templates/bindings/claude-code-thin.md",
+  "templates/bindings/cursor-thin.mdc",
   "docs/adoption.md",
   "docs/adoption.zh-CN.md",
 ]) record(`adoption-path-${path.replaceAll(/[^a-z0-9]+/gi, "-").toLowerCase()}`, existsSync(resolve(root, path)), path);
@@ -180,7 +183,16 @@ const claudeAdapter = json("adapters/claude-code.json");
 const cursorAdapter = json("adapters/cursor.json");
 record("codex-adapter-supported", codexAdapter.status === "supported" && codexAdapter.bindingTarget === "AGENTS.md" && codexAdapter.detectionTargets?.includes("AGENTS.md"), codexAdapter.status);
 record("claude-adapter-profile-only", claudeAdapter.status === "profile-only" && claudeAdapter.detectionTargets?.includes("CLAUDE.md"), claudeAdapter.status);
+record("claude-adapter-thin-only", JSON.stringify(claudeAdapter.bindingModes) === JSON.stringify(["thin-reference"]), claudeAdapter.bindingModes);
 record("cursor-adapter-profile-only", cursorAdapter.status === "profile-only" && cursorAdapter.detectionTargets?.includes(".cursor"), cursorAdapter.status);
+for (const adapter of [codexAdapter, claudeAdapter, cursorAdapter]) {
+  const modes = Object.keys(adapter.bindingTemplates ?? {}).sort();
+  record(`adapter-${adapter.id}-template-modes`, JSON.stringify(modes) === JSON.stringify([...adapter.bindingModes].sort()), { modes, bindingModes: adapter.bindingModes });
+  record(`adapter-${adapter.id}-all-host-thin-reference`, adapter.bindingModes.includes("thin-reference"), adapter.bindingModes);
+  for (const [mode, template] of Object.entries(adapter.bindingTemplates ?? {})) {
+    record(`adapter-${adapter.id}-${mode}-template`, existsSync(resolve(root, "templates", template)), template);
+  }
+}
 record("package-adapters", packageJson.files?.includes("adapters/"), packageJson.files ?? null);
 record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
 record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");

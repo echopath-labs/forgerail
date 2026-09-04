@@ -4,7 +4,7 @@
   "title": "ForgeRail Host Adapter",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "detectionTargets", "bindingModes", "managedMarker", "activationBoundary", "verification", "limitations"],
+  "required": ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "detectionTargets", "bindingModes", "bindingTemplates", "unmanagedBindingPolicy", "managedMarker", "activationBoundary", "verification", "limitations"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
@@ -12,10 +12,10 @@
     "status": { "enum": ["supported", "profile-only"] },
     "instructionDiscovery": { "enum": ["task-start", "rules", "explicit-only", "unknown"] },
     "skillDiscovery": { "enum": ["agent-plugin-skills", "agent-skills", "explicit-only", "unknown"] },
-    "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*/$)[^\\\\]+$" },
+    "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)[^/]*\\.(?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.|/|$))(?!.*/$)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
     "detectionTargets": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*/$)[^\\\\]+$" },
+      "items": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)[^/]*\\.(?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.|/|$))(?!.*/$)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
       "minItems": 1,
       "uniqueItems": true
     },
@@ -23,8 +23,18 @@
       "type": "array",
       "items": { "enum": ["managed-block", "thin-reference"] },
       "minItems": 1,
-      "uniqueItems": true
+      "uniqueItems": true,
+      "contains": { "const": "thin-reference" }
     },
+    "bindingTemplates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "managed-block": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)[^/]*\\.(?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.|/|$))(?!.*/$)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
+        "thin-reference": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)[^/]*\\.(?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.|/|$))(?!.*/$)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" }
+      }
+    },
+    "unmanagedBindingPolicy": { "enum": ["append-managed-block", "reject"] },
     "managedMarker": { "type": "string", "pattern": "^forgerail:binding:[a-z][a-z0-9-]+:v1$" },
     "activationBoundary": { "enum": ["new-task-required", "host-specific-verification-required"] },
     "verification": {
@@ -45,5 +55,51 @@
       "items": { "type": "string", "minLength": 1 },
       "uniqueItems": true
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "supported" } }, "required": ["status"] },
+      "then": {
+        "properties": {
+          "activationBoundary": { "const": "new-task-required" },
+          "verification": {
+            "properties": {
+              "mode": { "const": "new-task-discovery" },
+              "expectedSkills": { "minItems": 1 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "profile-only" } }, "required": ["status"] },
+      "then": {
+        "properties": {
+          "activationBoundary": { "const": "host-specific-verification-required" },
+          "verification": {
+            "properties": {
+              "mode": { "const": "profile-only" },
+              "expectedSkills": { "maxItems": 0 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "bindingModes": { "contains": { "const": "managed-block" } } }, "required": ["bindingModes"] },
+      "then": { "properties": { "bindingTemplates": { "required": ["managed-block"] } } }
+    },
+    {
+      "if": { "properties": { "bindingModes": { "contains": { "const": "thin-reference" } } }, "required": ["bindingModes"] },
+      "then": { "properties": { "bindingTemplates": { "required": ["thin-reference"] } } }
+    },
+    {
+      "if": { "properties": { "bindingTemplates": { "required": ["managed-block"] } }, "required": ["bindingTemplates"] },
+      "then": { "properties": { "bindingModes": { "contains": { "const": "managed-block" } } } }
+    },
+    {
+      "if": { "properties": { "bindingTemplates": { "required": ["thin-reference"] } }, "required": ["bindingTemplates"] },
+      "then": { "properties": { "bindingModes": { "contains": { "const": "thin-reference" } } } }
+    }
+  ]
 }

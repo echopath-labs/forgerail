@@ -28,9 +28,19 @@
             "required": ["status", "bindingTarget", "verificationMode"],
             "properties": {
               "status": { "enum": ["supported", "profile-only"] },
-              "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*/$)[^\\\\]+$" },
+              "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)[^/]*\\.(?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.|/|$))(?!.*/$)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
               "verificationMode": { "enum": ["new-task-discovery", "profile-only"] }
-            }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "status": { "const": "supported" } }, "required": ["status"] },
+                "then": { "properties": { "verificationMode": { "const": "new-task-discovery" } } }
+              },
+              {
+                "if": { "properties": { "status": { "const": "profile-only" } }, "required": ["status"] },
+                "then": { "properties": { "verificationMode": { "const": "profile-only" } } }
+              }
+            ]
           }
         }
       }
@@ -44,7 +54,7 @@
         "required": ["workspaceSha256", "path", "operation", "baseSha256", "contentSha256", "content", "managedMarker", "approvalSha256"],
         "properties": {
           "workspaceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-          "path": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*/$)[^\\\\]+$" },
+          "path": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)[^/]*\\.(?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.|/|$))(?!.*/$)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
           "operation": { "enum": ["create", "append-managed-block", "replace-managed-block"] },
           "baseSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
           "contentSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },

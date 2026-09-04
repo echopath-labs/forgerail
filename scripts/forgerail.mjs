@@ -13,11 +13,49 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function fail(message) { console.error(`forgerail: ${message}`); process.exit(1); }
 function emit(value) { console.log(JSON.stringify(value, null, 2)); }
-function arg(name) { const index = process.argv.indexOf(name); return index >= 0 ? process.argv[index + 1] : undefined; }
-function args(name) {
+function optionValues(name) {
   const values = [];
-  process.argv.forEach((value, index) => { if (value === name && process.argv[index + 1]) values.push(process.argv[index + 1]); });
+  process.argv.forEach((value, index) => {
+    if (value !== name) return;
+    const candidate = process.argv[index + 1];
+    if (candidate === undefined || candidate.startsWith("--")) fail(`${name} requires a value`);
+    values.push(candidate);
+  });
   return values;
+}
+function arg(name) {
+  const values = optionValues(name);
+  if (values.length > 1) fail(`${name} may be provided only once`);
+  return values[0];
+}
+function args(name) {
+  return optionValues(name);
+}
+
+function validateCommandOptions(command) {
+  const allowedByCommand = new Map([
+    ["validate", []],
+    ["validate-fixtures", []],
+    ["validate-fixture-matrix", []],
+    ["validate-adoption", []],
+    ["validate-contract", ["--type", "--file"]],
+    ["diagnose", ["--workspace"]],
+    ["adoption-plan", ["--workspace", "--host", "--level", "--selection"]],
+    ["resolve-profile", ["--file", "--pack-manifest"]],
+    ["launch", ["--profile", "--envelope", "--host-agent", "--pack-manifest"]],
+    ["verify-receipt", ["--receipt", "--workspace"]],
+  ]);
+  const allowed = allowedByCommand.get(command);
+  if (!allowed) return;
+  const values = process.argv.slice(3);
+  for (let index = 0; index < values.length; index += 2) {
+    const option = values[index];
+    if (typeof option !== "string" || !option.startsWith("--")) fail(`unexpected positional argument: ${option ?? ""}`);
+    if (option.includes("=")) fail(`option values must be provided separately: ${option.split("=", 1)[0]}`);
+    if (!allowed.includes(option)) fail(`unknown option for ${command}: ${option}`);
+    const candidate = values[index + 1];
+    if (candidate === undefined || candidate.startsWith("--")) fail(`${option} requires a value`);
+  }
 }
 
 function collectSchemaRefs(value, refs = []) {
@@ -623,6 +661,7 @@ function validateAdoption() {
 }
 
 const [command] = process.argv.slice(2);
+validateCommandOptions(command);
 if (command === "validate") {
   const result = validatePlugin(); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "validate-fixtures") {
@@ -636,7 +675,7 @@ if (command === "validate") {
   if (!type || !file) fail("validate-contract requires --type and --file");
   const result = validateContract(type, readJson(resolve(file))); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "diagnose") {
-  const workspace = arg("--workspace"); if (!workspace) fail("diagnose requires --workspace"); emit(diagnoseWorkspace(workspace));
+  const workspace = arg("--workspace"); if (!workspace) fail("diagnose requires --workspace"); emit(diagnoseWorkspace(workspace, root));
 } else if (command === "adoption-plan") {
   const workspace = arg("--workspace"); const hosts = args("--host"); const level = arg("--level") ?? "lightweight-adoption"; const selection = arg("--selection");
   if (!workspace) fail("adoption-plan requires --workspace");

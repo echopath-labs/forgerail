@@ -25,7 +25,7 @@ import { validateContract } from "./contracts.mjs";
 const levels = ["plugin-only", "lightweight-adoption", "persisted-governance"];
 const adoptionOperations = new Set(["create", "append-managed-block", "replace-managed-block"]);
 const hostSelectionModes = new Set(["explicit", "all-detected", "all-available"]);
-const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\/$)[^\\]+$/;
+const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*(?:^|\/)[^/]*\.(?:\/|$))(?!.*(?:^|\/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\.|\/|$))(?!.*\/$)[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -50,6 +50,14 @@ function confined(root, target) {
     && !value.startsWith(`..${sep}`)
     && !value.startsWith("/")
   );
+}
+
+function portableTargetIdentity(path) {
+  return path.normalize("NFC").toLowerCase();
+}
+
+function targetIdentitiesConflict(left, right) {
+  return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
 }
 
 function linkAwareStat(path) {
@@ -315,16 +323,84 @@ function writeAll(descriptor, content) {
 }
 
 export function loadHostAdapters(pluginRoot) {
-  const adapters = adapterFiles(pluginRoot).map((name) => JSON.parse(read(resolve(pluginRoot, "adapters", name))));
+  const entries = [];
   const errors = [];
+  for (const name of adapterFiles(pluginRoot)) {
+    try { entries.push({ name, adapter: JSON.parse(read(resolve(pluginRoot, "adapters", name))) }); }
+    catch { errors.push(`${name}: host adapter is not valid JSON`); }
+  }
   const ids = new Set();
-  for (const adapter of adapters) {
+  const bindingTargets = new Map();
+  for (const { name, adapter } of entries) {
     const validation = validateContract("host-adapter", adapter);
     if (!validation.valid) errors.push(...validation.errors.map((error) => `${adapter.id ?? name}: ${error}`));
-    if (ids.has(adapter.id)) errors.push(`duplicate host adapter: ${adapter.id}`);
-    ids.add(adapter.id);
+    if (typeof adapter.id === "string") {
+      if (ids.has(adapter.id)) errors.push(`duplicate host adapter: ${adapter.id}`);
+      ids.add(adapter.id);
+    }
+    if (typeof adapter.bindingTarget === "string") {
+      const targetIdentity = portableTargetIdentity(adapter.bindingTarget);
+      const reservedIdentity = portableTargetIdentity("FORGERAIL.md");
+      if (targetIdentitiesConflict(targetIdentity, reservedIdentity)) errors.push(`${adapter.id ?? name}: binding target conflicts with the reserved shared contract: ${adapter.bindingTarget}`);
+      const collision = [...bindingTargets.entries()].find(([existing]) => targetIdentitiesConflict(targetIdentity, existing));
+      if (collision) errors.push(`${adapter.id ?? name}: binding target conflicts with ${collision[1]}: ${adapter.bindingTarget}`);
+      else bindingTargets.set(targetIdentity, adapter.id ?? name);
+    }
+    if (validation.valid) {
+      for (const mode of adapter.bindingModes) {
+        try {
+          const content = readBindingTemplate(pluginRoot, adapter, mode);
+          validateBindingTemplateMarkers(adapter, mode, content);
+        }
+        catch (error) { errors.push(`${adapter.id}: ${error.message}`); }
+      }
+    }
   }
-  return { valid: errors.length === 0, errors, adapters };
+  return { valid: errors.length === 0, errors, adapters: entries.map(({ adapter }) => adapter) };
+}
+
+function validateBindingTemplateMarkers(adapter, mode, content) {
+  const start = `<!-- ${adapter.managedMarker}:start -->`;
+  const end = `<!-- ${adapter.managedMarker}:end -->`;
+  const startCount = countLiteralOccurrences(content, start);
+  const endCount = countLiteralOccurrences(content, end);
+  if (startCount !== 1 || endCount !== 1 || content.indexOf(start) > content.indexOf(end)) {
+    throw new Error(`binding template for ${mode} must contain exactly one ordered ${adapter.managedMarker} boundary`);
+  }
+}
+
+function readBindingTemplate(pluginRoot, adapter, mode) {
+  const path = adapter.bindingTemplates?.[mode];
+  if (typeof path !== "string" || !portableRelativePath.test(path)) {
+    throw new Error(`binding template for ${mode} is missing or unsafe`);
+  }
+  const templateRoot = realpathSync(resolve(pluginRoot, "templates"));
+  let cursor = templateRoot;
+  const segments = path.split("/");
+  for (const [index, segment] of segments.entries()) {
+    const candidate = resolve(cursor, segment);
+    if (!confined(templateRoot, candidate)) throw new Error(`binding template escapes template root: ${path}`);
+    const metadata = linkAwareStat(candidate);
+    if (metadata === null) throw new Error(`binding template does not exist: ${path}`);
+    if (metadata.isSymbolicLink()) throw new Error(`binding template cannot traverse a symbolic link: ${path}`);
+    const final = index === segments.length - 1;
+    if (final && !metadata.isFile()) throw new Error(`binding template is not a regular file: ${path}`);
+    if (!final && !metadata.isDirectory()) throw new Error(`binding template ancestor is not a directory: ${path}`);
+    cursor = candidate;
+  }
+  let descriptor;
+  try {
+    const before = lstatSync(cursor);
+    descriptor = openSync(cursor, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0));
+    const opened = fstatSync(descriptor);
+    const observed = realpathSync(cursor);
+    const after = lstatSync(observed);
+    if (!confined(templateRoot, observed) || after.isSymbolicLink() || !sameFile(after, opened)) throw new Error(`binding template escaped or changed before read: ${path}`);
+    if (!opened.isFile() || !sameFile(before, opened)) throw new Error(`binding template identity changed before read: ${path}`);
+    return readFileSync(descriptor, "utf8");
+  } finally {
+    if (descriptor !== undefined) closeSync(descriptor);
+  }
 }
 
 function detectionTargetPresent(root, path) {
@@ -366,8 +442,6 @@ function resolveHostSelection(root, adapters, hostIds, selectionMode) {
   }
   return {
     mode,
-    requestedHostIds: [...hostIds],
-    resolvedHostIds: selected.map((adapter) => adapter.id),
     selected,
   };
 }
@@ -383,13 +457,6 @@ export function observeAdoptionLevel(workspace, adapters = []) {
   return "plugin-only";
 }
 
-function templateName(adapterId, strategy) {
-  if (adapterId === "codex") return strategy === "single-host-managed-block" ? "codex-compact.md" : "codex-thin.md";
-  if (adapterId === "claude-code") return "claude-code-thin.md";
-  if (adapterId === "cursor") return "cursor-thin.mdc";
-  throw new Error(`no binding template for host adapter: ${adapterId}`);
-}
-
 function countLiteralOccurrences(content, marker) {
   let count = 0;
   let offset = 0;
@@ -400,7 +467,7 @@ function countLiteralOccurrences(content, marker) {
   return count;
 }
 
-function proposedWrite(workspace, workspaceSha256, path, content, managedMarker) {
+function proposedWrite(workspace, workspaceSha256, path, content, managedMarker, unmanagedBindingPolicy = "append-managed-block") {
   const target = adoptionTarget(workspace, path);
   const exists = existsSync(target);
   if (exists && !statSync(target).isFile()) throw new Error(`adoption target is not a file: ${path}`);
@@ -414,7 +481,9 @@ function proposedWrite(workspace, workspaceSha256, path, content, managedMarker)
   if (hasStart !== hasEnd) throw new Error(`adoption target has an incomplete managed marker: ${path}`);
   if (hasStart && prior.indexOf(start) > prior.indexOf(end)) throw new Error(`adoption target has reversed managed markers: ${path}`);
   if (startCount > 1 || endCount > 1) throw new Error(`adoption target has duplicate managed markers: ${path}`);
-  if (exists && path === ".cursor/rules/forgerail.mdc" && !hasStart) throw new Error("Cursor binding target already exists without a ForgeRail managed marker");
+  if (exists && !hasStart && unmanagedBindingPolicy === "reject") {
+    throw new Error(`Host binding target already exists without a ForgeRail managed marker: ${path}`);
+  }
   const operation = exists ? (hasStart ? "replace-managed-block" : "append-managed-block") : "create";
   const approvedContent = operation === "replace-managed-block" && content.indexOf(start) > 0
     ? `${content.slice(content.indexOf(start), content.indexOf(end) + end.length)}\n`
@@ -629,15 +698,14 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
   if (strategy === "single-host-managed-block") {
     const adapter = selected[0];
     if (!adapter.bindingModes.includes("managed-block")) throw new Error(`${adapter.id} does not support a managed-block binding`);
-    const content = read(resolve(pluginRoot, "templates/bindings", templateName(adapter.id, strategy)));
-    writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker));
+    const content = readBindingTemplate(pluginRoot, adapter, "managed-block");
+    writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker, adapter.unmanagedBindingPolicy));
   } else if (strategy === "shared-contract-with-thin-bindings") {
     const contract = read(resolve(pluginRoot, "templates/FORGERAIL.md")).replace("{{HOSTS}}", selected.map((adapter) => adapter.displayName).join(", "));
     writes.push(proposedWrite(realRoot, binding.workspaceSha256, "FORGERAIL.md", contract, "forgerail:adoption-contract:v1"));
     for (const adapter of selected) {
-      if (!adapter.bindingModes.includes("thin-reference")) throw new Error(`${adapter.id} does not support a thin-reference binding`);
-      const content = read(resolve(pluginRoot, "templates/bindings", templateName(adapter.id, strategy)));
-      writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker));
+      const content = readBindingTemplate(pluginRoot, adapter, "thin-reference");
+      writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker, adapter.unmanagedBindingPolicy));
     }
   }
   const selectedHosts = Object.fromEntries(selected.map((adapter) => [adapter.id, {
@@ -659,7 +727,7 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
     },
     evidence: [
       `Observed current adoption level: ${currentLevel}.`,
-      `Host selection mode ${selection.mode} resolved adapters: ${selection.resolvedHostIds.join(", ")}.`,
+      `Host selection mode ${selection.mode} resolved adapters: ${selected.map((adapter) => adapter.id).join(", ")}.`,
       "ForgeRail alpha.1 does not generate persisted .forgerail state.",
     ],
     proposedWrites: writes,

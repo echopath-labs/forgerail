@@ -46,6 +46,7 @@ const idPattern = /^[a-z][a-z0-9-]+$/;
 const ruleIdPattern = /^[a-z][a-z0-9.-]+$/;
 const taskIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]+$/;
 const relativePathPattern = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\/$)[^\\]+$/;
+const portableHostPathPattern = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*(?:^|\/)[^/]*\.(?:\/|$))(?!.*(?:^|\/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\.|\/|$))(?!.*\/$)[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
 const commitPattern = /^[0-9a-f]{40}$/;
 const digestPattern = /^[0-9a-f]{64}$/;
 const authorityClasses = ["agent_review", "automated_validation", "peer_review", "ownership_approval", "security_approval", "release_approval", "environment_approval"];
@@ -306,7 +307,7 @@ function validateReceipt(value, errors) {
 }
 
 function validateHostAdapter(value, errors) {
-  const keys = ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "detectionTargets", "bindingModes", "managedMarker", "activationBoundary", "verification", "limitations"];
+  const keys = ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "detectionTargets", "bindingModes", "bindingTemplates", "unmanagedBindingPolicy", "managedMarker", "activationBoundary", "verification", "limitations"];
   if (!exactKeys(value, keys, [], "hostAdapter", errors)) return;
   schemaVersion(value.schemaVersion, "hostAdapter", errors);
   string(value.id, "hostAdapter.id", errors, idPattern);
@@ -314,10 +315,21 @@ function validateHostAdapter(value, errors) {
   if (!["supported", "profile-only"].includes(value.status)) errors.push("hostAdapter.status is invalid");
   if (!["task-start", "rules", "explicit-only", "unknown"].includes(value.instructionDiscovery)) errors.push("hostAdapter.instructionDiscovery is invalid");
   if (!["agent-plugin-skills", "agent-skills", "explicit-only", "unknown"].includes(value.skillDiscovery)) errors.push("hostAdapter.skillDiscovery is invalid");
-  string(value.bindingTarget, "hostAdapter.bindingTarget", errors, relativePathPattern);
-  strings(value.detectionTargets, "hostAdapter.detectionTargets", errors, { min: 1, pattern: relativePathPattern, unique: true });
+  string(value.bindingTarget, "hostAdapter.bindingTarget", errors, portableHostPathPattern);
+  strings(value.detectionTargets, "hostAdapter.detectionTargets", errors, { min: 1, pattern: portableHostPathPattern, unique: true });
   strings(value.bindingModes, "hostAdapter.bindingModes", errors, { min: 1, unique: true });
+  if (!value.bindingModes?.includes("thin-reference")) errors.push("hostAdapter must support thin-reference for all-Host adoption");
   for (const mode of value.bindingModes ?? []) if (!["managed-block", "thin-reference"].includes(mode)) errors.push(`hostAdapter.bindingModes contains invalid mode: ${mode}`);
+  if (exactKeys(value.bindingTemplates, [], ["managed-block", "thin-reference"], "hostAdapter.bindingTemplates", errors)) {
+    for (const [mode, template] of Object.entries(value.bindingTemplates)) {
+      string(template, `hostAdapter.bindingTemplates.${mode}`, errors, portableHostPathPattern);
+      if (!value.bindingModes?.includes(mode)) errors.push(`hostAdapter.bindingTemplates.${mode} is not declared in bindingModes`);
+    }
+    for (const mode of value.bindingModes ?? []) {
+      if (typeof value.bindingTemplates?.[mode] !== "string") errors.push(`hostAdapter.bindingTemplates is missing mode: ${mode}`);
+    }
+  }
+  if (!["append-managed-block", "reject"].includes(value.unmanagedBindingPolicy)) errors.push("hostAdapter.unmanagedBindingPolicy is invalid");
   string(value.managedMarker, "hostAdapter.managedMarker", errors, /^forgerail:binding:[a-z][a-z0-9-]+:v1$/);
   if (value.managedMarker !== `forgerail:binding:${value.id}:v1`) errors.push("hostAdapter.managedMarker must match hostAdapter.id");
   if (!["new-task-required", "host-specific-verification-required"].includes(value.activationBoundary)) errors.push("hostAdapter.activationBoundary is invalid");
@@ -357,7 +369,7 @@ function validateAdoptionPlan(value, errors) {
       string(adapterId, `${label} identity`, errors, idPattern);
       if (!exactKeys(host, ["status", "bindingTarget", "verificationMode"], [], label, errors)) continue;
       if (!["supported", "profile-only"].includes(host.status)) errors.push(`${label}.status is invalid`);
-      string(host.bindingTarget, `${label}.bindingTarget`, errors, relativePathPattern);
+      string(host.bindingTarget, `${label}.bindingTarget`, errors, portableHostPathPattern);
       if (!["new-task-discovery", "profile-only"].includes(host.verificationMode)) errors.push(`${label}.verificationMode is invalid`);
       if (host.status === "supported" && host.verificationMode !== "new-task-discovery") errors.push(`${label} supported host must use new-task-discovery`);
       if (host.status === "profile-only" && host.verificationMode !== "profile-only") errors.push(`${label} profile-only host must not claim verified discovery`);
@@ -370,7 +382,7 @@ function validateAdoptionPlan(value, errors) {
     const label = `adoptionPlan.proposedWrites[${index}]`;
     if (!exactKeys(write, ["workspaceSha256", "path", "operation", "baseSha256", "contentSha256", "content", "managedMarker", "approvalSha256"], [], label, errors)) return;
     string(write.workspaceSha256, `${label}.workspaceSha256`, errors, digestPattern);
-    string(write.path, `${label}.path`, errors, relativePathPattern);
+    string(write.path, `${label}.path`, errors, portableHostPathPattern);
     if (!["create", "append-managed-block", "replace-managed-block"].includes(write.operation)) errors.push(`${label}.operation is invalid`);
     nullableString(write.baseSha256, `${label}.baseSha256`, errors, digestPattern);
     string(write.contentSha256, `${label}.contentSha256`, errors, digestPattern);

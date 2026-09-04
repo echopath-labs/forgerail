@@ -38,7 +38,9 @@ npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --h
 npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --selection all-available
 ```
 
-当前 Agent 可以把“只处理 Codex”“处理项目正在使用的全部 Agent”或“处理当前 registry 中的全部 adapter”等自然语言意图翻译成上述确定性模式。ForgeRail Core 不猜 instruction 路径；检测目标和绑定目标由版本化 Host Adapter 持有。若同时省略 `--host` 和 `--selection`，默认使用 `all-detected`；若未检测到任何已注册宿主，planner 会要求显式选择宿主或使用 `all-available`，而不是猜测。plan 会保留模式、请求 ID 和解析后的 ID，供人类复核。
+只读诊断不会跟随所选工作区内部的链接。它只读取有界的常规 `package.json` 和已注册 Host 绑定文件，每个文件最多 4 MiB；内容被消费前还会按 canonical workspace 复核已打开路径。不安全、发生变化、非常规或超限条目会作为“不可用证据”交给人类复核。只有安全受限的约定目录中至少存在一个有界常规 `.md` 文件时，才会报告 Markdown 记录实践；枚举上限为 4,096 项，空目录、超限目录、链接或非常规条目都不算 ADR 实践。
+
+当前 Agent 可以把“只处理 Codex”“处理项目正在使用的全部 Agent”或“处理当前 registry 中的全部 adapter”等自然语言意图翻译成上述确定性模式。ForgeRail Core 不猜 instruction 路径、模板名称，也不猜如何处理已有但未受管的绑定；检测目标、绑定目标、绑定模板和已有内容策略都由版本化 Host Adapter 持有。若同时省略 `--host` 和 `--selection`，默认使用 `all-detected`；若未检测到任何已注册宿主，planner 会要求显式选择宿主或使用 `all-available`，而不是猜测。供人类复核的 plan 会保留模式，以及一份以解析后 adapter ID 为键的 `hostSelection.hosts` 映射；不会再用请求/解析数组重复 Host 身份。
 
 每个 proposal 必须展示当前与目标层级、准确路径和内容、基线摘要、所需确认、验证步骤、支持状态与明确不执行的动作。ForgeRail 有意不提供 `apply-adoption` 命令。Agent 应先展示 proposal，等待人类判断。Node 集成必须把已批准的 `approvalSha256` 与可变 proposal 分开保存，并在应用时重新核验 canonical workspace 路径与已打开目录身份；即使摘要格式有效，apply 也只接受 `create`、`append-managed-block`、`replace-managed-block` 三种操作。同一路径下替换成另一个目录会使批准失效。若替换既有 binding 后的 post-install 校验失败，ForgeRail 会把保留的原 inode 直接原子重命名覆盖已核验的新候选；无法安全恢复时保留 recovery evidence，并回抛原始失败。随后只写入获批路径，在新任务中验证发现结果，并返回 Host Binding Receipt。
 
@@ -58,7 +60,7 @@ ForgeRail 目前不会创建 `.forgerail/`。未来设计必须先定义 ownersh
 | Claude Code | `CLAUDE.md` | `profile-only` | 已建模目标与薄绑定，不声称端到端激活已验证 |
 | Cursor | `.cursor/rules/forgerail.mdc` | `profile-only` | 已建模目标，不声称 Skill discovery 和端到端激活已验证 |
 
-未知宿主必须先有受审查的 Host Adapter，ForgeRail 才能生成绑定。Host Adapter 只是宿主投影边界，不是 ForgeRail Core，也不是第二套策略真相。
+未知宿主必须先有受审查的 Host Adapter，ForgeRail 才能生成绑定。每个 adapter 都必须提供 thin-reference 投影，使 `all-detected` 与 `all-available` 始终能通过共享契约组合；adapter 还可以为单个显式 Host 额外提供 managed-block 投影。Registry 将目标、检测路径和模板路径限制在 ASCII 安全的跨平台路径字符集中，并拒绝尾随句点别名和 Windows 设备名称，再对剩余身份进行大小写折叠。所有绑定目标必须互不相同、互不构成祖先/后代关系，且不得与保留的 `FORGERAIL.md` 冲突。每个模板还必须只包含一对有序、归属于该 adapter 的 marker 边界。Host Adapter 只是宿主投影边界，不是 ForgeRail Core，也不是第二套策略真相。
 
 ## Capability Pack 始终独立
 

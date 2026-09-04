@@ -8,6 +8,10 @@
   "bindingTarget": "CLAUDE.md",
   "detectionTargets": ["CLAUDE.md", ".claude"],
   "bindingModes": ["thin-reference"],
+  "bindingTemplates": {
+    "thin-reference": "bindings/claude-code-thin.md"
+  },
+  "unmanagedBindingPolicy": "append-managed-block",
   "managedMarker": "forgerail:binding:claude-code:v1",
   "activationBoundary": "host-specific-verification-required",
   "verification": {
