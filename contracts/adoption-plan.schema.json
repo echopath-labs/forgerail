@@ -29,7 +29,27 @@
           "minItems": 1,
           "uniqueItems": true
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "mode": { "const": "explicit" } },
+            "required": ["mode"]
+          },
+          "then": {
+            "properties": { "requestedHostIds": { "minItems": 1 } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "mode": { "enum": ["all-detected", "all-available"] } },
+            "required": ["mode"]
+          },
+          "then": {
+            "properties": { "requestedHostIds": { "maxItems": 0 } }
+          }
+        }
+      ]
     },
     "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
     "hosts": {

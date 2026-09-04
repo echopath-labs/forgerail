@@ -346,6 +346,18 @@ try {
     assert.ok(validation.errors.includes("adoptionPlan.hostSelection.resolvedHostIds must match hosts"));
   });
 
+  pass("adoption-schema-binds-requested-hosts-to-selection-mode", () => {
+    const schema = readJson(resolve(root, "contracts/adoption-plan.schema.json"));
+    const rules = schema.properties.hostSelection.allOf;
+    const explicit = rules.find((rule) => rule.if?.properties?.mode?.const === "explicit");
+    assert.ok(explicit.if.required.includes("mode"));
+    assert.equal(explicit.then.properties.requestedHostIds.minItems, 1);
+    const automatic = rules.find((rule) => rule.if?.properties?.mode?.enum?.includes("all-detected"));
+    assert.ok(automatic.if.required.includes("mode"));
+    assert.deepEqual(automatic.if.properties.mode.enum, ["all-detected", "all-available"]);
+    assert.equal(automatic.then.properties.requestedHostIds.maxItems, 0);
+  });
+
   pass("adoption-cli-defaults-to-detected-hosts", () => {
     const workspace = temporary("forgerail-adoption-cli-detected-");
     writeFileSync(resolve(workspace, "AGENTS.md"), "Codex instructions\n");
