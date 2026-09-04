@@ -6,6 +6,7 @@
   "instructionDiscovery": "task-start",
   "skillDiscovery": "agent-skills",
   "bindingTarget": "CLAUDE.md",
+  "detectionTargets": ["CLAUDE.md", ".claude"],
   "bindingModes": ["managed-block", "thin-reference"],
   "managedMarker": "forgerail:binding:claude-code:v1",
   "activationBoundary": "host-specific-verification-required",

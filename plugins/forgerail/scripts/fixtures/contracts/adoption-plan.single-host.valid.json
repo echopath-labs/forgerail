@@ -5,6 +5,11 @@
   "currentLevel": "plugin-only",
   "proposedLevel": "lightweight-adoption",
   "strategy": "single-host-managed-block",
+  "hostSelection": {
+    "mode": "explicit",
+    "requestedHostIds": ["codex"],
+    "resolvedHostIds": ["codex"]
+  },
   "evidence": ["Codex was explicitly selected."],
   "hosts": [
     { "adapterId": "codex", "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" }

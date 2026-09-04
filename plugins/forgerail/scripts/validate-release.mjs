@@ -155,6 +155,8 @@ for (const phrase of [
   `${expectedPackageName}@${expectedVersion}`,
   "new Codex task",
   "adoption-plan --workspace . --host codex",
+  "adoption-plan --workspace . --selection all-detected",
+  "adoption-plan --workspace . --selection all-available",
   "Host Binding Receipt",
 ]) {
   record(`installation-${phrase.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, installation.includes(phrase), phrase);
@@ -176,9 +178,9 @@ for (const path of [
 const codexAdapter = json("adapters/codex.json");
 const claudeAdapter = json("adapters/claude-code.json");
 const cursorAdapter = json("adapters/cursor.json");
-record("codex-adapter-supported", codexAdapter.status === "supported" && codexAdapter.bindingTarget === "AGENTS.md", codexAdapter.status);
-record("claude-adapter-profile-only", claudeAdapter.status === "profile-only", claudeAdapter.status);
-record("cursor-adapter-profile-only", cursorAdapter.status === "profile-only", cursorAdapter.status);
+record("codex-adapter-supported", codexAdapter.status === "supported" && codexAdapter.bindingTarget === "AGENTS.md" && codexAdapter.detectionTargets?.includes("AGENTS.md"), codexAdapter.status);
+record("claude-adapter-profile-only", claudeAdapter.status === "profile-only" && claudeAdapter.detectionTargets?.includes("CLAUDE.md"), claudeAdapter.status);
+record("cursor-adapter-profile-only", cursorAdapter.status === "profile-only" && cursorAdapter.detectionTargets?.includes(".cursor"), cursorAdapter.status);
 record("package-adapters", packageJson.files?.includes("adapters/"), packageJson.files ?? null);
 record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
 record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");

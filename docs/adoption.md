@@ -21,18 +21,28 @@ Use Plugin Only for occasional diagnosis, unfamiliar repositories, early experim
 
 Use this level only when repeated ForgeRail use justifies a small, reviewable project binding.
 
-- A single-host project may add one versioned managed block to the host's native instruction file.
-- A multi-host project may use `FORGERAIL.md` as a portable Adoption Contract plus thin host bindings.
+- A single-host project may add one versioned managed block when its adapter supports that mode.
+- A multi-host project, or a single host whose adapter supports only thin references, uses `FORGERAIL.md` as a portable Adoption Contract plus thin host bindings.
 - Existing project instructions, specifications, ADRs, CI, and documentation remain authoritative in their own domains.
 
 The optional planner is read-only:
 
 ```bash
+# Default: resolve only registered hosts detected in this workspace.
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --selection all-detected
+
+# Explicit subset chosen from the validated Host Adapter Registry.
 npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex --host claude-code --host cursor
+
+# Every adapter in the current validated registry.
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --selection all-available
 ```
 
+The active Agent may translate a request such as “only Codex”, “all Agents used by this project”, or “all currently available adapters” into these deterministic modes. ForgeRail Core does not guess instruction paths: detection targets and binding targets belong to versioned Host Adapters. Omitting both `--host` and `--selection` defaults to `all-detected`; if no registered host is detected, the planner asks for an explicit host or `all-available` instead of guessing. The plan records the mode, requested IDs and resolved IDs for human review.
+
 Every proposal must show the current and proposed level, exact target paths and content, base digests, each write's `approvalSha256`, required confirmation, verification steps, support status, and non-actions. ForgeRail deliberately has no `apply-adoption` command. The Agent shows the proposal and waits for a human decision. Node-based integrations must retain the approved `approvalSha256` separately from the mutable proposal, then pass it as the third argument to `applyApprovedAdoptionWrite()` from `scripts/lib/adoption.mjs` so the canonical workspace path plus opened directory identity, destination, operation, marker, content, confinement, no-follow open, file identity and base digest are revalidated against one immutable snapshot at write time. Apply accepts only `create`, `append-managed-block`, or `replace-managed-block`, even when another operation is covered by a syntactically valid digest. Replacing the directory at the same path invalidates the approval. If a post-install check fails after replacing an existing binding, ForgeRail atomically renames the retained original inode directly over the verified installed candidate; it preserves recovery evidence and returns the original failure when safe restoration is impossible. The Agent verifies discovery in a new task and returns a Host Binding Receipt.
+
+If safe automatic rollback is impossible because concurrent content now occupies the approved target, ForgeRail keeps the original binding as a same-directory `.forgerail-<random>.bak` file and includes its project-relative path in the error. Compare that file with the current target, restore only the intended content through a new reviewed operation, and delete the recovery file only after confirming recovery. ForgeRail never treats the retained file as a successful write.
 
 ## Level 2 — Persisted Governance
 

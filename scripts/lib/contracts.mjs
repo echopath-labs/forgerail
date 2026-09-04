@@ -306,7 +306,7 @@ function validateReceipt(value, errors) {
 }
 
 function validateHostAdapter(value, errors) {
-  const keys = ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "bindingModes", "managedMarker", "activationBoundary", "verification", "limitations"];
+  const keys = ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "detectionTargets", "bindingModes", "managedMarker", "activationBoundary", "verification", "limitations"];
   if (!exactKeys(value, keys, [], "hostAdapter", errors)) return;
   schemaVersion(value.schemaVersion, "hostAdapter", errors);
   string(value.id, "hostAdapter.id", errors, idPattern);
@@ -315,6 +315,7 @@ function validateHostAdapter(value, errors) {
   if (!["task-start", "rules", "explicit-only", "unknown"].includes(value.instructionDiscovery)) errors.push("hostAdapter.instructionDiscovery is invalid");
   if (!["agent-plugin-skills", "agent-skills", "explicit-only", "unknown"].includes(value.skillDiscovery)) errors.push("hostAdapter.skillDiscovery is invalid");
   string(value.bindingTarget, "hostAdapter.bindingTarget", errors, relativePathPattern);
+  strings(value.detectionTargets, "hostAdapter.detectionTargets", errors, { min: 1, pattern: relativePathPattern, unique: true });
   strings(value.bindingModes, "hostAdapter.bindingModes", errors, { min: 1, unique: true });
   for (const mode of value.bindingModes ?? []) if (!["managed-block", "thin-reference"].includes(mode)) errors.push(`hostAdapter.bindingModes contains invalid mode: ${mode}`);
   string(value.managedMarker, "hostAdapter.managedMarker", errors, /^forgerail:binding:[a-z][a-z0-9-]+:v1$/);
@@ -338,7 +339,7 @@ function validateHostAdapter(value, errors) {
 }
 
 function validateAdoptionPlan(value, errors) {
-  const keys = ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"];
+  const keys = ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"];
   if (!exactKeys(value, keys, [], "adoptionPlan", errors)) return;
   schemaVersion(value.schemaVersion, "adoptionPlan", errors);
   string(value.planId, "adoptionPlan.planId", errors, taskIdPattern);
@@ -347,6 +348,13 @@ function validateAdoptionPlan(value, errors) {
   if (!levels.includes(value.currentLevel)) errors.push("adoptionPlan.currentLevel is invalid");
   if (!levels.includes(value.proposedLevel)) errors.push("adoptionPlan.proposedLevel is invalid");
   if (!["no-change", "single-host-managed-block", "shared-contract-with-thin-bindings"].includes(value.strategy)) errors.push("adoptionPlan.strategy is invalid");
+  if (exactKeys(value.hostSelection, ["mode", "requestedHostIds", "resolvedHostIds"], [], "adoptionPlan.hostSelection", errors)) {
+    if (!["explicit", "all-detected", "all-available"].includes(value.hostSelection.mode)) errors.push("adoptionPlan.hostSelection.mode is invalid");
+    strings(value.hostSelection.requestedHostIds, "adoptionPlan.hostSelection.requestedHostIds", errors, { pattern: idPattern, unique: true });
+    strings(value.hostSelection.resolvedHostIds, "adoptionPlan.hostSelection.resolvedHostIds", errors, { min: 1, pattern: idPattern, unique: true });
+    if (value.hostSelection.mode === "explicit" && value.hostSelection.requestedHostIds?.length === 0) errors.push("explicit hostSelection requires requested host ids");
+    if (value.hostSelection.mode !== "explicit" && value.hostSelection.requestedHostIds?.length !== 0) errors.push("automatic hostSelection cannot retain requested host ids");
+  }
   strings(value.evidence, "adoptionPlan.evidence", errors, { min: 1, unique: true });
   if (!Array.isArray(value.hosts) || value.hosts.length === 0) errors.push("adoptionPlan.hosts must contain at least one host");
   else value.hosts.forEach((host, index) => {
@@ -361,6 +369,8 @@ function validateAdoptionPlan(value, errors) {
   });
   const hostIds = value.hosts?.map((host) => host.adapterId) ?? [];
   if (new Set(hostIds).size !== hostIds.length) errors.push("adoptionPlan.hosts contains duplicate adapter ids");
+  if (JSON.stringify(value.hostSelection?.resolvedHostIds) !== JSON.stringify(hostIds)) errors.push("adoptionPlan.hostSelection.resolvedHostIds must match hosts");
+  if (value.hostSelection?.mode === "explicit" && JSON.stringify(value.hostSelection.requestedHostIds) !== JSON.stringify(hostIds)) errors.push("explicit adoptionPlan host selection must preserve requested host order");
   if (!Array.isArray(value.proposedWrites)) errors.push("adoptionPlan.proposedWrites must be an array");
   else value.proposedWrites.forEach((write, index) => {
     const label = `adoptionPlan.proposedWrites[${index}]`;
@@ -408,7 +418,7 @@ function validateAdoptionPlan(value, errors) {
     if (value.proposedWrites?.[0]?.managedMarker !== `forgerail:binding:${value.hosts?.[0]?.adapterId}:v1`) errors.push("single-host managed write marker must match its Host Adapter");
   }
   if (value.strategy === "shared-contract-with-thin-bindings") {
-    if ((value.hosts?.length ?? 0) < 2) errors.push("shared-contract-with-thin-bindings requires at least two hosts");
+    if ((value.hosts?.length ?? 0) < 1) errors.push("shared-contract-with-thin-bindings requires at least one host");
     if (value.proposedWrites?.length !== (value.hosts?.length ?? 0) + 1) errors.push("shared-contract-with-thin-bindings requires one contract and one write per host");
     const contract = value.proposedWrites?.find((write) => write.path === "FORGERAIL.md");
     if (!contract) errors.push("shared-contract-with-thin-bindings must propose FORGERAIL.md");

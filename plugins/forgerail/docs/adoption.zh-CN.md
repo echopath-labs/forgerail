@@ -21,18 +21,28 @@ ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执�
 
 只有重复使用 ForgeRail 确实需要一个小型、可审查的项目绑定时，才采用这一层。
 
-- 单宿主项目可以在宿主原生 instruction 文件中加入一个带版本的 managed block。
-- 多宿主项目可以使用 `FORGERAIL.md` 作为可移植 Adoption Contract，再用薄绑定连接各宿主。
+- 单宿主项目在 adapter 支持时，可以在宿主原生 instruction 文件中加入一个带版本的 managed block。
+- 多宿主项目，或 adapter 只支持薄引用的单宿主项目，使用 `FORGERAIL.md` 作为可移植 Adoption Contract，再用薄绑定连接宿主。
 - 项目已有 instructions、规格、ADR、CI 和文档继续在各自领域保持权威。
 
 可选 planner 只读运行：
 
 ```bash
+# 默认：只解析当前工作区中检测到的已注册宿主。
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --selection all-detected
+
+# 从已验证的 Host Adapter Registry 中明确选择一部分。
 npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex --host claude-code --host cursor
+
+# 选择当前已验证 registry 中的全部 adapter。
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --selection all-available
 ```
 
+当前 Agent 可以把“只处理 Codex”“处理项目正在使用的全部 Agent”或“处理当前 registry 中的全部 adapter”等自然语言意图翻译成上述确定性模式。ForgeRail Core 不猜 instruction 路径；检测目标和绑定目标由版本化 Host Adapter 持有。若同时省略 `--host` 和 `--selection`，默认使用 `all-detected`；若未检测到任何已注册宿主，planner 会要求显式选择宿主或使用 `all-available`，而不是猜测。plan 会保留模式、请求 ID 和解析后的 ID，供人类复核。
+
 每个 proposal 必须展示当前与目标层级、准确路径和内容、基线摘要、所需确认、验证步骤、支持状态与明确不执行的动作。ForgeRail 有意不提供 `apply-adoption` 命令。Agent 应先展示 proposal，等待人类判断。Node 集成必须把已批准的 `approvalSha256` 与可变 proposal 分开保存，并在应用时重新核验 canonical workspace 路径与已打开目录身份；即使摘要格式有效，apply 也只接受 `create`、`append-managed-block`、`replace-managed-block` 三种操作。同一路径下替换成另一个目录会使批准失效。若替换既有 binding 后的 post-install 校验失败，ForgeRail 会把保留的原 inode 直接原子重命名覆盖已核验的新候选；无法安全恢复时保留 recovery evidence，并回抛原始失败。随后只写入获批路径，在新任务中验证发现结果，并返回 Host Binding Receipt。
+
+如果并发内容占用了已批准目标，导致无法安全自动回滚，ForgeRail 会把原 binding 保留为同目录的 `.forgerail-<随机值>.bak`，并在错误中给出项目相对路径。请先比较该文件与当前目标，再通过新的受审查操作恢复所需内容；只有确认恢复完成后才删除 recovery 文件。ForgeRail 不会把这类保留文件误报为成功写入。
 
 ## Level 2 — Persisted Governance
 

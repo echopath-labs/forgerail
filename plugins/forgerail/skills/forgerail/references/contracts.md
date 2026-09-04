@@ -37,7 +37,7 @@ Compare the receipt with observable state. A mismatch keeps closeout incomplete.
 Record:
 
 - current and proposed adoption level;
-- explicitly selected Host Adapters and their support status;
+- deterministically resolved Host Adapters, their selection mode, and their support status;
 - exact target paths, operations, base SHA-256 digests, candidate content, and content digests;
 - required user confirmation and activation verification;
 - confirmed non-mutations.

@@ -5,6 +5,11 @@
   "currentLevel": "plugin-only",
   "proposedLevel": "lightweight-adoption",
   "strategy": "shared-contract-with-thin-bindings",
+  "hostSelection": {
+    "mode": "explicit",
+    "requestedHostIds": ["codex", "claude-code"],
+    "resolvedHostIds": ["codex", "claude-code"]
+  },
   "evidence": ["Codex and Claude Code were explicitly selected."],
   "hosts": [
     { "adapterId": "codex", "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" },

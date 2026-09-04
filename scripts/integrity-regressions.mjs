@@ -293,6 +293,73 @@ try {
     assert.equal(existsSync(driftOutside), false);
   });
 
+  pass("adoption-resolves-host-intent-through-the-registry", () => {
+    const explicitWorkspace = temporary("forgerail-adoption-explicit-host-");
+    const sharedClaude = resolve(temporary("forgerail-adoption-unselected-host-"), "CLAUDE.md");
+    writeFileSync(sharedClaude, "shared Claude instructions\n");
+    symlinkSync(sharedClaude, resolve(explicitWorkspace, "CLAUDE.md"));
+    const explicit = planAdoption(root, explicitWorkspace, ["codex"]);
+    assert.deepEqual(explicit.hostSelection, {
+      mode: "explicit",
+      requestedHostIds: ["codex"],
+      resolvedHostIds: ["codex"],
+    });
+    assert.equal(explicit.strategy, "single-host-managed-block");
+    assert.equal(explicit.proposedWrites[0].path, "AGENTS.md");
+
+    const detectedWorkspace = temporary("forgerail-adoption-detected-hosts-");
+    writeFileSync(resolve(detectedWorkspace, "AGENTS.md"), "Codex instructions\n");
+    mkdirSync(resolve(detectedWorkspace, ".cursor"));
+    const detected = planAdoption(root, detectedWorkspace);
+    assert.deepEqual(detected.hostSelection, {
+      mode: "all-detected",
+      requestedHostIds: [],
+      resolvedHostIds: ["codex", "cursor"],
+    });
+    assert.deepEqual(detected.hosts.map(({ adapterId }) => adapterId), ["codex", "cursor"]);
+
+    const cursorOnlyWorkspace = temporary("forgerail-adoption-detected-cursor-");
+    mkdirSync(resolve(cursorOnlyWorkspace, ".cursor"));
+    const cursorOnly = planAdoption(root, cursorOnlyWorkspace);
+    assert.deepEqual(cursorOnly.hostSelection.resolvedHostIds, ["cursor"]);
+    assert.equal(cursorOnly.strategy, "shared-contract-with-thin-bindings");
+    assert.deepEqual(cursorOnly.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", ".cursor/rules/forgerail.mdc"]);
+
+    const availableWorkspace = temporary("forgerail-adoption-available-hosts-");
+    const available = planAdoption(root, availableWorkspace, [], "lightweight-adoption", "all-available");
+    assert.deepEqual(available.hostSelection, {
+      mode: "all-available",
+      requestedHostIds: [],
+      resolvedHostIds: ["claude-code", "codex", "cursor"],
+    });
+    assert.throws(() => planAdoption(root, availableWorkspace), /no registered host was detected/);
+    assert.throws(() => planAdoption(root, availableWorkspace, ["unknown-host"]), /unknown host adapter/);
+    assert.throws(
+      () => planAdoption(root, availableWorkspace, ["codex"], "lightweight-adoption", "all-available"),
+      /cannot be combined with --host/,
+    );
+
+    const malformed = clone(explicit);
+    malformed.hostSelection.resolvedHostIds = ["cursor"];
+    const validation = validateContract("adoption-plan", malformed);
+    assert.equal(validation.valid, false);
+    assert.ok(validation.errors.includes("adoptionPlan.hostSelection.resolvedHostIds must match hosts"));
+  });
+
+  pass("adoption-cli-defaults-to-detected-hosts", () => {
+    const workspace = temporary("forgerail-adoption-cli-detected-");
+    writeFileSync(resolve(workspace, "AGENTS.md"), "Codex instructions\n");
+    const output = execFileSync(process.execPath, [
+      resolve(root, "scripts/forgerail.mjs"),
+      "adoption-plan",
+      "--workspace",
+      workspace,
+    ], { encoding: "utf8" });
+    const plan = JSON.parse(output);
+    assert.equal(plan.hostSelection.mode, "all-detected");
+    assert.deepEqual(plan.hostSelection.resolvedHostIds, ["codex"]);
+  });
+
   pass("adoption-rejects-windows-drive-relative-targets", () => {
     const workspace = temporary("forgerail-adoption-drive-relative-");
     assert.throws(() => resolveAdoptionWriteTarget(workspace, "C:AGENTS.md"), /unsafe/);
@@ -539,6 +606,53 @@ try {
     assert.equal(readdirSync(workspace).some((name) => name.startsWith(".forgerail-")), false);
     const implementation = readFileSync(resolve(root, "scripts/lib/adoption.mjs"), "utf8");
     assert.doesNotMatch(implementation, /renameSync\(leaf, failed\)/);
+  });
+
+  pass("adoption-preserves-primary-error-when-cwd-restoration-fails", () => {
+    const priorDirectory = process.cwd();
+    const callerDirectory = temporary("forgerail-adoption-removed-cwd-");
+    const workspace = temporary("forgerail-adoption-primary-error-");
+    const approved = planAdoption(root, workspace, ["codex", "cursor"]).proposedWrites.find(({ path }) => path === ".cursor/rules/forgerail.mdc");
+    let caught;
+    process.chdir(callerDirectory);
+    try {
+      applyApprovedAdoptionWrite(workspace, approved, approved.approvalSha256, {
+        beforeInstall() {
+          rmSync(callerDirectory, { recursive: true, force: true });
+          throw new Error("primary adoption failure");
+        },
+      });
+    } catch (error) {
+      caught = error;
+    } finally {
+      process.chdir(priorDirectory);
+    }
+    assert.equal(caught?.message, "primary adoption failure");
+    assert.equal(existsSync(resolve(workspace, ".cursor")), false);
+  });
+
+  pass("adoption-errors-name-retained-recovery-evidence", () => {
+    const workspace = temporary("forgerail-adoption-retained-recovery-");
+    const target = resolve(workspace, "AGENTS.md");
+    const displacedCandidate = resolve(workspace, "AGENTS.md.displaced-candidate");
+    writeFileSync(target, "original instructions\n");
+    const approved = planAdoption(root, workspace, ["codex"]).proposedWrites[0];
+    let caught;
+    try {
+      applyApprovedAdoptionWrite(workspace, approved, approved.approvalSha256, {
+        afterInstall() {
+          renameSync(target, displacedCandidate);
+          writeFileSync(target, "concurrent user content\n");
+          throw new Error("forced unsafe recovery");
+        },
+      });
+    } catch (error) {
+      caught = error;
+    }
+    assert.match(caught?.message ?? "", /^forced unsafe recovery; recovery evidence retained at \.forgerail-[0-9a-f]{24}\.bak$/);
+    const recoveryPath = caught.message.slice(caught.message.lastIndexOf(" at ") + 4);
+    assert.equal(readFileSync(resolve(workspace, recoveryPath), "utf8"), "original instructions\n");
+    assert.equal(readFileSync(target, "utf8"), "concurrent user content\n");
   });
 
   pass("invalid-pack-collections-fail-closed-with-structured-errors", () => {

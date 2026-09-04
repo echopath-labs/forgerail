@@ -4,7 +4,7 @@
   "title": "ForgeRail Host Adapter",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "bindingModes", "managedMarker", "activationBoundary", "verification", "limitations"],
+  "required": ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "detectionTargets", "bindingModes", "managedMarker", "activationBoundary", "verification", "limitations"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
@@ -13,6 +13,12 @@
     "instructionDiscovery": { "enum": ["task-start", "rules", "explicit-only", "unknown"] },
     "skillDiscovery": { "enum": ["agent-plugin-skills", "agent-skills", "explicit-only", "unknown"] },
     "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*/$)[^\\\\]+$" },
+    "detectionTargets": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*/$)[^\\\\]+$" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
     "bindingModes": {
       "type": "array",
       "items": { "enum": ["managed-block", "thin-reference"] },

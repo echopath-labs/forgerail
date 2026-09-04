@@ -24,6 +24,7 @@ import { validateContract } from "./contracts.mjs";
 
 const levels = ["plugin-only", "lightweight-adoption", "persisted-governance"];
 const adoptionOperations = new Set(["create", "append-managed-block", "replace-managed-block"]);
+const hostSelectionModes = new Set(["explicit", "all-detected", "all-available"]);
 const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\/$)[^\\]+$/;
 
 function sha256(value) {
@@ -242,7 +243,7 @@ function withBoundAdoptionParent(root, path, workspaceMetadata, operation) {
   const segments = parentPath === "." ? [] : parentPath.split("/");
   const originalDirectory = process.cwd();
   const created = [];
-  let failed = false;
+  let operationError;
   let parentDescriptor;
   try {
     process.chdir(root);
@@ -291,12 +292,15 @@ function withBoundAdoptionParent(root, path, workspaceMetadata, operation) {
       metadata: openedParent,
     });
   } catch (error) {
-    failed = true;
+    operationError = error;
     throw error;
   } finally {
     if (parentDescriptor !== undefined) closeSync(parentDescriptor);
-    process.chdir(originalDirectory);
-    if (failed) removeCreatedParents(root, created);
+    let restoreError;
+    try { process.chdir(originalDirectory); }
+    catch (error) { restoreError = error; }
+    if (operationError !== undefined) removeCreatedParents(root, created);
+    if (operationError === undefined && restoreError !== undefined) throw restoreError;
   }
 }
 
@@ -321,6 +325,51 @@ export function loadHostAdapters(pluginRoot) {
     ids.add(adapter.id);
   }
   return { valid: errors.length === 0, errors, adapters };
+}
+
+function detectionTargetPresent(root, path) {
+  let cursor = root;
+  for (const segment of path.split("/")) {
+    const candidate = resolve(cursor, segment);
+    if (!confined(root, candidate)) throw new Error(`host detection target escapes workspace: ${path}`);
+    const metadata = linkAwareStat(candidate);
+    if (metadata === null) return false;
+    if (metadata.isSymbolicLink()) return true;
+    cursor = candidate;
+  }
+  return true;
+}
+
+function resolveHostSelection(root, adapters, hostIds, selectionMode) {
+  if (!Array.isArray(hostIds)) throw new Error("host selection must be an array");
+  if (new Set(hostIds).size !== hostIds.length) throw new Error("host selection contains duplicates");
+  const mode = selectionMode ?? (hostIds.length > 0 ? "explicit" : "all-detected");
+  if (!hostSelectionModes.has(mode)) throw new Error(`unknown host selection mode: ${mode}`);
+  if (mode === "explicit" && hostIds.length === 0) throw new Error("explicit host selection requires at least one --host");
+  if (mode !== "explicit" && hostIds.length > 0) throw new Error(`${mode} host selection cannot be combined with --host`);
+
+  const byId = new Map(adapters.map((adapter) => [adapter.id, adapter]));
+  let selected;
+  if (mode === "explicit") {
+    selected = hostIds.map((id) => {
+      const adapter = byId.get(id);
+      if (!adapter) throw new Error(`unknown host adapter: ${id}`);
+      return adapter;
+    });
+  } else if (mode === "all-available") {
+    selected = [...adapters];
+  } else {
+    selected = adapters.filter((adapter) => adapter.detectionTargets.some((path) => detectionTargetPresent(root, path)));
+    if (selected.length === 0) {
+      throw new Error("no registered host was detected; select an explicit --host or use --selection all-available");
+    }
+  }
+  return {
+    mode,
+    requestedHostIds: [...hostIds],
+    resolvedHostIds: selected.map((adapter) => adapter.id),
+    selected,
+  };
 }
 
 export function observeAdoptionLevel(workspace, adapters = []) {
@@ -533,6 +582,11 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
           if (temporaryStat !== undefined && sameFile(temporaryStat, installed)) unlinkSync(leaf);
         } catch {}
       }
+      if (preserveBackup && backup !== undefined && error instanceof Error) {
+        const parent = dirname(approvedWrite.path);
+        const recoveryPath = parent === "." ? backup : `${parent}/${backup}`;
+        error.message = `${error.message}; recovery evidence retained at ${recoveryPath}`;
+      }
       throw error;
     } finally {
       if (sourceDescriptor !== undefined) closeSync(sourceDescriptor);
@@ -551,7 +605,7 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
   }
 }
 
-export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "lightweight-adoption") {
+export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel = "lightweight-adoption", selectionMode) {
   const root = resolve(workspace);
   if (!existsSync(root) || !statSync(root).isDirectory()) throw new Error("workspace must be an existing directory");
   const binding = openBoundWorkspace(root);
@@ -559,20 +613,18 @@ export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "li
   try {
   if (!levels.includes(proposedLevel)) throw new Error(`unknown adoption level: ${proposedLevel}`);
   if (proposedLevel === "persisted-governance") throw new Error("persisted-governance is evidence-gated and deferred in ForgeRail alpha.1");
-  if (!Array.isArray(hostIds) || hostIds.length === 0) throw new Error("at least one explicit --host is required");
-  if (new Set(hostIds).size !== hostIds.length) throw new Error("host selection contains duplicates");
   const registry = loadHostAdapters(pluginRoot);
   if (!registry.valid) throw new Error(`host adapter registry is invalid: ${registry.errors.join("; ")}`);
-  const byId = new Map(registry.adapters.map((adapter) => [adapter.id, adapter]));
-  const selected = hostIds.map((id) => {
-    const adapter = byId.get(id);
-    if (!adapter) throw new Error(`unknown host adapter: ${id}`);
-    return adapter;
-  });
-  const currentLevel = observeAdoptionLevel(realRoot, registry.adapters);
+  const selection = resolveHostSelection(realRoot, registry.adapters, hostIds, selectionMode);
+  const selected = selection.selected;
+  const currentLevel = observeAdoptionLevel(realRoot, selected);
   if (currentLevel !== "plugin-only" && proposedLevel === "plugin-only") throw new Error("adoption removal or downgrade requires a separate reviewed plan and is not generated by alpha.1");
   if (currentLevel === "persisted-governance") throw new Error("persisted-governance was observed; alpha.1 will diagnose it but will not generate replacement or downgrade writes");
-  const strategy = proposedLevel === "plugin-only" ? "no-change" : selected.length === 1 ? "single-host-managed-block" : "shared-contract-with-thin-bindings";
+  const strategy = proposedLevel === "plugin-only"
+    ? "no-change"
+    : selected.length === 1 && selected[0].bindingModes.includes("managed-block")
+      ? "single-host-managed-block"
+      : "shared-contract-with-thin-bindings";
   const writes = [];
   if (strategy === "single-host-managed-block") {
     const adapter = selected[0];
@@ -588,7 +640,7 @@ export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "li
       writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker));
     }
   }
-  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hosts: hostIds, writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
+  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hostSelection: { mode: selection.mode, requestedHostIds: selection.requestedHostIds, resolvedHostIds: selection.resolvedHostIds }, writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
   const plan = {
     schemaVersion: "1.0",
     planId: `adoption:${identity}`,
@@ -596,9 +648,14 @@ export function planAdoption(pluginRoot, workspace, hostIds, proposedLevel = "li
     currentLevel,
     proposedLevel,
     strategy,
+    hostSelection: {
+      mode: selection.mode,
+      requestedHostIds: selection.requestedHostIds,
+      resolvedHostIds: selection.resolvedHostIds,
+    },
     evidence: [
       `Observed current adoption level: ${currentLevel}.`,
-      `User or host Agent explicitly selected host adapters: ${hostIds.join(", ")}.`,
+      `Host selection mode ${selection.mode} resolved adapters: ${selection.resolvedHostIds.join(", ")}.`,
       "ForgeRail alpha.1 does not generate persisted .forgerail state.",
     ],
     hosts: selected.map((adapter) => ({ adapterId: adapter.id, status: adapter.status, bindingTarget: adapter.bindingTarget, verificationMode: adapter.verification.mode })),

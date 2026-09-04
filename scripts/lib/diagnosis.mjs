@@ -99,7 +99,7 @@ export function diagnoseWorkspace(workspace) {
       recommendedLevel: adoptionLevel,
       changeRecommended: false,
       reason: "ForgeRail keeps the minimum observed adoption level unless the user requests durable adoption or concrete evidence justifies escalation.",
-      planCommandAvailable: "forgerail adoption-plan --workspace . --host codex",
+      planCommandAvailable: "forgerail adoption-plan --workspace .",
       persistedGovernanceGeneration: "deferred",
     },
     fullHealthReviewRecommended: evidence.filter((item) => item.id.startsWith("instructions:")).length > 2,

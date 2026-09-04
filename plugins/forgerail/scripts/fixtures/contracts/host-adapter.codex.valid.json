@@ -6,6 +6,7 @@
   "instructionDiscovery": "task-start",
   "skillDiscovery": "agent-plugin-skills",
   "bindingTarget": "AGENTS.md",
+  "detectionTargets": ["AGENTS.md"],
   "bindingModes": ["managed-block", "thin-reference"],
   "managedMarker": "forgerail:binding:codex:v1",
   "activationBoundary": "new-task-required",

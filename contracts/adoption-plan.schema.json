@@ -4,7 +4,7 @@
   "title": "ForgeRail Adoption Plan",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
+  "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "planId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
@@ -12,6 +12,25 @@
     "currentLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
     "proposedLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
     "strategy": { "enum": ["no-change", "single-host-managed-block", "shared-contract-with-thin-bindings"] },
+    "hostSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "requestedHostIds", "resolvedHostIds"],
+      "properties": {
+        "mode": { "enum": ["explicit", "all-detected", "all-available"] },
+        "requestedHostIds": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+          "uniqueItems": true
+        },
+        "resolvedHostIds": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
     "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
     "hosts": {
       "type": "array",
