@@ -299,11 +299,8 @@ try {
     writeFileSync(sharedClaude, "shared Claude instructions\n");
     symlinkSync(sharedClaude, resolve(explicitWorkspace, "CLAUDE.md"));
     const explicit = planAdoption(root, explicitWorkspace, ["codex"]);
-    assert.deepEqual(explicit.hostSelection, {
-      mode: "explicit",
-      requestedHostIds: ["codex"],
-      resolvedHostIds: ["codex"],
-    });
+    assert.equal(explicit.hostSelection.mode, "explicit");
+    assert.deepEqual(Object.keys(explicit.hostSelection.hosts), ["codex"]);
     assert.equal(explicit.strategy, "single-host-managed-block");
     assert.equal(explicit.proposedWrites[0].path, "AGENTS.md");
 
@@ -311,27 +308,27 @@ try {
     writeFileSync(resolve(detectedWorkspace, "AGENTS.md"), "Codex instructions\n");
     mkdirSync(resolve(detectedWorkspace, ".cursor"));
     const detected = planAdoption(root, detectedWorkspace);
-    assert.deepEqual(detected.hostSelection, {
-      mode: "all-detected",
-      requestedHostIds: [],
-      resolvedHostIds: ["codex", "cursor"],
-    });
-    assert.deepEqual(detected.hosts.map(({ adapterId }) => adapterId), ["codex", "cursor"]);
+    assert.equal(detected.hostSelection.mode, "all-detected");
+    assert.deepEqual(Object.keys(detected.hostSelection.hosts), ["codex", "cursor"]);
 
     const cursorOnlyWorkspace = temporary("forgerail-adoption-detected-cursor-");
     mkdirSync(resolve(cursorOnlyWorkspace, ".cursor"));
     const cursorOnly = planAdoption(root, cursorOnlyWorkspace);
-    assert.deepEqual(cursorOnly.hostSelection.resolvedHostIds, ["cursor"]);
+    assert.deepEqual(Object.keys(cursorOnly.hostSelection.hosts), ["cursor"]);
     assert.equal(cursorOnly.strategy, "shared-contract-with-thin-bindings");
     assert.deepEqual(cursorOnly.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", ".cursor/rules/forgerail.mdc"]);
 
+    const claudeOnlyWorkspace = temporary("forgerail-adoption-detected-claude-");
+    mkdirSync(resolve(claudeOnlyWorkspace, ".claude"));
+    const claudeOnly = planAdoption(root, claudeOnlyWorkspace);
+    assert.deepEqual(Object.keys(claudeOnly.hostSelection.hosts), ["claude-code"]);
+    assert.equal(claudeOnly.strategy, "shared-contract-with-thin-bindings");
+    assert.deepEqual(claudeOnly.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", "CLAUDE.md"]);
+
     const availableWorkspace = temporary("forgerail-adoption-available-hosts-");
     const available = planAdoption(root, availableWorkspace, [], "lightweight-adoption", "all-available");
-    assert.deepEqual(available.hostSelection, {
-      mode: "all-available",
-      requestedHostIds: [],
-      resolvedHostIds: ["claude-code", "codex", "cursor"],
-    });
+    assert.equal(available.hostSelection.mode, "all-available");
+    assert.deepEqual(Object.keys(available.hostSelection.hosts), ["claude-code", "codex", "cursor"]);
     assert.throws(() => planAdoption(root, availableWorkspace), /no registered host was detected/);
     assert.throws(() => planAdoption(root, availableWorkspace, ["unknown-host"]), /unknown host adapter/);
     assert.throws(
@@ -340,22 +337,22 @@ try {
     );
 
     const malformed = clone(explicit);
-    malformed.hostSelection.resolvedHostIds = ["cursor"];
+    malformed.hosts = [{ adapterId: "cursor" }];
     const validation = validateContract("adoption-plan", malformed);
     assert.equal(validation.valid, false);
-    assert.ok(validation.errors.includes("adoptionPlan.hostSelection.resolvedHostIds must match hosts"));
+    assert.ok(validation.errors.includes("adoptionPlan.hosts is unsupported"));
   });
 
-  pass("adoption-schema-binds-requested-hosts-to-selection-mode", () => {
+  pass("adoption-schema-uses-one-identity-keyed-host-selection", () => {
     const schema = readJson(resolve(root, "contracts/adoption-plan.schema.json"));
-    const rules = schema.properties.hostSelection.allOf;
-    const explicit = rules.find((rule) => rule.if?.properties?.mode?.const === "explicit");
-    assert.ok(explicit.if.required.includes("mode"));
-    assert.equal(explicit.then.properties.requestedHostIds.minItems, 1);
-    const automatic = rules.find((rule) => rule.if?.properties?.mode?.enum?.includes("all-detected"));
-    assert.ok(automatic.if.required.includes("mode"));
-    assert.deepEqual(automatic.if.properties.mode.enum, ["all-detected", "all-available"]);
-    assert.equal(automatic.then.properties.requestedHostIds.maxItems, 0);
+    assert.deepEqual(schema.properties.hostSelection.required, ["mode", "hosts"]);
+    assert.equal(Object.hasOwn(schema.properties, "hosts"), false);
+    const hosts = schema.properties.hostSelection.properties.hosts;
+    assert.equal(hosts.type, "object");
+    assert.equal(hosts.minProperties, 1);
+    assert.equal(hosts.propertyNames.pattern, "^[a-z][a-z0-9-]+$");
+    assert.deepEqual(hosts.additionalProperties.required, ["status", "bindingTarget", "verificationMode"]);
+    assert.equal(hosts.additionalProperties.additionalProperties, false);
   });
 
   pass("adoption-cli-defaults-to-detected-hosts", () => {
@@ -369,7 +366,7 @@ try {
     ], { encoding: "utf8" });
     const plan = JSON.parse(output);
     assert.equal(plan.hostSelection.mode, "all-detected");
-    assert.deepEqual(plan.hostSelection.resolvedHostIds, ["codex"]);
+    assert.deepEqual(Object.keys(plan.hostSelection.hosts), ["codex"]);
   });
 
   pass("adoption-rejects-windows-drive-relative-targets", () => {

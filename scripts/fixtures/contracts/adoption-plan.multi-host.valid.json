@@ -7,14 +7,12 @@
   "strategy": "shared-contract-with-thin-bindings",
   "hostSelection": {
     "mode": "explicit",
-    "requestedHostIds": ["codex", "claude-code"],
-    "resolvedHostIds": ["codex", "claude-code"]
+    "hosts": {
+      "codex": { "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" },
+      "claude-code": { "status": "profile-only", "bindingTarget": "CLAUDE.md", "verificationMode": "profile-only" }
+    }
   },
   "evidence": ["Codex and Claude Code were explicitly selected."],
-  "hosts": [
-    { "adapterId": "codex", "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" },
-    { "adapterId": "claude-code", "status": "profile-only", "bindingTarget": "CLAUDE.md", "verificationMode": "profile-only" }
-  ],
   "proposedWrites": [
     {
       "workspaceSha256": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d",

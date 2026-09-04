@@ -4,7 +4,7 @@
   "title": "ForgeRail Adoption Plan",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
+  "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
     "planId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
@@ -15,58 +15,27 @@
     "hostSelection": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["mode", "requestedHostIds", "resolvedHostIds"],
+      "required": ["mode", "hosts"],
       "properties": {
         "mode": { "enum": ["explicit", "all-detected", "all-available"] },
-        "requestedHostIds": {
-          "type": "array",
-          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
-          "uniqueItems": true
-        },
-        "resolvedHostIds": {
-          "type": "array",
-          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
-          "minItems": 1,
-          "uniqueItems": true
-        }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": { "mode": { "const": "explicit" } },
-            "required": ["mode"]
-          },
-          "then": {
-            "properties": { "requestedHostIds": { "minItems": 1 } }
+        "hosts": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9-]+$" },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "bindingTarget", "verificationMode"],
+            "properties": {
+              "status": { "enum": ["supported", "profile-only"] },
+              "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*/$)[^\\\\]+$" },
+              "verificationMode": { "enum": ["new-task-discovery", "profile-only"] }
+            }
           }
-        },
-        {
-          "if": {
-            "properties": { "mode": { "enum": ["all-detected", "all-available"] } },
-            "required": ["mode"]
-          },
-          "then": {
-            "properties": { "requestedHostIds": { "maxItems": 0 } }
-          }
-        }
-      ]
-    },
-    "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
-    "hosts": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["adapterId", "status", "bindingTarget", "verificationMode"],
-        "properties": {
-          "adapterId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
-          "status": { "enum": ["supported", "profile-only"] },
-          "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*/$)[^\\\\]+$" },
-          "verificationMode": { "enum": ["new-task-discovery", "profile-only"] }
         }
       }
     },
+    "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
     "proposedWrites": {
       "type": "array",
       "items": {

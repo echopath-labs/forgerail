@@ -339,7 +339,7 @@ function validateHostAdapter(value, errors) {
 }
 
 function validateAdoptionPlan(value, errors) {
-  const keys = ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"];
+  const keys = ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"];
   if (!exactKeys(value, keys, [], "adoptionPlan", errors)) return;
   schemaVersion(value.schemaVersion, "adoptionPlan", errors);
   string(value.planId, "adoptionPlan.planId", errors, taskIdPattern);
@@ -348,29 +348,23 @@ function validateAdoptionPlan(value, errors) {
   if (!levels.includes(value.currentLevel)) errors.push("adoptionPlan.currentLevel is invalid");
   if (!levels.includes(value.proposedLevel)) errors.push("adoptionPlan.proposedLevel is invalid");
   if (!["no-change", "single-host-managed-block", "shared-contract-with-thin-bindings"].includes(value.strategy)) errors.push("adoptionPlan.strategy is invalid");
-  if (exactKeys(value.hostSelection, ["mode", "requestedHostIds", "resolvedHostIds"], [], "adoptionPlan.hostSelection", errors)) {
+  const hostEntries = [];
+  if (exactKeys(value.hostSelection, ["mode", "hosts"], [], "adoptionPlan.hostSelection", errors)) {
     if (!["explicit", "all-detected", "all-available"].includes(value.hostSelection.mode)) errors.push("adoptionPlan.hostSelection.mode is invalid");
-    strings(value.hostSelection.requestedHostIds, "adoptionPlan.hostSelection.requestedHostIds", errors, { pattern: idPattern, unique: true });
-    strings(value.hostSelection.resolvedHostIds, "adoptionPlan.hostSelection.resolvedHostIds", errors, { min: 1, pattern: idPattern, unique: true });
-    if (value.hostSelection.mode === "explicit" && value.hostSelection.requestedHostIds?.length === 0) errors.push("explicit hostSelection requires requested host ids");
-    if (value.hostSelection.mode !== "explicit" && value.hostSelection.requestedHostIds?.length !== 0) errors.push("automatic hostSelection cannot retain requested host ids");
+    if (!object(value.hostSelection.hosts) || Object.keys(value.hostSelection.hosts).length === 0) errors.push("adoptionPlan.hostSelection.hosts must contain at least one host");
+    else for (const [adapterId, host] of Object.entries(value.hostSelection.hosts)) {
+      const label = `adoptionPlan.hostSelection.hosts.${adapterId}`;
+      string(adapterId, `${label} identity`, errors, idPattern);
+      if (!exactKeys(host, ["status", "bindingTarget", "verificationMode"], [], label, errors)) continue;
+      if (!["supported", "profile-only"].includes(host.status)) errors.push(`${label}.status is invalid`);
+      string(host.bindingTarget, `${label}.bindingTarget`, errors, relativePathPattern);
+      if (!["new-task-discovery", "profile-only"].includes(host.verificationMode)) errors.push(`${label}.verificationMode is invalid`);
+      if (host.status === "supported" && host.verificationMode !== "new-task-discovery") errors.push(`${label} supported host must use new-task-discovery`);
+      if (host.status === "profile-only" && host.verificationMode !== "profile-only") errors.push(`${label} profile-only host must not claim verified discovery`);
+      hostEntries.push({ adapterId, ...host });
+    }
   }
   strings(value.evidence, "adoptionPlan.evidence", errors, { min: 1, unique: true });
-  if (!Array.isArray(value.hosts) || value.hosts.length === 0) errors.push("adoptionPlan.hosts must contain at least one host");
-  else value.hosts.forEach((host, index) => {
-    const label = `adoptionPlan.hosts[${index}]`;
-    if (!exactKeys(host, ["adapterId", "status", "bindingTarget", "verificationMode"], [], label, errors)) return;
-    string(host.adapterId, `${label}.adapterId`, errors, idPattern);
-    if (!["supported", "profile-only"].includes(host.status)) errors.push(`${label}.status is invalid`);
-    string(host.bindingTarget, `${label}.bindingTarget`, errors, relativePathPattern);
-    if (!["new-task-discovery", "profile-only"].includes(host.verificationMode)) errors.push(`${label}.verificationMode is invalid`);
-    if (host.status === "supported" && host.verificationMode !== "new-task-discovery") errors.push(`${label} supported host must use new-task-discovery`);
-    if (host.status === "profile-only" && host.verificationMode !== "profile-only") errors.push(`${label} profile-only host must not claim verified discovery`);
-  });
-  const hostIds = value.hosts?.map((host) => host.adapterId) ?? [];
-  if (new Set(hostIds).size !== hostIds.length) errors.push("adoptionPlan.hosts contains duplicate adapter ids");
-  if (JSON.stringify(value.hostSelection?.resolvedHostIds) !== JSON.stringify(hostIds)) errors.push("adoptionPlan.hostSelection.resolvedHostIds must match hosts");
-  if (value.hostSelection?.mode === "explicit" && JSON.stringify(value.hostSelection.requestedHostIds) !== JSON.stringify(hostIds)) errors.push("explicit adoptionPlan host selection must preserve requested host order");
   if (!Array.isArray(value.proposedWrites)) errors.push("adoptionPlan.proposedWrites must be an array");
   else value.proposedWrites.forEach((write, index) => {
     const label = `adoptionPlan.proposedWrites[${index}]`;
@@ -412,18 +406,18 @@ function validateAdoptionPlan(value, errors) {
   if (value.status !== "candidate") errors.push("adoptionPlan.status must equal candidate");
   if (value.strategy === "no-change" && (value.proposedWrites?.length ?? 0) !== 0) errors.push("no-change adoptionPlan cannot propose writes");
   if (value.strategy === "single-host-managed-block") {
-    if (value.hosts?.length !== 1) errors.push("single-host-managed-block requires exactly one host");
+    if (hostEntries.length !== 1) errors.push("single-host-managed-block requires exactly one host");
     if (value.proposedWrites?.length !== 1) errors.push("single-host-managed-block requires exactly one proposed write");
-    if (value.proposedWrites?.[0]?.path !== value.hosts?.[0]?.bindingTarget) errors.push("single-host managed write must target its Host Adapter entry");
-    if (value.proposedWrites?.[0]?.managedMarker !== `forgerail:binding:${value.hosts?.[0]?.adapterId}:v1`) errors.push("single-host managed write marker must match its Host Adapter");
+    if (value.proposedWrites?.[0]?.path !== hostEntries[0]?.bindingTarget) errors.push("single-host managed write must target its Host Adapter entry");
+    if (value.proposedWrites?.[0]?.managedMarker !== `forgerail:binding:${hostEntries[0]?.adapterId}:v1`) errors.push("single-host managed write marker must match its Host Adapter");
   }
   if (value.strategy === "shared-contract-with-thin-bindings") {
-    if ((value.hosts?.length ?? 0) < 1) errors.push("shared-contract-with-thin-bindings requires at least one host");
-    if (value.proposedWrites?.length !== (value.hosts?.length ?? 0) + 1) errors.push("shared-contract-with-thin-bindings requires one contract and one write per host");
+    if (hostEntries.length < 1) errors.push("shared-contract-with-thin-bindings requires at least one host");
+    if (value.proposedWrites?.length !== hostEntries.length + 1) errors.push("shared-contract-with-thin-bindings requires one contract and one write per host");
     const contract = value.proposedWrites?.find((write) => write.path === "FORGERAIL.md");
     if (!contract) errors.push("shared-contract-with-thin-bindings must propose FORGERAIL.md");
     else if (contract.managedMarker !== "forgerail:adoption-contract:v1") errors.push("FORGERAIL.md must use the portable Adoption Contract marker");
-    for (const host of value.hosts ?? []) {
+    for (const host of hostEntries) {
       const binding = value.proposedWrites?.find((write) => write.path === host.bindingTarget);
       if (!binding) errors.push(`shared-contract plan is missing host binding: ${host.adapterId}`);
       else if (binding.managedMarker !== `forgerail:binding:${host.adapterId}:v1`) errors.push(`shared-contract binding marker is invalid: ${host.adapterId}`);

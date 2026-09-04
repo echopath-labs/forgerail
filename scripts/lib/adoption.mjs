@@ -640,7 +640,12 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
       writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker));
     }
   }
-  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hostSelection: { mode: selection.mode, requestedHostIds: selection.requestedHostIds, resolvedHostIds: selection.resolvedHostIds }, writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
+  const selectedHosts = Object.fromEntries(selected.map((adapter) => [adapter.id, {
+    status: adapter.status,
+    bindingTarget: adapter.bindingTarget,
+    verificationMode: adapter.verification.mode,
+  }]));
+  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hostSelection: { mode: selection.mode, hosts: selectedHosts }, writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
   const plan = {
     schemaVersion: "1.0",
     planId: `adoption:${identity}`,
@@ -650,15 +655,13 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
     strategy,
     hostSelection: {
       mode: selection.mode,
-      requestedHostIds: selection.requestedHostIds,
-      resolvedHostIds: selection.resolvedHostIds,
+      hosts: selectedHosts,
     },
     evidence: [
       `Observed current adoption level: ${currentLevel}.`,
       `Host selection mode ${selection.mode} resolved adapters: ${selection.resolvedHostIds.join(", ")}.`,
       "ForgeRail alpha.1 does not generate persisted .forgerail state.",
     ],
-    hosts: selected.map((adapter) => ({ adapterId: adapter.id, status: adapter.status, bindingTarget: adapter.bindingTarget, verificationMode: adapter.verification.mode })),
     proposedWrites: writes,
     requiredConfirmation: true,
     verification: selected.map((adapter) => adapter.status === "supported"

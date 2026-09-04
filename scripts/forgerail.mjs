@@ -607,11 +607,11 @@ function validateAdoption() {
   const after = JSON.stringify(workspaceSnapshot(workspace));
   if (before !== after) errors.push("adoption planning mutated its fixture workspace");
   if (single?.strategy !== "single-host-managed-block" || single?.proposedWrites?.length !== 1 || single?.proposedWrites?.[0]?.path !== "AGENTS.md") errors.push("single-host plan is not a bounded AGENTS.md managed block");
-  if (single?.hostSelection?.mode !== "explicit" || single?.hostSelection?.resolvedHostIds?.join(",") !== "codex") errors.push("single-host plan did not retain its explicit selection");
+  if (single?.hostSelection?.mode !== "explicit" || Object.keys(single?.hostSelection?.hosts ?? {}).join(",") !== "codex") errors.push("single-host plan did not retain its explicit selection");
   if (multi?.strategy !== "shared-contract-with-thin-bindings" || !multi?.proposedWrites?.some((write) => write.path === "FORGERAIL.md")) errors.push("multi-host plan is missing the shared Adoption Contract");
-  if (detected?.hostSelection?.mode !== "all-detected" || detected?.hostSelection?.resolvedHostIds?.join(",") !== "codex") errors.push("default adoption planning did not resolve detected hosts");
-  if (available?.hostSelection?.mode !== "all-available" || available?.hosts?.length !== registry.adapters.length) errors.push("all-available adoption planning did not resolve the current registry");
-  if (multi?.hosts?.find((host) => host.adapterId === "claude-code")?.status !== "profile-only" || multi?.hosts?.find((host) => host.adapterId === "cursor")?.status !== "profile-only") errors.push("unverified hosts must remain profile-only");
+  if (detected?.hostSelection?.mode !== "all-detected" || Object.keys(detected?.hostSelection?.hosts ?? {}).join(",") !== "codex") errors.push("default adoption planning did not resolve detected hosts");
+  if (available?.hostSelection?.mode !== "all-available" || Object.keys(available?.hostSelection?.hosts ?? {}).length !== registry.adapters.length) errors.push("all-available adoption planning did not resolve the current registry");
+  if (multi?.hostSelection?.hosts?.["claude-code"]?.status !== "profile-only" || multi?.hostSelection?.hosts?.cursor?.status !== "profile-only") errors.push("unverified hosts must remain profile-only");
   if ([...(single?.proposedWrites ?? []), ...(multi?.proposedWrites ?? [])].some((write) => write.path === ".forgerail" || write.path.startsWith(".forgerail/"))) errors.push("alpha.1 adoption plan cannot propose .forgerail state");
   try {
     planAdoption(root, workspace, ["codex"], "persisted-governance");

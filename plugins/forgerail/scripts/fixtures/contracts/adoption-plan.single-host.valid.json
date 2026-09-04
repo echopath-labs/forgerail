@@ -7,13 +7,11 @@
   "strategy": "single-host-managed-block",
   "hostSelection": {
     "mode": "explicit",
-    "requestedHostIds": ["codex"],
-    "resolvedHostIds": ["codex"]
+    "hosts": {
+      "codex": { "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" }
+    }
   },
   "evidence": ["Codex was explicitly selected."],
-  "hosts": [
-    { "adapterId": "codex", "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" }
-  ],
   "proposedWrites": [
     {
       "workspaceSha256": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d",
