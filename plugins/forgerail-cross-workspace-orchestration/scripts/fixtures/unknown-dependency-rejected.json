@@ -1,0 +1,13 @@
+{
+  "name": "unknown-dependency-rejected",
+  "input": {
+    "workItems": [
+      { "id": "one", "ownerWorkspace": "/workspaces/one", "repository": "one", "branch": "feat/one", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": ["missing"], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "markdown",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expectedErrorContains": "unknown dependencies"
+}

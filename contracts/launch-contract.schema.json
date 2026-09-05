@@ -4,10 +4,46 @@
   "title": "ForgeRail Launch Contract",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "envelope", "effectiveRuleSources", "hostAgent", "executionOwner"],
+  "required": ["schemaVersion", "envelope", "effectiveProfile", "effectivePackManifests", "effectiveRuleSources", "hostAgent", "executionOwner"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
-    "envelope": { "$ref": "task-envelope.schema.json" },
+    "envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Resolved Task Envelope. Requested Pack identities are represented once as an identity-to-manifest-digest map so schema-only consumers cannot accept an unbound requested Pack.",
+      "required": ["schemaVersion", "taskId", "intent", "nonGoals", "ownerWorkspace", "allowedOperations", "prohibitedOperations", "packs", "approvalGates", "validation", "returnContract"],
+      "properties": {
+        "schemaVersion": { "const": "1.0" },
+        "taskId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
+        "intent": { "type": "string", "minLength": 1 },
+        "nonGoals": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "ownerWorkspace": { "type": "string", "minLength": 1 },
+        "allowedOperations": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "prohibitedOperations": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "packs": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9-]+$" },
+          "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        },
+        "approvalGates": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" }, "uniqueItems": true },
+        "validation": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "returnContract": { "const": "forgerail-return-receipt-v1" }
+      }
+    },
+    "effectiveProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Identity of the validated effective profile. Workspace identity is represented once by envelope.ownerWorkspace.",
+      "required": ["digest"],
+      "properties": {
+        "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "effectivePackManifests": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]+$" },
+      "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+    },
     "effectiveRuleSources": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
     "hostAgent": { "type": "string", "minLength": 1 },
     "executionOwner": { "const": "host-agent" }

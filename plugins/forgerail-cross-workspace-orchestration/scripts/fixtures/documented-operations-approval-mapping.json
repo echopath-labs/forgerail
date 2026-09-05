@@ -1,0 +1,48 @@
+{
+  "name": "documented-operations-approval-mapping",
+  "input": {
+    "workItems": [
+      {
+        "id": "operations",
+        "ownerWorkspace": "/workspaces/operations",
+        "repository": "operations",
+        "branch": "feat/operations",
+        "pr": null,
+        "releaseIdentity": null,
+        "aggregateWrites": [],
+        "dependencies": [],
+        "status": "pending",
+        "deploymentEnvironment": "production",
+        "requestedOperations": ["push", "draft-pr", "remote-ci", "ready", "merge", "tag", "publish", "deploy", "release", "lifecycle-change", "deprecate", "archive", "delete", "redirect", "transfer", "repository-transfer", "default-branch", "ruleset"],
+        "grantedApprovals": []
+      }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "openspec",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": {
+    "missingApprovals": [
+      { "workItem": "operations", "operation": "push", "required": "remote-integration-approval" },
+      { "workItem": "operations", "operation": "draft-pr", "required": "remote-integration-approval" },
+      { "workItem": "operations", "operation": "remote-ci", "required": "remote-integration-approval" },
+      { "workItem": "operations", "operation": "ready", "required": "release-approval" },
+      { "workItem": "operations", "operation": "merge", "required": "release-approval" },
+      { "workItem": "operations", "operation": "tag", "required": "release-approval" },
+      { "workItem": "operations", "operation": "publish", "required": "release-approval" },
+      { "workItem": "operations", "operation": "deploy", "required": "release-approval" },
+      { "workItem": "operations", "operation": "deploy", "required": "production-change-approval" },
+      { "workItem": "operations", "operation": "release", "required": "release-approval" },
+      { "workItem": "operations", "operation": "lifecycle-change", "required": "lifecycle-change-approval" },
+      { "workItem": "operations", "operation": "deprecate", "required": "lifecycle-change-approval" },
+      { "workItem": "operations", "operation": "archive", "required": "lifecycle-change-approval" },
+      { "workItem": "operations", "operation": "delete", "required": "lifecycle-change-approval" },
+      { "workItem": "operations", "operation": "redirect", "required": "lifecycle-change-approval" },
+      { "workItem": "operations", "operation": "transfer", "required": "lifecycle-change-approval" },
+      { "workItem": "operations", "operation": "repository-transfer", "required": "lifecycle-change-approval" },
+      { "workItem": "operations", "operation": "default-branch", "required": "lifecycle-change-approval" },
+      { "workItem": "operations", "operation": "ruleset", "required": "lifecycle-change-approval" }
+    ]
+  }
+}

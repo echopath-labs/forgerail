@@ -1,0 +1,14 @@
+{
+  "name": "duplicate-work-item-rejected",
+  "input": {
+    "workItems": [
+      { "id": "same", "ownerWorkspace": "a", "repository": "a", "branch": "a", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "same", "ownerWorkspace": "b", "repository": "b", "branch": "b", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] },
+    "hostAdapter": {},
+    "relayPact": { "available": false },
+    "recordStrategy": "existing-habits-first"
+  },
+  "expectedErrorContains": "duplicate work item ids"
+}

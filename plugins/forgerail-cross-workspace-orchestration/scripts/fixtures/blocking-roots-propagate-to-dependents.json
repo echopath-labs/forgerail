@@ -1,0 +1,21 @@
+{
+  "name": "blocking-roots-propagate-to-dependents",
+  "input": {
+    "workItems": [
+      { "id": "blocked-a", "ownerWorkspace": "/workspaces/a", "repository": "repo-a", "branch": "feat/a", "pr": null, "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "blocked", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "dependent-b", "ownerWorkspace": "/workspaces/b", "repository": "repo-b", "branch": "feat/b", "pr": null, "releaseIdentity": "b", "aggregateWrites": [], "dependencies": ["blocked-a"], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "approval-c", "ownerWorkspace": "/workspaces/c", "repository": "repo-c", "branch": "feat/c", "pr": null, "releaseIdentity": "c", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": ["push"], "grantedApprovals": [] },
+      { "id": "dependent-d", "ownerWorkspace": "/workspaces/d", "repository": "repo-d", "branch": "feat/d", "pr": null, "releaseIdentity": "d", "aggregateWrites": [], "dependencies": ["approval-c"], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "independent-e", "ownerWorkspace": "/workspaces/e", "repository": "repo-e", "branch": "feat/e", "pr": null, "releaseIdentity": "e", "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "openspec",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": {
+    "held": ["approval-c", "blocked-a", "dependent-b", "dependent-d"],
+    "unresolved": [],
+    "waves": [["independent-e"]]
+  }
+}

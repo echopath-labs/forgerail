@@ -2,7 +2,7 @@
 
 ForgeRail is primarily a Codex Agent Plugin. The default installation does not add Node.js, `package.json`, `node_modules`, or `.forgerail/` to the project you use it with.
 
-The current public prerelease is `0.1.0-alpha.3`. Pin the immutable Git tag so another user can reproduce the same Plugin snapshot.
+The current public prerelease is `0.1.0-alpha.4`. Pin the immutable Git tag so another user can reproduce the same Plugin snapshot.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ The target project does not require Node.js, `package.json`, `node_modules`, or 
 ## Install the Codex Plugin
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.3
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.4
 codex plugin add forgerail@echopath-labs
 ```
 
@@ -69,14 +69,14 @@ Installation only makes a Pack available. It does not authenticate, enable, invo
 The CLI is useful for deterministic validation or read-only diagnosis, but it is not required for Plugin use:
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 diagnose --workspace .
 ```
 
 For a global CLI:
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.3
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.4
 forgerail validate
 ```
 
@@ -103,7 +103,7 @@ Uninstalling ForgeRail must not delete project instructions, specifications, rec
 ### The Skills do not appear
 
 1. Confirm the Marketplace and Plugin are listed and enabled with `codex plugin list`.
-2. Confirm the registration is pinned to `v0.1.0-alpha.3`.
+2. Confirm the registration is pinned to `v0.1.0-alpha.4`.
 3. Start a new Codex task; an already-running task may not refresh Plugin discovery.
 4. Use the namespaced Skill name if another Plugin or personal Skill has the same short name.
 

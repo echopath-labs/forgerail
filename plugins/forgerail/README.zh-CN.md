@@ -14,7 +14,7 @@
   <a href="CHANGELOG.md">变更记录</a>
 </p>
 
-> **当前状态：** `0.1.0-alpha.3` 是当前公开预发布版本。Codex 是已经验证的宿主；稳定版之前，接口与引导方式仍可能变化。
+> **当前状态：** `0.1.0-alpha.4` 是当前公开预发布版本。Codex 是已经验证的宿主；稳定版之前，接口与引导方式仍可能变化。
 
 ## 为什么需要 ForgeRail？
 
@@ -34,7 +34,7 @@ ForgeRail 不是自动执行器，不替代 OpenSpec 或 `AGENTS.md`，不提供
 ### 1. 安装精确版本的 Codex Plugin
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.3
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.4
 codex plugin add forgerail@echopath-labs
 ```
 
@@ -112,8 +112,8 @@ ForgeRail 组合四层能力，但不会要求每个项目都持久化这些层�
 npm 包为维护者和 CI 提供确定性校验与诊断，**不是** Agent Plugin 或目标项目的必需条件。
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 diagnose --workspace .
 ```
 
 正式包是带组织 scope 的 `@echopath-labs/forgerail`。不带 scope 的 `forgerail` 只是名称占位，不是安装来源。
@@ -126,7 +126,7 @@ npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 diagnose --workspace .
 - [Pack 开发](docs/pack-authoring.md)
 - [从 Agent Workflow Governance 迁移](docs/migration-from-agw.md)
 - [架构验收](docs/architecture-acceptance.md)
-- [alpha.3 发布说明与 Runbook](docs/release-alpha3.zh-CN.md)
+- [alpha.4 发布说明与 Runbook](docs/release-alpha4.zh-CN.md)
 
 ## 项目状态
 
@@ -138,7 +138,7 @@ ForgeRail 已经可以通过 Plugin Only 和经过评审的 Lightweight Adoption
 - Universal Plugins Directory 上架暂停，当前支持精确 tag Marketplace 安装；
 - 缺陷通过新版本 forward fix，不改写已发布 tag 或 package。
 
-参见 [alpha.3 prerelease](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0-alpha.3)和[变更记录](CHANGELOG.md)。
+参见 [alpha.4 prerelease](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0-alpha.4)和[变更记录](CHANGELOG.md)。
 
 ## 贡献与支持
 

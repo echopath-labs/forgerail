@@ -1,0 +1,13 @@
+{
+  "name": "failed-status-missing-event-rejected",
+  "input": {
+    "workItems": [
+      { "id": "failed-a", "ownerWorkspace": "/workspaces/a", "repository": "repo-a", "branch": "feat/a", "pr": null, "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "failed", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "spec-kit",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expectedErrorContains": "failed work item is missing its event: failed-a"
+}

@@ -18,12 +18,11 @@
       "status": "observed"
     }
   ],
-  "packs": [
-    {
-      "id": "workspace-health-review",
+  "packs": {
+    "workspace-health-review": {
       "state": "available",
       "reason": "Installed with ForgeRail but not required for this task."
     }
-  ],
+  },
   "conflicts": []
 }

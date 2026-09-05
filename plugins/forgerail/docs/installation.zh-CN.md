@@ -2,7 +2,7 @@
 
 ForgeRail 首先是一个 Codex Agent Plugin。默认安装不会在目标项目中加入 Node.js、`package.json`、`node_modules` 或 `.forgerail/`。
 
-当前公开预发布版本是 `0.1.0-alpha.3`。请固定不可变 Git tag，让其他用户能够复现同一个 Plugin 快照。
+当前公开预发布版本是 `0.1.0-alpha.4`。请固定不可变 Git tag，让其他用户能够复现同一个 Plugin 快照。
 
 ## 准备条件
 
@@ -15,7 +15,7 @@ ForgeRail 首先是一个 Codex Agent Plugin。默认安装不会在目标项目
 ## 安装 Codex Plugin
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.3
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.4
 codex plugin add forgerail@echopath-labs
 ```
 
@@ -68,14 +68,14 @@ codex plugin add forgerail-cross-workspace-orchestration@echopath-labs
 CLI 可用于确定性验证或只读诊断，但不是使用 Plugin 的前提：
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 diagnose --workspace .
 ```
 
 如果需要全局 CLI：
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.3
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.4
 forgerail validate
 ```
 
@@ -102,7 +102,7 @@ npm uninstall --global @echopath-labs/forgerail
 ### 看不到 Skills
 
 1. 使用 `codex plugin list` 确认 Marketplace 和 Plugin 已列出并启用。
-2. 确认 Marketplace 固定在 `v0.1.0-alpha.3`。
+2. 确认 Marketplace 固定在 `v0.1.0-alpha.4`。
 3. 新建 Codex 任务；已运行的任务可能不会刷新 Plugin discovery。
 4. 如果有同名 Skill，使用带命名空间的完整名称。
 

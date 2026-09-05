@@ -44,7 +44,9 @@ export const contractTypes = Object.keys(contractSchemaNames);
 const packStates = ["available", "recommended", "enabled", "required", "blocked", "disabled"];
 const idPattern = /^[a-z][a-z0-9-]+$/;
 const ruleIdPattern = /^[a-z][a-z0-9.-]+$/;
-const taskIdPattern = /^[a-zA-Z0-9._:-]+$/;
+const taskIdPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]+$/;
+const relativePathPattern = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\/$)[^\\]+$/;
+const portableHostPathPattern = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*(?:^|\/)[^/]*\.(?:\/|$))(?!.*(?:^|\/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\.|\/|$))(?!.*\/$)[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
 const commitPattern = /^[0-9a-f]{40}$/;
 const digestPattern = /^[0-9a-f]{64}$/;
 const authorityClasses = ["agent_review", "automated_validation", "peer_review", "ownership_approval", "security_approval", "release_approval", "environment_approval"];
@@ -85,7 +87,21 @@ function nullableString(value, label, errors, pattern) {
 
 function dateTime(value, label, errors) {
   string(value, label, errors);
-  if (typeof value === "string" && (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) || Number.isNaN(Date.parse(value)))) errors.push(`${label} must be an ISO 8601 date-time with timezone`);
+  if (typeof value !== "string") return;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/.exec(value);
+  if (!match) {
+    errors.push(`${label} must be an ISO 8601 date-time with timezone`);
+    return;
+  }
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, zone, zoneHourText = "0", zoneMinuteText = "0"] = match;
+  const [year, month, day, hour, minute, second, zoneHour, zoneMinute] = [yearText, monthText, dayText, hourText, minuteText, secondText, zoneHourText, zoneMinuteText].map(Number);
+  const calendar = new Date(0);
+  calendar.setUTCHours(0, 0, 0, 0);
+  calendar.setUTCFullYear(year, month - 1, day);
+  const calendarValid = calendar.getUTCFullYear() === year && calendar.getUTCMonth() === month - 1 && calendar.getUTCDate() === day;
+  const clockValid = hour <= 23 && minute <= 59 && second <= 59;
+  const zoneValid = zone === "Z" || (zoneHour <= 23 && zoneMinute <= 59);
+  if (!calendarValid || !clockValid || !zoneValid || Number.isNaN(Date.parse(value))) errors.push(`${label} must be an ISO 8601 date-time with timezone`);
 }
 
 function strings(value, label, errors, { min = 0, pattern, unique = false } = {}) {
@@ -187,25 +203,26 @@ function validateProfile(value, errors) {
     if (!Number.isInteger(rule.precedence) || rule.precedence < 1 || rule.precedence > 6) errors.push(`${label}.precedence must be 1-6`);
     if (!["observed", "inferred", "confirmed", "default"].includes(rule.status)) errors.push(`${label}.status is invalid`);
   });
-  if (!Array.isArray(value.packs)) errors.push("profile.packs must be an array");
-  else value.packs.forEach((pack, index) => {
-    const label = `profile.packs[${index}]`;
-    if (!exactKeys(pack, ["id", "state", "reason"], [], label, errors)) return;
-    string(pack.id, `${label}.id`, errors, idPattern);
+  if (!object(value.packs)) errors.push("profile.packs must be an identity-keyed object");
+  else Object.entries(value.packs).forEach(([id, pack]) => {
+    const label = `profile.packs.${id}`;
+    string(id, `${label} identity`, errors, idPattern);
+    if (!exactKeys(pack, ["state", "reason"], [], label, errors)) return;
     if (!packStates.includes(pack.state)) errors.push(`${label}.state is invalid`);
     string(pack.reason, `${label}.reason`, errors);
   });
   strings(value.conflicts, "profile.conflicts", errors);
   const ids = value.rules?.map((rule) => rule.id) ?? [];
   if (new Set(ids).size !== ids.length) errors.push("profile.rules contains duplicate ids");
-  const enabled = new Set((value.packs ?? []).filter((item) => ["enabled", "required"].includes(item.state)).map((item) => item.id));
-  for (const pack of value.packs ?? []) {
+  const profilePacks = object(value.packs) ? Object.entries(value.packs) : [];
+  const enabled = new Set(profilePacks.filter(([, item]) => ["enabled", "required"].includes(item.state)).map(([id]) => id));
+  for (const [id, pack] of profilePacks) {
     if (!["enabled", "required"].includes(pack.state)) continue;
-    if (pack.id === "agent-workflow-governance" && enabled.has("forgerail-core")) errors.push("profile has duplicate core workflow owners");
+    if (id === "agent-workflow-governance" && enabled.has("forgerail-core")) errors.push("profile has duplicate core workflow owners");
   }
 }
 
-function validateEnvelope(value, errors, label = "envelope") {
+function validateEnvelope(value, errors, label = "envelope", packsMode = "ids") {
   const keys = ["schemaVersion", "taskId", "intent", "nonGoals", "ownerWorkspace", "allowedOperations", "prohibitedOperations", "packs", "approvalGates", "validation", "returnContract"];
   if (!exactKeys(value, keys, [], label, errors)) return;
   schemaVersion(value.schemaVersion, label, errors);
@@ -215,7 +232,15 @@ function validateEnvelope(value, errors, label = "envelope") {
   string(value.ownerWorkspace, `${label}.ownerWorkspace`, errors);
   strings(value.allowedOperations, `${label}.allowedOperations`, errors, { unique: true });
   strings(value.prohibitedOperations, `${label}.prohibitedOperations`, errors, { unique: true });
-  strings(value.packs, `${label}.packs`, errors, { pattern: idPattern, unique: true });
+  if (packsMode === "manifest-map") {
+    if (!object(value.packs)) errors.push(`${label}.packs must be an object keyed by requested Pack identity`);
+    else for (const [id, manifestDigest] of Object.entries(value.packs)) {
+      string(id, `${label}.packs Pack identity`, errors, idPattern);
+      string(manifestDigest, `${label}.packs.${id}`, errors, digestPattern);
+    }
+  } else {
+    strings(value.packs, `${label}.packs`, errors, { pattern: idPattern, unique: true });
+  }
   strings(value.approvalGates, `${label}.approvalGates`, errors, { pattern: idPattern, unique: true });
   strings(value.validation, `${label}.validation`, errors);
   if (value.returnContract !== "forgerail-return-receipt-v1") errors.push(`${label}.returnContract is invalid`);
@@ -239,9 +264,24 @@ function validateProfileCandidate(value, errors) {
 }
 
 function validateLaunch(value, errors) {
-  if (!exactKeys(value, ["schemaVersion", "envelope", "effectiveRuleSources", "hostAgent", "executionOwner"], [], "launch", errors)) return;
+  if (!exactKeys(value, ["schemaVersion", "envelope", "effectiveProfile", "effectivePackManifests", "effectiveRuleSources", "hostAgent", "executionOwner"], [], "launch", errors)) return;
   schemaVersion(value.schemaVersion, "launch", errors);
-  validateEnvelope(value.envelope, errors, "launch.envelope");
+  validateEnvelope(value.envelope, errors, "launch.envelope", "manifest-map");
+  if (exactKeys(value.effectiveProfile, ["digest"], [], "launch.effectiveProfile", errors)) {
+    string(value.effectiveProfile.digest, "launch.effectiveProfile.digest", errors, digestPattern);
+  }
+  if (!object(value.effectivePackManifests)) errors.push("launch.effectivePackManifests must be an object keyed by Pack identity");
+  else for (const [id, manifestDigest] of Object.entries(value.effectivePackManifests)) {
+    string(id, "launch.effectivePackManifests Pack identity", errors, idPattern);
+    string(manifestDigest, `launch.effectivePackManifests.${id}`, errors, digestPattern);
+  }
+  if (object(value.effectivePackManifests) && object(value.envelope?.packs)) {
+    for (const [id, manifestDigest] of Object.entries(value.envelope.packs)) {
+      if (value.effectivePackManifests[id] !== manifestDigest) {
+        errors.push(`launch.effectivePackManifests does not match requested Pack identity: ${id}`);
+      }
+    }
+  }
   strings(value.effectiveRuleSources, "launch.effectiveRuleSources", errors, { min: 1, unique: true });
   string(value.hostAgent, "launch.hostAgent", errors);
   if (value.executionOwner !== "host-agent") errors.push("launch.executionOwner must equal host-agent");
@@ -267,7 +307,7 @@ function validateReceipt(value, errors) {
 }
 
 function validateHostAdapter(value, errors) {
-  const keys = ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "bindingModes", "managedMarker", "activationBoundary", "verification", "limitations"];
+  const keys = ["schemaVersion", "id", "displayName", "status", "instructionDiscovery", "skillDiscovery", "bindingTarget", "detectionTargets", "bindingModes", "bindingTemplates", "unmanagedBindingPolicy", "managedMarker", "activationBoundary", "verification", "limitations"];
   if (!exactKeys(value, keys, [], "hostAdapter", errors)) return;
   schemaVersion(value.schemaVersion, "hostAdapter", errors);
   string(value.id, "hostAdapter.id", errors, idPattern);
@@ -275,9 +315,21 @@ function validateHostAdapter(value, errors) {
   if (!["supported", "profile-only"].includes(value.status)) errors.push("hostAdapter.status is invalid");
   if (!["task-start", "rules", "explicit-only", "unknown"].includes(value.instructionDiscovery)) errors.push("hostAdapter.instructionDiscovery is invalid");
   if (!["agent-plugin-skills", "agent-skills", "explicit-only", "unknown"].includes(value.skillDiscovery)) errors.push("hostAdapter.skillDiscovery is invalid");
-  string(value.bindingTarget, "hostAdapter.bindingTarget", errors, /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/);
+  string(value.bindingTarget, "hostAdapter.bindingTarget", errors, portableHostPathPattern);
+  strings(value.detectionTargets, "hostAdapter.detectionTargets", errors, { min: 1, pattern: portableHostPathPattern, unique: true });
   strings(value.bindingModes, "hostAdapter.bindingModes", errors, { min: 1, unique: true });
+  if (!value.bindingModes?.includes("thin-reference")) errors.push("hostAdapter must support thin-reference for all-Host adoption");
   for (const mode of value.bindingModes ?? []) if (!["managed-block", "thin-reference"].includes(mode)) errors.push(`hostAdapter.bindingModes contains invalid mode: ${mode}`);
+  if (exactKeys(value.bindingTemplates, [], ["managed-block", "thin-reference"], "hostAdapter.bindingTemplates", errors)) {
+    for (const [mode, template] of Object.entries(value.bindingTemplates)) {
+      string(template, `hostAdapter.bindingTemplates.${mode}`, errors, portableHostPathPattern);
+      if (!value.bindingModes?.includes(mode)) errors.push(`hostAdapter.bindingTemplates.${mode} is not declared in bindingModes`);
+    }
+    for (const mode of value.bindingModes ?? []) {
+      if (typeof value.bindingTemplates?.[mode] !== "string") errors.push(`hostAdapter.bindingTemplates is missing mode: ${mode}`);
+    }
+  }
+  if (!["append-managed-block", "reject"].includes(value.unmanagedBindingPolicy)) errors.push("hostAdapter.unmanagedBindingPolicy is invalid");
   string(value.managedMarker, "hostAdapter.managedMarker", errors, /^forgerail:binding:[a-z][a-z0-9-]+:v1$/);
   if (value.managedMarker !== `forgerail:binding:${value.id}:v1`) errors.push("hostAdapter.managedMarker must match hostAdapter.id");
   if (!["new-task-required", "host-specific-verification-required"].includes(value.activationBoundary)) errors.push("hostAdapter.activationBoundary is invalid");
@@ -298,8 +350,20 @@ function validateHostAdapter(value, errors) {
   }
 }
 
+function rejectConflictingPaths(paths, label, errors) {
+  const identities = paths.filter((path) => typeof path === "string").map((path) => path.normalize("NFC").toLowerCase());
+  for (let index = 0; index < identities.length; index += 1) {
+    const current = identities[index];
+    for (const previous of identities.slice(0, index)) {
+      if (current === previous || current.startsWith(`${previous}/`) || previous.startsWith(`${current}/`)) {
+        errors.push(`${label} contains conflicting target paths: ${previous}, ${current}`);
+      }
+    }
+  }
+}
+
 function validateAdoptionPlan(value, errors) {
-  const keys = ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"];
+  const keys = ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"];
   if (!exactKeys(value, keys, [], "adoptionPlan", errors)) return;
   schemaVersion(value.schemaVersion, "adoptionPlan", errors);
   string(value.planId, "adoptionPlan.planId", errors, taskIdPattern);
@@ -308,38 +372,60 @@ function validateAdoptionPlan(value, errors) {
   if (!levels.includes(value.currentLevel)) errors.push("adoptionPlan.currentLevel is invalid");
   if (!levels.includes(value.proposedLevel)) errors.push("adoptionPlan.proposedLevel is invalid");
   if (!["no-change", "single-host-managed-block", "shared-contract-with-thin-bindings"].includes(value.strategy)) errors.push("adoptionPlan.strategy is invalid");
+  const hostEntries = [];
+  if (exactKeys(value.hostSelection, ["mode", "hosts"], [], "adoptionPlan.hostSelection", errors)) {
+    if (!["explicit", "all-detected", "all-available"].includes(value.hostSelection.mode)) errors.push("adoptionPlan.hostSelection.mode is invalid");
+    if (!object(value.hostSelection.hosts) || Object.keys(value.hostSelection.hosts).length === 0) errors.push("adoptionPlan.hostSelection.hosts must contain at least one host");
+    else for (const [adapterId, host] of Object.entries(value.hostSelection.hosts)) {
+      const label = `adoptionPlan.hostSelection.hosts.${adapterId}`;
+      string(adapterId, `${label} identity`, errors, idPattern);
+      if (!exactKeys(host, ["status", "bindingTarget", "verificationMode"], [], label, errors)) continue;
+      if (!["supported", "profile-only"].includes(host.status)) errors.push(`${label}.status is invalid`);
+      string(host.bindingTarget, `${label}.bindingTarget`, errors, portableHostPathPattern);
+      if (!["new-task-discovery", "profile-only"].includes(host.verificationMode)) errors.push(`${label}.verificationMode is invalid`);
+      if (host.status === "supported" && host.verificationMode !== "new-task-discovery") errors.push(`${label} supported host must use new-task-discovery`);
+      if (host.status === "profile-only" && host.verificationMode !== "profile-only") errors.push(`${label} profile-only host must not claim verified discovery`);
+      hostEntries.push({ adapterId, ...host });
+    }
+  }
+  rejectConflictingPaths(["FORGERAIL.md", ...hostEntries.map(({ bindingTarget }) => bindingTarget)], "adoptionPlan.hostSelection", errors);
   strings(value.evidence, "adoptionPlan.evidence", errors, { min: 1, unique: true });
-  if (!Array.isArray(value.hosts) || value.hosts.length === 0) errors.push("adoptionPlan.hosts must contain at least one host");
-  else value.hosts.forEach((host, index) => {
-    const label = `adoptionPlan.hosts[${index}]`;
-    if (!exactKeys(host, ["adapterId", "status", "bindingTarget", "verificationMode"], [], label, errors)) return;
-    string(host.adapterId, `${label}.adapterId`, errors, idPattern);
-    if (!["supported", "profile-only"].includes(host.status)) errors.push(`${label}.status is invalid`);
-    string(host.bindingTarget, `${label}.bindingTarget`, errors, /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/);
-    if (!["new-task-discovery", "profile-only"].includes(host.verificationMode)) errors.push(`${label}.verificationMode is invalid`);
-    if (host.status === "supported" && host.verificationMode !== "new-task-discovery") errors.push(`${label} supported host must use new-task-discovery`);
-    if (host.status === "profile-only" && host.verificationMode !== "profile-only") errors.push(`${label} profile-only host must not claim verified discovery`);
-  });
-  const hostIds = value.hosts?.map((host) => host.adapterId) ?? [];
-  if (new Set(hostIds).size !== hostIds.length) errors.push("adoptionPlan.hosts contains duplicate adapter ids");
   if (!Array.isArray(value.proposedWrites)) errors.push("adoptionPlan.proposedWrites must be an array");
   else value.proposedWrites.forEach((write, index) => {
     const label = `adoptionPlan.proposedWrites[${index}]`;
-    if (!exactKeys(write, ["path", "operation", "baseSha256", "contentSha256", "content", "managedMarker"], [], label, errors)) return;
-    string(write.path, `${label}.path`, errors, /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/);
+    if (!exactKeys(write, ["workspaceSha256", "path", "operation", "baseSha256", "contentSha256", "content", "managedMarker", "approvalSha256"], [], label, errors)) return;
+    string(write.workspaceSha256, `${label}.workspaceSha256`, errors, digestPattern);
+    string(write.path, `${label}.path`, errors, portableHostPathPattern);
     if (!["create", "append-managed-block", "replace-managed-block"].includes(write.operation)) errors.push(`${label}.operation is invalid`);
     nullableString(write.baseSha256, `${label}.baseSha256`, errors, digestPattern);
     string(write.contentSha256, `${label}.contentSha256`, errors, digestPattern);
     string(write.content, `${label}.content`, errors);
     string(write.managedMarker, `${label}.managedMarker`, errors, /^forgerail:(?:binding:[a-z][a-z0-9-]+|adoption-contract):v1$/);
+    string(write.approvalSha256, `${label}.approvalSha256`, errors, digestPattern);
     if (typeof write.content === "string" && write.contentSha256 !== sha256(write.content)) errors.push(`${label}.contentSha256 does not match content`);
+    if (typeof write.content === "string") {
+      const approvalBound = {
+        workspaceSha256: write.workspaceSha256,
+        path: write.path,
+        operation: write.operation,
+        baseSha256: write.baseSha256,
+        contentSha256: write.contentSha256,
+        content: write.content,
+        managedMarker: write.managedMarker,
+      };
+      if (write.approvalSha256 !== sha256(JSON.stringify(approvalBound))) errors.push(`${label}.approvalSha256 does not match the proposed write`);
+    }
     if (typeof write.content === "string" && (!write.content.includes(`<!-- ${write.managedMarker}:start -->`) || !write.content.includes(`<!-- ${write.managedMarker}:end -->`))) errors.push(`${label}.content must contain its complete managed marker`);
     if (write.operation === "create" && write.baseSha256 !== null) errors.push(`${label}.baseSha256 must be null for create`);
     if (write.operation !== "create" && !digestPattern.test(write.baseSha256 ?? "")) errors.push(`${label}.baseSha256 is required for managed-block updates`);
-    if (write.path === ".forgerail" || write.path.startsWith(".forgerail/")) errors.push(`${label} cannot target deferred .forgerail state`);
+    if (typeof write.path === "string" && (write.path === ".forgerail" || write.path.startsWith(".forgerail/"))) errors.push(`${label} cannot target deferred .forgerail state`);
   });
-  const writePaths = value.proposedWrites?.map((write) => write.path) ?? [];
+  if (!Array.isArray(value.proposedWrites) || value.proposedWrites.some((write) => !object(write))) return;
+  const writePaths = value.proposedWrites.map((write) => write.path);
+  rejectConflictingPaths(writePaths, "adoptionPlan.proposedWrites", errors);
   if (new Set(writePaths).size !== writePaths.length) errors.push("adoptionPlan.proposedWrites contains duplicate paths");
+  const writeWorkspaces = (value.proposedWrites ?? []).map((write) => write.workspaceSha256).filter((identity) => typeof identity === "string");
+  if (new Set(writeWorkspaces).size > 1) errors.push("adoptionPlan.proposedWrites must share one workspace identity");
   if (value.requiredConfirmation !== true) errors.push("adoptionPlan.requiredConfirmation must equal true");
   strings(value.verification, "adoptionPlan.verification", errors, { min: 1, unique: true });
   strings(value.confirmedNonMutations, "adoptionPlan.confirmedNonMutations", errors, { min: 1, unique: true });
@@ -347,18 +433,18 @@ function validateAdoptionPlan(value, errors) {
   if (value.status !== "candidate") errors.push("adoptionPlan.status must equal candidate");
   if (value.strategy === "no-change" && (value.proposedWrites?.length ?? 0) !== 0) errors.push("no-change adoptionPlan cannot propose writes");
   if (value.strategy === "single-host-managed-block") {
-    if (value.hosts?.length !== 1) errors.push("single-host-managed-block requires exactly one host");
+    if (hostEntries.length !== 1) errors.push("single-host-managed-block requires exactly one host");
     if (value.proposedWrites?.length !== 1) errors.push("single-host-managed-block requires exactly one proposed write");
-    if (value.proposedWrites?.[0]?.path !== value.hosts?.[0]?.bindingTarget) errors.push("single-host managed write must target its Host Adapter entry");
-    if (value.proposedWrites?.[0]?.managedMarker !== `forgerail:binding:${value.hosts?.[0]?.adapterId}:v1`) errors.push("single-host managed write marker must match its Host Adapter");
+    if (value.proposedWrites?.[0]?.path !== hostEntries[0]?.bindingTarget) errors.push("single-host managed write must target its Host Adapter entry");
+    if (value.proposedWrites?.[0]?.managedMarker !== `forgerail:binding:${hostEntries[0]?.adapterId}:v1`) errors.push("single-host managed write marker must match its Host Adapter");
   }
   if (value.strategy === "shared-contract-with-thin-bindings") {
-    if ((value.hosts?.length ?? 0) < 2) errors.push("shared-contract-with-thin-bindings requires at least two hosts");
-    if (value.proposedWrites?.length !== (value.hosts?.length ?? 0) + 1) errors.push("shared-contract-with-thin-bindings requires one contract and one write per host");
+    if (hostEntries.length < 1) errors.push("shared-contract-with-thin-bindings requires at least one host");
+    if (value.proposedWrites?.length !== hostEntries.length + 1) errors.push("shared-contract-with-thin-bindings requires one contract and one write per host");
     const contract = value.proposedWrites?.find((write) => write.path === "FORGERAIL.md");
     if (!contract) errors.push("shared-contract-with-thin-bindings must propose FORGERAIL.md");
     else if (contract.managedMarker !== "forgerail:adoption-contract:v1") errors.push("FORGERAIL.md must use the portable Adoption Contract marker");
-    for (const host of value.hosts ?? []) {
+    for (const host of hostEntries) {
       const binding = value.proposedWrites?.find((write) => write.path === host.bindingTarget);
       if (!binding) errors.push(`shared-contract plan is missing host binding: ${host.adapterId}`);
       else if (binding.managedMarker !== `forgerail:binding:${host.adapterId}:v1`) errors.push(`shared-contract binding marker is invalid: ${host.adapterId}`);

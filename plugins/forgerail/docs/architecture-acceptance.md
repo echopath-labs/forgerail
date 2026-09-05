@@ -5,7 +5,7 @@ Accepted on 2026-08-12:
 - Core + Workspace Diagnosis + Workspace Health Review ship in the main Agent Plugin.
 - GitHub Rulesets, Release Safety, and Thread Closure begin as external Capability Packs.
 - Workspace Profile is computed from existing sources; no `.forgerail/profile.yaml` is created by default.
-- A lightweight npm/npx CLI is approved for deterministic diagnosis, contract validation, installation inspection, and bundle construction; it is not a prerequisite for using the Agent Plugin.
+- A lightweight npm/npx CLI is approved for deterministic diagnosis, contract validation, and installation inspection; it is not a prerequisite for using the Agent Plugin. Public-projection bundle construction is a source-repository maintainer tool and is not exposed by the installed CLI.
 - Adoption is progressive: Plugin Only by default, explicitly confirmed Lightweight Adoption through Host Adapters, and evidence-gated Persisted Governance deferred beyond alpha.1.
 - Host instruction entries are projections of one portable Adoption Contract. Codex is supported; Claude Code and Cursor remain profile-only until host-specific activation is verified.
 
