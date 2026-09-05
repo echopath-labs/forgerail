@@ -340,6 +340,10 @@ try {
     }
   });
 
+  pass("adoption-closeout-regressions", () => {
+    execFileSync(process.execPath, ["--test", resolve(root, "scripts/adoption-closeout-regressions.mjs")], { encoding: "utf8", timeout: 30_000 });
+  });
+
   pass("host-registry-owns-future-adapter-diagnosis-and-templates", () => {
     const pluginRoot = temporary("forgerail-future-adapter-plugin-");
     cpSync(resolve(root, "adapters"), resolve(pluginRoot, "adapters"), { recursive: true });

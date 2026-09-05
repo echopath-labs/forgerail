@@ -2,7 +2,7 @@
 
 ForgeRail separates **installation**, **availability**, **project adoption**, and **execution approval**. Installing the Plugin exposes guidance to the Agent; it does not edit workspace instructions, create durable state, enable Capability Packs, or authorize external effects.
 
-This guide describes the current `0.1.0-alpha.4` / `v0.1.0-alpha.4` public prerelease.
+This guide describes the `0.1.0-alpha.4` / `v0.1.0-alpha.4` candidate. Check the published release for availability; this source document does not prove publication.
 
 Start with Plugin Only. Move up only when repeated evidence shows that a small durable project binding is more useful than asking explicitly each time.
 
@@ -45,6 +45,12 @@ The active Agent may translate a request such as “only Codex”, “all Agents
 Every proposal must show the current and proposed level, exact target paths and content, base digests, each write's `approvalSha256`, required confirmation, verification steps, support status, and non-actions. ForgeRail deliberately has no `apply-adoption` command. The Agent shows the proposal and waits for a human decision. Node-based integrations must retain the approved `approvalSha256` separately from the mutable proposal, then pass it as the third argument to `applyApprovedAdoptionWrite()` from `scripts/lib/adoption.mjs` so the canonical workspace path plus opened directory identity, destination, operation, marker, content, confinement, no-follow open, file identity and base digest are revalidated against one immutable snapshot at write time. Apply accepts only `create`, `append-managed-block`, or `replace-managed-block`, even when another operation is covered by a syntactically valid digest. Replacing the directory at the same path invalidates the approval. If a post-install check fails after replacing an existing binding, ForgeRail atomically renames the retained original inode directly over the verified installed candidate; it preserves recovery evidence and returns the original failure when safe restoration is impossible. The Agent verifies discovery in a new task and returns a Host Binding Receipt.
 
 If safe automatic rollback is impossible because concurrent content now occupies the approved target, ForgeRail keeps the original binding as a same-directory `.forgerail-<random>.bak` file and includes its project-relative path in the error. Compare that file with the current target, restore only the intended content through a new reviewed operation, and delete the recovery file only after confirming recovery. ForgeRail never treats the retained file as a successful write.
+
+### Subset plans and received plans
+
+Only selected hosts enter strict write planning. Other registered bindings are inspected through the same bounded, no-follow reader used by diagnosis: known managed bindings contribute to the observed current level and are listed as retained; unreadable entries are explicitly unknown and never block the selected-host plan. `currentLevel` describes readable workspace evidence, while `proposedLevel` and writes apply only to the selection. A `no-change` proposal does not remove an unselected binding. Selecting a subset does not consolidate other hosts' rules; review the coexistence warning before approving a new shared contract.
+
+Before approving or applying **any** write from a received plan, validate the complete plan with `validateContract("adoption-plan", plan)`. Per-write approval digests do not replace that check. The runtime rejects case-folded duplicates, ancestor/descendant write targets and Host targets conflicting with reserved `FORGERAIL.md`; JSON Schema alone cannot compare arbitrary paths across entries. Thin-reference templates must name the exact shared `FORGERAIL.md` inside their managed block. This is a structural reference check, not proof that an Agent obeyed the instruction.
 
 ## Level 2 — Persisted Governance
 

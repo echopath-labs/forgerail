@@ -350,6 +350,18 @@ function validateHostAdapter(value, errors) {
   }
 }
 
+function rejectConflictingPaths(paths, label, errors) {
+  const identities = paths.filter((path) => typeof path === "string").map((path) => path.normalize("NFC").toLowerCase());
+  for (let index = 0; index < identities.length; index += 1) {
+    const current = identities[index];
+    for (const previous of identities.slice(0, index)) {
+      if (current === previous || current.startsWith(`${previous}/`) || previous.startsWith(`${current}/`)) {
+        errors.push(`${label} contains conflicting target paths: ${previous}, ${current}`);
+      }
+    }
+  }
+}
+
 function validateAdoptionPlan(value, errors) {
   const keys = ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"];
   if (!exactKeys(value, keys, [], "adoptionPlan", errors)) return;
@@ -376,6 +388,7 @@ function validateAdoptionPlan(value, errors) {
       hostEntries.push({ adapterId, ...host });
     }
   }
+  rejectConflictingPaths(["FORGERAIL.md", ...hostEntries.map(({ bindingTarget }) => bindingTarget)], "adoptionPlan.hostSelection", errors);
   strings(value.evidence, "adoptionPlan.evidence", errors, { min: 1, unique: true });
   if (!Array.isArray(value.proposedWrites)) errors.push("adoptionPlan.proposedWrites must be an array");
   else value.proposedWrites.forEach((write, index) => {
@@ -405,9 +418,11 @@ function validateAdoptionPlan(value, errors) {
     if (typeof write.content === "string" && (!write.content.includes(`<!-- ${write.managedMarker}:start -->`) || !write.content.includes(`<!-- ${write.managedMarker}:end -->`))) errors.push(`${label}.content must contain its complete managed marker`);
     if (write.operation === "create" && write.baseSha256 !== null) errors.push(`${label}.baseSha256 must be null for create`);
     if (write.operation !== "create" && !digestPattern.test(write.baseSha256 ?? "")) errors.push(`${label}.baseSha256 is required for managed-block updates`);
-    if (write.path === ".forgerail" || write.path.startsWith(".forgerail/")) errors.push(`${label} cannot target deferred .forgerail state`);
+    if (typeof write.path === "string" && (write.path === ".forgerail" || write.path.startsWith(".forgerail/"))) errors.push(`${label} cannot target deferred .forgerail state`);
   });
-  const writePaths = value.proposedWrites?.map((write) => write.path) ?? [];
+  if (!Array.isArray(value.proposedWrites) || value.proposedWrites.some((write) => !object(write))) return;
+  const writePaths = value.proposedWrites.map((write) => write.path);
+  rejectConflictingPaths(writePaths, "adoptionPlan.proposedWrites", errors);
   if (new Set(writePaths).size !== writePaths.length) errors.push("adoptionPlan.proposedWrites contains duplicate paths");
   const writeWorkspaces = (value.proposedWrites ?? []).map((write) => write.workspaceSha256).filter((identity) => typeof identity === "string");
   if (new Set(writeWorkspaces).size > 1) errors.push("adoptionPlan.proposedWrites must share one workspace identity");

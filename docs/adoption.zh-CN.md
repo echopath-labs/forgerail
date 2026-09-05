@@ -2,7 +2,7 @@
 
 ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执行授权**。安装 Plugin 只是让 Agent 能发现引导能力；不会编辑工作区 instructions、创建持久状态、启用 Capability Pack 或批准任何外部影响。
 
-本文对应当前公开预发布版本 `0.1.0-alpha.4` / `v0.1.0-alpha.4`。
+本文对应候选版本 `0.1.0-alpha.4` / `v0.1.0-alpha.4`。是否已可安装以公开 Release 为准，源码文档本身不代表发布完成。
 
 默认从 Plugin Only 开始。只有重复证据表明“小范围持久绑定”比每次显式调用更有价值时，才升级采用层级。
 
@@ -45,6 +45,12 @@ npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --s
 每个 proposal 必须展示当前与目标层级、准确路径和内容、基线摘要、所需确认、验证步骤、支持状态与明确不执行的动作。ForgeRail 有意不提供 `apply-adoption` 命令。Agent 应先展示 proposal，等待人类判断。Node 集成必须把已批准的 `approvalSha256` 与可变 proposal 分开保存，并在应用时重新核验 canonical workspace 路径与已打开目录身份；即使摘要格式有效，apply 也只接受 `create`、`append-managed-block`、`replace-managed-block` 三种操作。同一路径下替换成另一个目录会使批准失效。若替换既有 binding 后的 post-install 校验失败，ForgeRail 会把保留的原 inode 直接原子重命名覆盖已核验的新候选；无法安全恢复时保留 recovery evidence，并回抛原始失败。随后只写入获批路径，在新任务中验证发现结果，并返回 Host Binding Receipt。
 
 如果并发内容占用了已批准目标，导致无法安全自动回滚，ForgeRail 会把原 binding 保留为同目录的 `.forgerail-<随机值>.bak`，并在错误中给出项目相对路径。请先比较该文件与当前目标，再通过新的受审查操作恢复所需内容；只有确认恢复完成后才删除 recovery 文件。ForgeRail 不会把这类保留文件误报为成功写入。
+
+### 只处理部分宿主，以及接收外部计划
+
+只有选中的宿主进入严格写入规划。其他已注册绑定使用与诊断相同的有界、不跟随链接的读取方式：已读到的受管绑定计入当前层级，并明确提示会保留；无法读取的条目记为未知，不阻塞所选宿主。`currentLevel` 表达可读的工作区现状，`proposedLevel` 和写入范围只针对本次选择；`no-change` 不会移除未选中的绑定。只选部分宿主并不等于自动合并其他宿主的规则，批准新共享契约前应核对并存提示。
+
+外部传入的计划必须先通过 `validateContract("adoption-plan", plan)` **整份校验**，然后才能批准或应用其中任何写入；单条写入摘要不能代替整份校验。运行时会拒绝大小写折叠后的重复目标、祖先/后代目标和与保留 `FORGERAIL.md` 冲突的宿主目标；仅用 JSON Schema 无法比较任意条目之间的路径。thin-reference 模板必须在自己的受管块中引用准确的共享 `FORGERAIL.md`；这是结构检查，不是 Agent 已遵循指令的证明。
 
 ## Level 2 — Persisted Governance
 

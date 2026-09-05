@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://forgerail.dev/schemas/adoption-plan-v1.json",
   "title": "ForgeRail Adoption Plan",
+  "$comment": "Before approval or applying any write, validate the complete plan with ForgeRail validateContract('adoption-plan', plan). Runtime validation additionally rejects case-folded duplicate and ancestor/descendant target paths and reserved shared-contract collisions; standard JSON Schema cannot compare arbitrary path strings across entries.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
