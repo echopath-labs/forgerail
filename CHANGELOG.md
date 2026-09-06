@@ -4,6 +4,20 @@
 
 No shipping changes yet.
 
+## 0.1.0-alpha.4 - 2026-09-01
+
+- Make contract identifiers, calendar values and portable paths fail closed and align the CLI with the published schemas.
+- Reject duplicate Profile, Pack and cross-workspace identities; bind Launch Contracts to the validated Effective Profile and every required active Pack.
+- Harden Adoption and source-repository projection construction against symlink traversal, sensitive files, unsupported file types, partial output and non-deterministic inventory modes.
+- Restore failed Adoption replacements with one atomic rename, reject sensitive projection filenames case-insensitively, and reserve projection outputs without replacing concurrent directories.
+- Materialize every projection descendant through retained no-follow output-directory identities, and represent requested Launch Contract Packs as a schema-native identity-to-manifest-digest map.
+- Bind each approved Adoption write to its canonical workspace and complete executable metadata using one immutable apply-time snapshot, atomically replace an existing managed binding without a missing-target window, and preserve literal four-digit years including `0000` through `0099`.
+- Reject existing Adoption targets unless both managed-block boundary markers occur exactly once, preventing a replacement from preserving duplicate closing or opening markers.
+- Reject non-canonical Adoption paths and mixed-workspace write sets, preserve Task Envelope inputs during Launch construction, encode Effective Profile Packs as identity-keyed objects, and apply projection directory deny lists case-insensitively.
+- Make Shadow comparison independent from its expected phrases and fail non-zero when coverage is missing.
+- Reject unknown orchestration operations, dependencies and conflicting terminal events; handle malformed receipts and package metadata without crashes or private absolute paths.
+- Add complete Node.js 22 and 24 integrity, Core, shadow, release, consumer, Directory and external Pack gates while preserving Skills-only installation, no project Node.js requirement, no implicit `.forgerail/` state and Apache-2.0.
+
 ## 0.1.0-alpha.3 - 2026-08-31
 
 - Keep the main Agent Plugin within Codex's maximum of three `defaultPrompt` entries while preserving discovery and direct invocation for all four ForgeRail Skills.

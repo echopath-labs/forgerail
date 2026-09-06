@@ -16,7 +16,7 @@ Task authorization expires with the task. Never promote it into workspace policy
 
 ## Launch Contract
 
-Give the host Agent the Envelope plus the effective rule sources. Specify outcomes and boundaries, not unnecessary implementation steps.
+Give the host Agent the resolved Envelope plus the effective rule sources. In the Launch Contract, `envelope.packs` is an identity-to-canonical-manifest-digest map rather than the Task Envelope's pre-resolution id list. This makes every requested Pack self-bound for schema-only consumers; `effectivePackManifests` retains the complete active Pack set. Specify outcomes and boundaries, not unnecessary implementation steps.
 
 ## Return Receipt
 
@@ -37,7 +37,7 @@ Compare the receipt with observable state. A mismatch keeps closeout incomplete.
 Record:
 
 - current and proposed adoption level;
-- explicitly selected Host Adapters and their support status;
+- deterministically resolved Host Adapters, their selection mode, and their support status;
 - exact target paths, operations, base SHA-256 digests, candidate content, and content digests;
 - required user confirmation and activation verification;
 - confirmed non-mutations.

@@ -14,7 +14,7 @@
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Status:** `0.1.0-alpha.3` is the current public prerelease. Codex is the verified host. Interfaces and guidance can change before a stable release.
+> **Status:** `0.1.0-alpha.4` is the current public prerelease. Codex is the verified host. Interfaces and guidance can change before a stable release.
 
 ## Why ForgeRail?
 
@@ -34,7 +34,7 @@ ForgeRail is not an autonomous executor, a replacement for OpenSpec or `AGENTS.m
 ### 1. Install the exact Codex Plugin release
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.3
+codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.4
 codex plugin add forgerail@echopath-labs
 ```
 
@@ -113,8 +113,8 @@ Host instruction files are adapters, not ForgeRail Core. OpenSpec, ADRs, project
 The npm package exposes deterministic validation and diagnosis for maintainers and CI. It is **not** required for the Agent Plugin or target project.
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.3 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 validate
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 diagnose --workspace .
 ```
 
 The official package is scoped. The unscoped `forgerail` package is only a reservation and is not an install source.
@@ -127,7 +127,7 @@ The official package is scoped. The unscoped `forgerail` package is only a reser
 - [Pack authoring](docs/pack-authoring.md)
 - [Migration from Agent Workflow Governance](docs/migration-from-agw.md)
 - [Architecture acceptance](docs/architecture-acceptance.md)
-- [Alpha.3 release notes and runbook](docs/release-alpha3.md)
+- [Alpha.4 release notes and runbook](docs/release-alpha4.md)
 
 ## Project status
 
@@ -139,7 +139,7 @@ ForgeRail is usable for real Codex projects through Plugin Only and reviewed Lig
 - Universal Plugins Directory publication is paused; exact-tag Marketplace installation is the supported route.
 - Defects are fixed forward in a new version; published tags and packages are not rewritten.
 
-See the [alpha.3 prerelease](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0-alpha.3) and [changelog](CHANGELOG.md).
+See the [alpha.4 prerelease](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0-alpha.4) and [changelog](CHANGELOG.md).
 
 ## Contributing and support
 

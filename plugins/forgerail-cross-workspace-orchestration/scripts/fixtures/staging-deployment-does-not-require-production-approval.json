@@ -1,0 +1,30 @@
+{
+  "name": "staging-deployment-does-not-require-production-approval",
+  "input": {
+    "workItems": [
+      {
+        "id": "staging",
+        "ownerWorkspace": "/workspaces/staging",
+        "repository": "staging",
+        "branch": "release/staging",
+        "pr": null,
+        "releaseIdentity": "staging",
+        "aggregateWrites": [],
+        "dependencies": [],
+        "status": "pending",
+        "deploymentEnvironment": "staging",
+        "requestedOperations": ["deploy"],
+        "grantedApprovals": ["release-approval"]
+      }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "openspec",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expected": {
+    "missingApprovals": [],
+    "waves": [["staging"]],
+    "unresolved": []
+  }
+}

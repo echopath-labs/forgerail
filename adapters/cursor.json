@@ -6,7 +6,12 @@
   "instructionDiscovery": "rules",
   "skillDiscovery": "unknown",
   "bindingTarget": ".cursor/rules/forgerail.mdc",
+  "detectionTargets": [".cursor"],
   "bindingModes": ["thin-reference"],
+  "bindingTemplates": {
+    "thin-reference": "bindings/cursor-thin.mdc"
+  },
+  "unmanagedBindingPolicy": "reject",
   "managedMarker": "forgerail:binding:cursor:v1",
   "activationBoundary": "host-specific-verification-required",
   "verification": {

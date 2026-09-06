@@ -2,45 +2,66 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://forgerail.dev/schemas/adoption-plan-v1.json",
   "title": "ForgeRail Adoption Plan",
+  "$comment": "Before approval or applying any write, validate the complete plan with ForgeRail validateContract('adoption-plan', plan). Runtime validation additionally rejects case-folded duplicate and ancestor/descendant target paths and reserved shared-contract collisions; standard JSON Schema cannot compare arbitrary path strings across entries.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "evidence", "hosts", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
+  "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
-    "planId": { "type": "string", "pattern": "^[a-zA-Z0-9._:-]+$" },
+    "planId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
     "workspace": { "type": "string", "minLength": 1 },
     "currentLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
     "proposedLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
     "strategy": { "enum": ["no-change", "single-host-managed-block", "shared-contract-with-thin-bindings"] },
-    "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
-    "hosts": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["adapterId", "status", "bindingTarget", "verificationMode"],
-        "properties": {
-          "adapterId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
-          "status": { "enum": ["supported", "profile-only"] },
-          "bindingTarget": { "type": "string", "minLength": 1 },
-          "verificationMode": { "enum": ["new-task-discovery", "profile-only"] }
+    "hostSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "hosts"],
+      "properties": {
+        "mode": { "enum": ["explicit", "all-detected", "all-available"] },
+        "hosts": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9-]+$" },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "bindingTarget", "verificationMode"],
+            "properties": {
+              "status": { "enum": ["supported", "profile-only"] },
+              "bindingTarget": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)[^/]*\\.(?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.|/|$))(?!.*/$)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
+              "verificationMode": { "enum": ["new-task-discovery", "profile-only"] }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "status": { "const": "supported" } }, "required": ["status"] },
+                "then": { "properties": { "verificationMode": { "const": "new-task-discovery" } } }
+              },
+              {
+                "if": { "properties": { "status": { "const": "profile-only" } }, "required": ["status"] },
+                "then": { "properties": { "verificationMode": { "const": "profile-only" } } }
+              }
+            ]
+          }
         }
       }
     },
+    "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
     "proposedWrites": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["path", "operation", "baseSha256", "contentSha256", "content", "managedMarker"],
+        "required": ["workspaceSha256", "path", "operation", "baseSha256", "contentSha256", "content", "managedMarker", "approvalSha256"],
         "properties": {
-          "path": { "type": "string", "minLength": 1 },
+          "workspaceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "path": { "type": "string", "minLength": 1, "pattern": "^(?![\\\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)[^/]*\\.(?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.|/|$))(?!.*/$)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
           "operation": { "enum": ["create", "append-managed-block", "replace-managed-block"] },
           "baseSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
           "contentSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
           "content": { "type": "string", "minLength": 1 },
-          "managedMarker": { "type": "string", "pattern": "^forgerail:(binding:[a-z][a-z0-9-]+|adoption-contract):v1$" }
+          "managedMarker": { "type": "string", "pattern": "^forgerail:(binding:[a-z][a-z0-9-]+|adoption-contract):v1$" },
+          "approvalSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
         }
       }
     },

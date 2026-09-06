@@ -9,7 +9,7 @@
   "inputs": ["owner workspace and repository identities", "dependency graph", "branch PR release and aggregate writer identities", "host coordination capabilities", "independent approval gates", "stable product receipts"],
   "dependencies": [],
   "conflicts": [],
-  "approvals": ["task-creation-approval", "durable-record-write-approval", "remote-integration-approval", "release-approval", "lifecycle-change-approval"],
+  "approvals": ["task-creation-approval", "durable-record-write-approval", "remote-integration-approval", "release-approval", "production-change-approval", "lifecycle-change-approval"],
   "validation": ["ordinary single-repository work does not trigger", "writer identities do not overlap inside a wave", "approval classes remain non-transitive", "master accepts only reviewed stable handoffs", "partial failure preserves accepted independent work", "host capability gaps degrade safely"],
   "receiptExtensions": ["parent", "tree", "taskStatus", "receiptId", "writerIdentity", "masterReview"]
 }

@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "candidateType": "openai-universal-plugin-directory",
   "submissionType": "skills_only",
-  "status": "local_alpha3_forward_fix_candidate",
+  "status": "local_alpha4_integrity_candidate",
   "approval": { "type": "submission_approval", "status": "not_granted" },
   "officialBaseline": {
     "observedAt": "2026-08-30",
@@ -13,7 +13,7 @@
   },
   "plugin": {
     "id": "forgerail",
-    "version": "0.1.0-alpha.3",
+    "version": "0.1.0-alpha.4",
     "manifest": ".codex-plugin/plugin.json",
     "skills": [
       "forgerail",
@@ -57,8 +57,8 @@
   },
   "releaseNotes": {
     "state": "candidate",
-    "path": "./directory/release-notes-alpha3.md",
-    "value": "ForgeRail alpha.3 keeps all four independent Skills discoverable while reducing the main Plugin to three reviewed starter prompts, matching the Codex host limit without changing Skill ownership, invocation, or project mutation boundaries."
+    "path": "./directory/release-notes-alpha4.md",
+    "value": "ForgeRail alpha.4 hardens fail-closed contracts, profile and Pack identity, filesystem confinement, deterministic projection, shadow evidence and cross-workspace orchestration while preserving four independent Skills, no project Node.js requirement and read-only adoption defaults."
   },
   "evaluationFile": "./directory/evaluations.json",
   "unresolvedGates": [

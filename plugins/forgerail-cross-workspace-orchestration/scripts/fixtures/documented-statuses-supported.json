@@ -1,0 +1,24 @@
+{
+  "name": "documented-statuses-supported",
+  "input": {
+    "workItems": [
+      { "id": "pending", "ownerWorkspace": "/workspaces/pending", "repository": "pending", "branch": "feat/pending", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "active", "ownerWorkspace": "/workspaces/active", "repository": "active", "branch": "feat/active", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "active", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "review", "ownerWorkspace": "/workspaces/review", "repository": "review", "branch": "feat/review", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "review-required", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "accepted", "ownerWorkspace": "/workspaces/accepted", "repository": "accepted", "branch": "feat/accepted", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "accepted", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "failed", "ownerWorkspace": "/workspaces/failed", "repository": "failed", "branch": "feat/failed", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "failed", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "paused", "ownerWorkspace": "/workspaces/paused", "repository": "paused", "branch": "feat/paused", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "paused", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "blocked", "ownerWorkspace": "/workspaces/blocked", "repository": "blocked", "branch": "feat/blocked", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "blocked", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "openspec",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": ["failed"], "acceptedWorkItems": ["accepted"] }
+  },
+  "expected": {
+    "waves": [["pending"]],
+    "paused": ["failed", "paused"],
+    "held": ["active", "blocked", "paused", "review"],
+    "preservedAccepted": ["accepted"]
+  }
+}

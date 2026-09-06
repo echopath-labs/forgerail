@@ -25,13 +25,13 @@
       }
     },
     "packs": {
-      "type": "array",
-      "items": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9-]+$" },
+      "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "state", "reason"],
+        "required": ["state", "reason"],
         "properties": {
-          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
           "state": { "enum": ["available", "recommended", "enabled", "required", "blocked", "disabled"] },
           "reason": { "type": "string", "minLength": 1 }
         }

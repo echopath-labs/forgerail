@@ -1,6 +1,6 @@
 {
   "name": "@echopath-labs/forgerail",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
   "license": "Apache-2.0",
   "type": "module",
@@ -37,6 +37,7 @@
   },
   "scripts": {
     "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures && node scripts/forgerail.mjs validate-adoption && npm run test:docs",
+    "test:integrity": "node scripts/integrity-regressions.mjs",
     "test:docs": "node scripts/validate-open-source-docs.mjs",
     "test:consumer": "node scripts/disposable-consumer.mjs",
     "test:release": "node scripts/validate-release.mjs",
@@ -44,7 +45,7 @@
     "test:directory": "node scripts/validate-universal-directory.mjs",
     "build:directory-candidate": "node scripts/build-universal-directory-candidate.mjs",
     "diagnose:fixture": "node scripts/forgerail.mjs diagnose --workspace scripts/fixtures/workspaces/markdown-existing",
-    "prepublishOnly": "npm test && npm run test:shadow && npm run test:release && npm run test:consumer && npm run test:directory"
+    "prepublishOnly": "npm test && npm run test:integrity && npm run test:shadow && npm run test:release && npm run test:consumer && npm run test:directory"
   },
   "repository": {
     "type": "git",

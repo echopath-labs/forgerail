@@ -5,7 +5,7 @@ ForgeRail is alpha software maintained as an open-source project. Support is bes
 ## Start here
 
 1. Read the [README](README.md) and [installation guide](docs/installation.md).
-2. Confirm you installed the exact public tag `v0.1.0-alpha.3`.
+2. Confirm you installed the exact public tag `v0.1.0-alpha.4`.
 3. Start a new Codex task and verify the four ForgeRail Skills.
 4. Reproduce the problem with Plugin Only and a read-only request when possible.
 5. Remove secrets, private paths, project memory, customer data, and production configuration before sharing evidence.
@@ -28,7 +28,7 @@ Screenshots and receipts must be redacted. Prefer copied error text over an imag
 
 ## Current support boundary
 
-- Codex is the verified host for `0.1.0-alpha.3`.
+- Codex is the verified host for `0.1.0-alpha.4`.
 - Claude Code and Cursor are `profile-only`; end-to-end support is not claimed.
 - Plugin Only and reviewed Lightweight Adoption are usable; persisted `.forgerail/` governance is deferred.
 - Capability Packs are independent Plugins and keep their own identity, permissions, and approval requirements.

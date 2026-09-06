@@ -5,18 +5,23 @@
   "currentLevel": "plugin-only",
   "proposedLevel": "lightweight-adoption",
   "strategy": "single-host-managed-block",
+  "hostSelection": {
+    "mode": "explicit",
+    "hosts": {
+      "codex": { "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" }
+    }
+  },
   "evidence": ["Codex was explicitly selected."],
-  "hosts": [
-    { "adapterId": "codex", "status": "supported", "bindingTarget": "AGENTS.md", "verificationMode": "new-task-discovery" }
-  ],
   "proposedWrites": [
     {
+      "workspaceSha256": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d",
       "path": "AGENTS.md",
       "operation": "create",
       "baseSha256": null,
       "contentSha256": "0bccefea0979ec3ad7b80555d1da43a793ab710417b9d4541aa2a15be9ad0810",
       "content": "<!-- forgerail:binding:codex:v1:start -->\nUse ForgeRail.\n<!-- forgerail:binding:codex:v1:end -->\n",
-      "managedMarker": "forgerail:binding:codex:v1"
+      "managedMarker": "forgerail:binding:codex:v1",
+      "approvalSha256": "4a3ac2446e5f1ec0fe3273c106b9ca6aead4aaa4c355ae722ee9921fae9148da"
     }
   ],
   "requiredConfirmation": true,

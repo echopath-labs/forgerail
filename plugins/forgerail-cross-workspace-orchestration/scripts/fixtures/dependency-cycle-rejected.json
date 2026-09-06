@@ -1,0 +1,15 @@
+{
+  "name": "dependency-cycle-rejected",
+  "input": {
+    "workItems": [
+      { "id": "one", "ownerWorkspace": "/workspaces/one", "repository": "one", "branch": "feat/one", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": ["two"], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "two", "ownerWorkspace": "/workspaces/two", "repository": "two", "branch": "feat/two", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": ["three"], "status": "pending", "requestedOperations": [], "grantedApprovals": [] },
+      { "id": "three", "ownerWorkspace": "/workspaces/three", "repository": "three", "branch": "feat/three", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": ["one"], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "openspec",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": [], "acceptedWorkItems": [] }
+  },
+  "expectedErrorContains": "work item dependency cycle: one -> two -> three -> one"
+}

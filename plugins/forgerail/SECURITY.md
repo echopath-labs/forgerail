@@ -6,7 +6,7 @@ ForgeRail guides Agents around project context, scope, authority, evidence, and 
 
 | Version | Security support |
 | --- | --- |
-| `0.1.0-alpha.3` | Current public prerelease; fixes move forward |
+| `0.1.0-alpha.4` | Current public prerelease; fixes move forward |
 | Earlier alpha releases | Upgrade to the current prerelease before reporting unless the issue is version-specific |
 
 Published npm versions and Git tags are immutable. Security fixes are released as a new version; maintainers do not overwrite packages or move published tags.

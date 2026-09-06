@@ -5,7 +5,6 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadHostAdapters, planAdoption } from "./lib/adoption.mjs";
-import { buildBundle } from "./lib/bundle.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
 import { contractSchemaNames, contractTypes, readJson, validateContract } from "./lib/contracts.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
@@ -14,11 +13,49 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function fail(message) { console.error(`forgerail: ${message}`); process.exit(1); }
 function emit(value) { console.log(JSON.stringify(value, null, 2)); }
-function arg(name) { const index = process.argv.indexOf(name); return index >= 0 ? process.argv[index + 1] : undefined; }
-function args(name) {
+function optionValues(name) {
   const values = [];
-  process.argv.forEach((value, index) => { if (value === name && process.argv[index + 1]) values.push(process.argv[index + 1]); });
+  process.argv.forEach((value, index) => {
+    if (value !== name) return;
+    const candidate = process.argv[index + 1];
+    if (candidate === undefined || candidate.startsWith("--")) fail(`${name} requires a value`);
+    values.push(candidate);
+  });
   return values;
+}
+function arg(name) {
+  const values = optionValues(name);
+  if (values.length > 1) fail(`${name} may be provided only once`);
+  return values[0];
+}
+function args(name) {
+  return optionValues(name);
+}
+
+function validateCommandOptions(command) {
+  const allowedByCommand = new Map([
+    ["validate", []],
+    ["validate-fixtures", []],
+    ["validate-fixture-matrix", []],
+    ["validate-adoption", []],
+    ["validate-contract", ["--type", "--file"]],
+    ["diagnose", ["--workspace"]],
+    ["adoption-plan", ["--workspace", "--host", "--level", "--selection"]],
+    ["resolve-profile", ["--file", "--pack-manifest"]],
+    ["launch", ["--profile", "--envelope", "--host-agent", "--pack-manifest"]],
+    ["verify-receipt", ["--receipt", "--workspace"]],
+  ]);
+  const allowed = allowedByCommand.get(command);
+  if (!allowed) return;
+  const values = process.argv.slice(3);
+  for (let index = 0; index < values.length; index += 2) {
+    const option = values[index];
+    if (typeof option !== "string" || !option.startsWith("--")) fail(`unexpected positional argument: ${option ?? ""}`);
+    if (option.includes("=")) fail(`option values must be provided separately: ${option.split("=", 1)[0]}`);
+    if (!allowed.includes(option)) fail(`unknown option for ${command}: ${option}`);
+    const candidate = values[index + 1];
+    if (candidate === undefined || candidate.startsWith("--")) fail(`${option} requires a value`);
+  }
 }
 
 function collectSchemaRefs(value, refs = []) {
@@ -229,7 +266,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.0-alpha.3") errors.push("Plugin version must be 0.1.0-alpha.3");
+  if (manifest.version !== "0.1.0-alpha.4") errors.push("Plugin version must be 0.1.0-alpha.4");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -595,17 +632,24 @@ function validateAdoption() {
   const before = JSON.stringify(workspaceSnapshot(workspace));
   let single;
   let multi;
+  let detected;
+  let available;
   try {
     single = planAdoption(root, workspace, ["codex"]);
     multi = planAdoption(root, workspace, ["codex", "claude-code", "cursor"]);
+    detected = planAdoption(root, workspace);
+    available = planAdoption(root, workspace, [], "lightweight-adoption", "all-available");
   } catch (error) {
     errors.push(error.message);
   }
   const after = JSON.stringify(workspaceSnapshot(workspace));
   if (before !== after) errors.push("adoption planning mutated its fixture workspace");
   if (single?.strategy !== "single-host-managed-block" || single?.proposedWrites?.length !== 1 || single?.proposedWrites?.[0]?.path !== "AGENTS.md") errors.push("single-host plan is not a bounded AGENTS.md managed block");
+  if (single?.hostSelection?.mode !== "explicit" || Object.keys(single?.hostSelection?.hosts ?? {}).join(",") !== "codex") errors.push("single-host plan did not retain its explicit selection");
   if (multi?.strategy !== "shared-contract-with-thin-bindings" || !multi?.proposedWrites?.some((write) => write.path === "FORGERAIL.md")) errors.push("multi-host plan is missing the shared Adoption Contract");
-  if (multi?.hosts?.find((host) => host.adapterId === "claude-code")?.status !== "profile-only" || multi?.hosts?.find((host) => host.adapterId === "cursor")?.status !== "profile-only") errors.push("unverified hosts must remain profile-only");
+  if (detected?.hostSelection?.mode !== "all-detected" || Object.keys(detected?.hostSelection?.hosts ?? {}).join(",") !== "codex") errors.push("default adoption planning did not resolve detected hosts");
+  if (available?.hostSelection?.mode !== "all-available" || Object.keys(available?.hostSelection?.hosts ?? {}).length !== registry.adapters.length) errors.push("all-available adoption planning did not resolve the current registry");
+  if (multi?.hostSelection?.hosts?.["claude-code"]?.status !== "profile-only" || multi?.hostSelection?.hosts?.cursor?.status !== "profile-only") errors.push("unverified hosts must remain profile-only");
   if ([...(single?.proposedWrites ?? []), ...(multi?.proposedWrites ?? [])].some((write) => write.path === ".forgerail" || write.path.startsWith(".forgerail/"))) errors.push("alpha.1 adoption plan cannot propose .forgerail state");
   try {
     planAdoption(root, workspace, ["codex"], "persisted-governance");
@@ -617,6 +661,7 @@ function validateAdoption() {
 }
 
 const [command] = process.argv.slice(2);
+validateCommandOptions(command);
 if (command === "validate") {
   const result = validatePlugin(); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "validate-fixtures") {
@@ -630,11 +675,11 @@ if (command === "validate") {
   if (!type || !file) fail("validate-contract requires --type and --file");
   const result = validateContract(type, readJson(resolve(file))); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "diagnose") {
-  const workspace = arg("--workspace"); if (!workspace) fail("diagnose requires --workspace"); emit(diagnoseWorkspace(workspace));
+  const workspace = arg("--workspace"); if (!workspace) fail("diagnose requires --workspace"); emit(diagnoseWorkspace(workspace, root));
 } else if (command === "adoption-plan") {
-  const workspace = arg("--workspace"); const hosts = args("--host"); const level = arg("--level") ?? "lightweight-adoption";
-  if (!workspace || hosts.length === 0) fail("adoption-plan requires --workspace and at least one --host");
-  try { emit(planAdoption(root, workspace, hosts, level)); } catch (error) { fail(error.message); }
+  const workspace = arg("--workspace"); const hosts = args("--host"); const level = arg("--level") ?? "lightweight-adoption"; const selection = arg("--selection");
+  if (!workspace) fail("adoption-plan requires --workspace");
+  try { emit(planAdoption(root, workspace, hosts, level, selection)); } catch (error) { fail(error.message); }
 } else if (command === "resolve-profile") {
   const file = arg("--file"); if (!file) fail("resolve-profile requires --file");
   const manifests = [
@@ -651,13 +696,13 @@ if (command === "validate") {
   if (!profile || !envelope || !hostAgent) fail("launch requires --profile, --envelope, and --host-agent");
   const profilePayload = readJson(resolve(profile));
   const effectiveProfile = profilePayload.profile ?? profilePayload;
-  const result = createLaunchContract(effectiveProfile, readJson(resolve(envelope)), hostAgent); emit(result); if (!result.valid) process.exitCode = 1;
+  const manifests = [
+    ...readdirSync(resolve(root, "packs")).filter((name) => name.endsWith(".json")).map((name) => readJson(resolve(root, "packs", name))),
+    ...args("--pack-manifest").map((path) => readJson(resolve(path))),
+  ];
+  const result = createLaunchContract(effectiveProfile, readJson(resolve(envelope)), hostAgent, manifests); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "verify-receipt") {
   const receipt = arg("--receipt"); const workspace = arg("--workspace");
   if (!receipt || !workspace) fail("verify-receipt requires --receipt and --workspace");
   const result = verifyReceipt(readJson(resolve(receipt)), workspace); emit(result); if (!result.valid) process.exitCode = 1;
-} else if (command === "build-bundle") {
-  const output = arg("--output"); if (!output) fail("build-bundle requires --output");
-  const result = buildBundle(root, output);
-  emit(process.argv.includes("--summary") ? { schemaVersion: result.schemaVersion, productId: result.productId, projection: result.projection, fileCount: result.fileCount, totalBytes: result.totalBytes, digest: result.digest, receiptDigest: result.receiptDigest } : result);
-} else fail("usage: forgerail.mjs validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt | build-bundle");
+} else fail("usage: forgerail.mjs validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");

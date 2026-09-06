@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "planId", "workspace", "adoptionLevel", "contractPath", "hosts", "changedFiles", "validationEvidence", "discoveredSkills", "activationVerification", "confirmedNonMutations", "deviations", "closeout"],
   "properties": {
     "schemaVersion": { "const": "1.0" },
-    "planId": { "type": "string", "pattern": "^[a-zA-Z0-9._:-]+$" },
+    "planId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$" },
     "workspace": { "type": "string", "minLength": 1 },
     "adoptionLevel": { "enum": ["plugin-only", "lightweight-adoption", "persisted-governance"] },
     "contractPath": { "type": ["string", "null"] },

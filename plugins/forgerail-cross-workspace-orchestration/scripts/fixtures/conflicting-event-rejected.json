@@ -1,0 +1,13 @@
+{
+  "name": "conflicting-event-rejected",
+  "input": {
+    "workItems": [
+      { "id": "one", "ownerWorkspace": "/workspaces/one", "repository": "one", "branch": "feat/one", "pr": null, "releaseIdentity": null, "aggregateWrites": [], "dependencies": [], "status": "pending", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "markdown",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": ["one"], "acceptedWorkItems": ["one"] }
+  },
+  "expectedErrorContains": "both failed and accepted"
+}

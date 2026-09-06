@@ -4,7 +4,7 @@
     {
       "id": "current-release-and-install",
       "kind": "release-text",
-      "content": "Current public prerelease 0.1.0-alpha.3. codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.3",
+      "content": "Current public prerelease 0.1.0-alpha.4. codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.4",
       "expectedErrors": []
     },
     {
@@ -32,10 +32,22 @@
       "expectedErrors": ["invalid-issue-metadata"]
     },
     {
+      "id": "stale-alpha3-issue-version",
+      "kind": "issue-form",
+      "content": "name: Documentation issue\ndescription: Report stale docs.\nbody:\n  - label: I checked the current alpha.3 documentation.\n",
+      "expectedErrors": ["stale-issue-version"]
+    },
+    {
       "id": "private-path-leak",
       "kind": "public-text",
       "content": "Continue in __PRIVATE_USER_PATH__.",
       "expectedErrors": ["private-path"]
+    },
+    {
+      "id": "private-process-reference-leak",
+      "kind": "public-text",
+      "content": "Canonical architecture change: openspec/changes/private-control-system/",
+      "expectedErrors": ["private-process-reference"]
     },
     {
       "id": "project-node-requirement",

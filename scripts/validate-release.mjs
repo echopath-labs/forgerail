@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const expectedPackageName = "@echopath-labs/forgerail";
-const expectedVersion = "0.1.0-alpha.3";
+const expectedVersion = "0.1.0-alpha.4";
 const expectedTag = `v${expectedVersion}`;
-const expectedDate = "2026-08-31";
+const expectedDate = "2026-09-01";
 const expectedPlugins = [
   "forgerail",
   "forgerail-cross-workspace-orchestration",
@@ -38,6 +40,30 @@ function findExisting(candidates) {
 
 const packageJson = json("package.json");
 const packageLock = json("package-lock.json");
+const launchContractSchema = json("contracts/launch-contract.schema.json");
+const effectiveProfileSchema = json("contracts/effective-profile.schema.json");
+const publicCli = read("scripts/forgerail.mjs");
+const packCache = mkdtempSync(resolve(tmpdir(), "forgerail-pack-cache-"));
+const packEnvironment = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => key.toLowerCase() !== "npm_config_cache"),
+);
+packEnvironment.NPM_CONFIG_CACHE = packCache;
+let packResult;
+try {
+  packResult = spawnSync("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], {
+    cwd: root,
+    encoding: "utf8",
+    env: packEnvironment,
+  });
+} finally {
+  rmSync(packCache, { recursive: true, force: true });
+}
+let packedFiles = [];
+try {
+  packedFiles = packResult.status === 0
+    ? JSON.parse(packResult.stdout)[0]?.files?.map(({ path }) => path) ?? []
+    : [];
+} catch {}
 record("package-name", packageJson.name === expectedPackageName, packageJson.name);
 record("package-lock-name", packageLock.name === expectedPackageName && packageLock.packages?.[""]?.name === expectedPackageName, packageLock.name);
 record("package-version", packageJson.version === expectedVersion, packageJson.version);
@@ -45,9 +71,26 @@ record("package-lock-version", packageLock.version === expectedVersion && packag
 record("package-license", packageJson.license === "Apache-2.0", packageJson.license);
 record("package-lock-license", packageLock.packages?.[""]?.license === "Apache-2.0", packageLock.packages?.[""]?.license ?? null);
 record("npm-next-tag", packageJson.publishConfig?.tag === "next", packageJson.publishConfig?.tag ?? null);
+record("no-public-bundle-builder-command", !publicCli.includes('command === "build-bundle"'), "source-repository maintainer tool only");
+record("npm-pack-dry-run", packResult.status === 0 && packedFiles.length > 0, packResult.status === 0 ? `${packedFiles.length} files` : packResult.stderr.trim());
+record("bundle-builder-source-only", existsSync(resolve(root, "tools/lib/bundle.mjs")) && !packedFiles.includes("tools/lib/bundle.mjs"), "tools/lib/bundle.mjs");
+record(
+  "launch-requested-pack-schema-native-binding",
+  launchContractSchema.properties?.envelope?.properties?.packs?.type === "object"
+    && launchContractSchema.properties?.envelope?.properties?.packs?.additionalProperties?.pattern === "^[0-9a-f]{64}$",
+  launchContractSchema.properties?.envelope?.properties?.packs ?? null,
+);
+record(
+  "profile-pack-schema-native-identity",
+  effectiveProfileSchema.properties?.packs?.type === "object"
+    && effectiveProfileSchema.properties?.packs?.propertyNames?.pattern === "^[a-z][a-z0-9-]+$"
+    && effectiveProfileSchema.properties?.packs?.additionalProperties?.required?.includes("state")
+    && effectiveProfileSchema.properties?.packs?.additionalProperties?.required?.includes("reason"),
+  effectiveProfileSchema.properties?.packs ?? null,
+);
 record(
   "prepublish-gate",
-  ["npm test", "npm run test:shadow", "npm run test:release", "npm run test:consumer", "npm run test:directory"].every((command) => packageJson.scripts?.prepublishOnly?.includes(command)),
+  ["npm test", "npm run test:integrity", "npm run test:shadow", "npm run test:release", "npm run test:consumer", "npm run test:directory"].every((command) => packageJson.scripts?.prepublishOnly?.includes(command)),
   packageJson.scripts?.prepublishOnly ?? null,
 );
 
@@ -89,7 +132,11 @@ for (const phrase of ["Workspace Diagnosis", "Return Receipts", "GitHub Rulesets
   record(`changelog-${phrase.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, changelog.includes(phrase), phrase);
 }
 
-const marketplacePath = findExisting(["marketplace/.agents/plugins/marketplace.json", ".agents/plugins/marketplace.json"]);
+const marketplacePath = findExisting([
+  "marketplace/.agents/plugins/marketplace.json",
+  ".agents/plugins/marketplace.json",
+  "../../.agents/plugins/marketplace.json",
+]);
 const marketplace = json(marketplacePath);
 const marketplacePlugins = new Map(marketplace.plugins.map((plugin) => [plugin.name, plugin]));
 record("marketplace-name", marketplace.name === "echopath-labs", marketplace.name);
@@ -108,6 +155,8 @@ for (const phrase of [
   `${expectedPackageName}@${expectedVersion}`,
   "new Codex task",
   "adoption-plan --workspace . --host codex",
+  "adoption-plan --workspace . --selection all-detected",
+  "adoption-plan --workspace . --selection all-available",
   "Host Binding Receipt",
 ]) {
   record(`installation-${phrase.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, installation.includes(phrase), phrase);
@@ -122,6 +171,9 @@ for (const path of [
   "adapters/cursor.json",
   "templates/FORGERAIL.md",
   "templates/bindings/codex-compact.md",
+  "templates/bindings/codex-thin.md",
+  "templates/bindings/claude-code-thin.md",
+  "templates/bindings/cursor-thin.mdc",
   "docs/adoption.md",
   "docs/adoption.zh-CN.md",
 ]) record(`adoption-path-${path.replaceAll(/[^a-z0-9]+/gi, "-").toLowerCase()}`, existsSync(resolve(root, path)), path);
@@ -129,15 +181,24 @@ for (const path of [
 const codexAdapter = json("adapters/codex.json");
 const claudeAdapter = json("adapters/claude-code.json");
 const cursorAdapter = json("adapters/cursor.json");
-record("codex-adapter-supported", codexAdapter.status === "supported" && codexAdapter.bindingTarget === "AGENTS.md", codexAdapter.status);
-record("claude-adapter-profile-only", claudeAdapter.status === "profile-only", claudeAdapter.status);
-record("cursor-adapter-profile-only", cursorAdapter.status === "profile-only", cursorAdapter.status);
+record("codex-adapter-supported", codexAdapter.status === "supported" && codexAdapter.bindingTarget === "AGENTS.md" && codexAdapter.detectionTargets?.includes("AGENTS.md"), codexAdapter.status);
+record("claude-adapter-profile-only", claudeAdapter.status === "profile-only" && claudeAdapter.detectionTargets?.includes("CLAUDE.md"), claudeAdapter.status);
+record("claude-adapter-thin-only", JSON.stringify(claudeAdapter.bindingModes) === JSON.stringify(["thin-reference"]), claudeAdapter.bindingModes);
+record("cursor-adapter-profile-only", cursorAdapter.status === "profile-only" && cursorAdapter.detectionTargets?.includes(".cursor"), cursorAdapter.status);
+for (const adapter of [codexAdapter, claudeAdapter, cursorAdapter]) {
+  const modes = Object.keys(adapter.bindingTemplates ?? {}).sort();
+  record(`adapter-${adapter.id}-template-modes`, JSON.stringify(modes) === JSON.stringify([...adapter.bindingModes].sort()), { modes, bindingModes: adapter.bindingModes });
+  record(`adapter-${adapter.id}-all-host-thin-reference`, adapter.bindingModes.includes("thin-reference"), adapter.bindingModes);
+  for (const [mode, template] of Object.entries(adapter.bindingTemplates ?? {})) {
+    record(`adapter-${adapter.id}-${mode}-template`, existsSync(resolve(root, "templates", template)), template);
+  }
+}
 record("package-adapters", packageJson.files?.includes("adapters/"), packageJson.files ?? null);
 record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
 record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-const releaseEnglish = read("docs/release-alpha3.md");
-const releaseChinese = read("docs/release-alpha3.zh-CN.md");
+const releaseEnglish = read("docs/release-alpha4.md");
+const releaseChinese = read("docs/release-alpha4.zh-CN.md");
 const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
 for (const phrase of [
   "remote_integration_approval",
@@ -146,7 +207,7 @@ for (const phrase of [
   expectedVersion,
   expectedTag,
   "Node.js 22 and 24",
-  "codex/forgerail-alpha3-scoped",
+  "codex/forgerail-alpha4-critical-integrity",
   "Do not unpublish",
   "AGW",
   "Host Binding Receipt",
@@ -179,8 +240,11 @@ record("runbook-no-fixed-external-pack-count", !releaseChinese.includes("三个�
 const workflow = read(".github/workflows/plugin-contracts.yml");
 record("ci-node-22", workflow.includes("- 22"), "Node.js 22");
 record("ci-node-24", workflow.includes("- 24"), "Node.js 24");
+record("ci-full-core", workflow.includes("run: npm test"), "npm test");
+record("ci-integrity-regressions", workflow.includes("run: npm run test:integrity"), "npm run test:integrity");
 record("ci-release-source", workflow.includes("node scripts/validate-release.mjs"), "release source validator");
 record("ci-progressive-adoption", workflow.includes("node scripts/forgerail.mjs validate-adoption"), "progressive adoption validator");
+record("ci-directory", workflow.includes("node scripts/validate-universal-directory.mjs"), "Universal Directory validator");
 
 const failures = checks.filter((check) => !check.passed);
 const report = {

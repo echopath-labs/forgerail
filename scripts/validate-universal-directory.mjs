@@ -64,11 +64,11 @@ function validateMarkdownLinks(relativePath) {
 }
 
 assert(candidate.submissionType === "skills_only", "candidate is Skills-only");
-assert(candidate.status === "local_alpha3_forward_fix_candidate", "candidate status is local alpha.3 forward-fix preparation");
+assert(candidate.status === "local_alpha4_integrity_candidate", "candidate status is local alpha.4 integrity preparation");
 assert(candidate.approval.status === "not_granted", "submission approval is not granted");
 assert(candidate.plugin.id === manifest.name, "candidate and manifest Plugin identity match");
 assert(candidate.plugin.version === manifest.version, "candidate and manifest version match");
-assert(candidate.plugin.version === "0.1.0-alpha.3", "candidate version is alpha.3");
+assert(candidate.plugin.version === "0.1.0-alpha.4", "candidate version is alpha.4");
 assert(packageJson.version === candidate.plugin.version, "optional scoped package version matches candidate");
 assert(candidate.plugin.mcpServers.length === 0, "candidate has no MCP server requirement");
 assert(candidate.plugin.authentication === "none", "candidate has no authentication requirement");
@@ -108,8 +108,8 @@ for (const field of ["websiteUrl", "supportUrl", "privacyPolicyUrl", "termsOfSer
 }
 assert(candidate.availability.intent.state === "confirmed_by_user" && candidate.availability.intent.value === "all_platform_supported_regions", "all-platform-supported-regions intent is user-confirmed");
 assert(candidate.availability.portalEnumeration.state === "pending_confirmation" && candidate.availability.portalEnumeration.values.length === 0, "portal region enumeration remains pending without an invented country list");
-assert(candidate.releaseNotes.state === "candidate" && candidate.releaseNotes.path === "./directory/release-notes-alpha3.md", "alpha.3 release notes path is explicit");
-assert(existsSync(resolve(pluginRoot, candidate.releaseNotes.path)), "alpha.3 release notes file exists");
+assert(candidate.releaseNotes.state === "candidate" && candidate.releaseNotes.path === "./directory/release-notes-alpha4.md", "alpha.4 release notes path is explicit");
+assert(existsSync(resolve(pluginRoot, candidate.releaseNotes.path)), "alpha.4 release notes file exists");
 
 const privacy = readFileSync(resolve(pluginRoot, "PRIVACY.md"), "utf8");
 const terms = readFileSync(resolve(pluginRoot, "TERMS.md"), "utf8");
@@ -119,7 +119,7 @@ for (const phrase of ["Skills-only Agent Plugin", "does not operate its own serv
 for (const phrase of ["Apache License 2.0", "without warranties", "You are responsible", "external actions", "does not provide legal advice", "service-level agreement"]) {
   assert(terms.includes(phrase), `Terms contain required boundary: ${phrase}`);
 }
-for (const path of ["PRIVACY.md", "TERMS.md", "README.md", "README.zh-CN.md", "docs/installation.md", "docs/installation.zh-CN.md", "docs/release-alpha3.md", "docs/release-alpha3.zh-CN.md"]) {
+for (const path of ["PRIVACY.md", "TERMS.md", "README.md", "README.zh-CN.md", "docs/installation.md", "docs/installation.zh-CN.md", "docs/release-alpha4.md", "docs/release-alpha4.zh-CN.md"]) {
   validateMarkdownLinks(path);
 }
 

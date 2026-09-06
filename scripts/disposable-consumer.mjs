@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const base = mkdtempSync(resolve(tmpdir(), "forgerail-consumer-"));
@@ -48,20 +48,6 @@ function snapshot(path) {
     });
 }
 
-function renderApprovedWrite(write) {
-  const targetPath = resolve(target, write.path);
-  const prior = existsSync(targetPath) ? readFileSync(targetPath, "utf8") : "";
-  if (write.operation === "create") return write.content;
-  if (sha256(prior) !== write.baseSha256) throw new Error(`adoption base digest drifted for ${write.path}`);
-  if (write.operation === "append-managed-block") return `${prior.replace(/\s*$/, "")}\n\n${write.content}`;
-  const start = `<!-- ${write.managedMarker}:start -->`;
-  const end = `<!-- ${write.managedMarker}:end -->`;
-  const startIndex = prior.indexOf(start);
-  const endIndex = prior.indexOf(end, startIndex);
-  if (startIndex < 0 || endIndex < 0) throw new Error(`adoption managed block is missing for ${write.path}`);
-  return `${prior.slice(0, startIndex)}${write.content}${prior.slice(endIndex + end.length)}`;
-}
-
 const priorPack = JSON.parse(run("npm", ["pack", priorSource, "--json"], base))[0];
 const priorTarball = resolve(base, priorPack.filename);
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", priorTarball]);
@@ -77,9 +63,12 @@ const after = JSON.stringify(snapshot(target));
 const adoptionPlan = JSON.parse(run(cli, ["adoption-plan", "--workspace", target, "--host", "codex"]));
 const afterPlan = JSON.stringify(snapshot(target));
 const proposed = adoptionPlan.proposedWrites[0];
-const approvedContent = renderApprovedWrite(proposed);
-writeFileSync(resolve(target, proposed.path), approvedContent);
+const adoptionLibrary = await import(pathToFileURL(resolve(installedPackageRoot, "scripts/lib/adoption.mjs")).href);
+const approvedContent = adoptionLibrary.renderProposedWrite(target, proposed);
+const approvedWriteDigest = proposed.approvalSha256;
+const appliedWrite = adoptionLibrary.applyApprovedAdoptionWrite(target, proposed, approvedWriteDigest);
 const approvedDigest = sha256(approvedContent);
+if (appliedWrite.contentSha256 !== approvedDigest) throw new Error("approved adoption write digest mismatch");
 const discoveredSkills = firstValidation.skills;
 const bindingReceipt = {
   schemaVersion: "1.0",
@@ -112,6 +101,7 @@ run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", priorTarba
 const rolledBack = JSON.parse(readFileSync(resolve(installedPackageRoot, "package.json"), "utf8")).version === "0.1.0-alpha.0";
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball]);
 const reinstallValidation = JSON.parse(run(cli, ["validate"]));
+const installedIntegrity = JSON.parse(run("npm", ["run", "test:integrity", "--silent"], installedPackageRoot));
 run("npm", ["uninstall", "--no-audit", "--no-fund", packageName]);
 
 const result = {
@@ -133,11 +123,14 @@ const result = {
   noPersistedGovernance: !existsSync(resolve(target, ".forgerail")),
   launch: launch.valid && launch.launch.executionOwner === "host-agent",
   reinstall: reinstallValidation.valid,
+  installedIntegrity: installedIntegrity.valid
+    && installedIntegrity.assertions.includes("source-only-bundle-regressions-not-installed")
+    && installedIntegrity.assertions.includes("source-only-shadow-regressions-not-installed"),
   upgrade: upgraded,
   rollback: rolledBack,
   uninstall: !existsSync(installedPackageRoot),
   disposableRoot: "[disposable]",
 };
-result.passed = result.priorInstall && result.install && result.binaryShim && result.diagnosis && result.targetUnchangedByDiagnosis && result.adoptionPlan && result.targetUnchangedByPlanner && result.explicitApprovedWrite && result.equivalentNewTaskDiscovery && result.bindingReceipt && result.noPersistedGovernance && result.launch && result.upgrade && result.rollback && result.reinstall && result.uninstall;
+result.passed = result.priorInstall && result.install && result.binaryShim && result.diagnosis && result.targetUnchangedByDiagnosis && result.adoptionPlan && result.targetUnchangedByPlanner && result.explicitApprovedWrite && result.equivalentNewTaskDiscovery && result.bindingReceipt && result.noPersistedGovernance && result.launch && result.upgrade && result.rollback && result.reinstall && result.installedIntegrity && result.uninstall;
 console.log(JSON.stringify(result, null, 2));
 if (!result.passed) process.exitCode = 1;

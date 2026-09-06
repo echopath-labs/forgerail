@@ -8,11 +8,15 @@
     "ownerWorkspace": "fixture-workspace",
     "allowedOperations": ["read files", "edit documentation", "run local validation"],
     "prohibitedOperations": ["push", "merge", "tag", "release"],
-    "packs": [],
+    "packs": {},
     "approvalGates": ["remote-integration-approval", "release-approval"],
     "validation": ["git diff --check passes"],
     "returnContract": "forgerail-return-receipt-v1"
   },
+  "effectiveProfile": {
+    "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "effectivePackManifests": {},
   "effectiveRuleSources": ["AGENTS.md", "ForgeRail Core"],
   "hostAgent": "Codex",
   "executionOwner": "host-agent"

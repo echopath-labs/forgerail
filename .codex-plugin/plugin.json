@@ -1,6 +1,6 @@
 {
   "name": "forgerail",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "description": "Engineering guidance and governance for coding agents, with workspace diagnosis and composable capability packs.",
   "author": {
     "name": "EchoPath Labs",

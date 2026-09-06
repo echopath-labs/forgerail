@@ -1,0 +1,13 @@
+{
+  "name": "duplicate-terminal-event-rejected",
+  "input": {
+    "workItems": [
+      { "id": "failed-a", "ownerWorkspace": "/workspaces/a", "repository": "repo-a", "branch": "feat/a", "pr": null, "releaseIdentity": "a", "aggregateWrites": [], "dependencies": [], "status": "failed", "requestedOperations": [], "grantedApprovals": [] }
+    ],
+    "hostAdapter": { "create": true, "inspect": true, "wait": true, "message": true, "resume": true },
+    "recordStrategy": "spec-kit",
+    "relayPact": { "available": false },
+    "events": { "failedWorkItems": ["failed-a", "failed-a"], "acceptedWorkItems": [] }
+  },
+  "expectedErrorContains": "duplicate failedWorkItems events: failed-a"
+}
