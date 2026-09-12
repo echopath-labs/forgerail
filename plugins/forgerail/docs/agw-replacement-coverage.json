@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "Unreleased AGW replacement work; published alpha.4 is not retroactively qualified.",
+  "scope": "AGW/WHR replacement guidance published in @echopath-labs/forgerail@0.1.0-alpha.5 (v0.1.0-alpha.5). This structural inventory does not qualify every host or project.",
   "baselineFamilies": [
     "installed AGW legacy workflow",
     "canonical AGW with expanded Git lifecycle and optional profile snapshot",
