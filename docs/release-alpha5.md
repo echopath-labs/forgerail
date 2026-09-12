@@ -20,7 +20,7 @@ After publication, the public npm archive was downloaded anonymously and verifie
 SHA-256: caefd9c0bae3172938c8b557ffa1c432a8de1e0b604ccc72e255a8f7674859f6
 ```
 
-All 258 installed files matched the archive. The installed command validated all four Skills, performed read-only diagnosis without changing the sample workspace, and uninstalled successfully on Node.js 22.23.2 and 24.20.0.
+All 258 installed files matched the archive. On Node.js 22.23.2 and 24.20.0, the installed command validated all four Skills and performed read-only diagnosis without changing the sample workspace. Installation and uninstallation succeeded once in a disposable tools prefix; they were not repeated for each Node.js version.
 
 Repository documentation was corrected after publication to reflect these results. The immutable npm archive and Git tag retain their original documentation snapshot, including prepublication wording; use the current repository installation guide and GitHub release notes for availability.
 

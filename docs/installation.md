@@ -59,7 +59,7 @@ Project bindings and automatic recovery have their own adoption requirements. Do
 
 ## Published package verification
 
-The public npm archive was downloaded anonymously after publication and matched the approved SHA-256. All 258 installed files matched the archive; Node.js 22 and 24 passed CLI validation, read-only diagnosis and uninstall checks in a disposable tools prefix. See the [alpha.5 release evidence](release-alpha5.md).
+The public npm archive was downloaded anonymously after publication and matched the approved SHA-256. All 258 installed files matched the archive. The installed CLI passed validation and read-only diagnosis on Node.js 22 and 24. Installation and uninstallation succeeded once in a disposable tools prefix; they were not repeated for each Node.js version. See the [alpha.5 release evidence](release-alpha5.md).
 
 ## Upgrade, rollback and uninstall
 
