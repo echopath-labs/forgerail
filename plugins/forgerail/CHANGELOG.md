@@ -6,7 +6,9 @@ No shipping changes yet.
 
 ## 0.1.0-alpha.5 - 2026-09-12
 
-Local release candidate; not yet published. npm installation with explicit packaged-Skill loading is the current delivery route; Codex Marketplace registration and standalone binaries are deferred.
+Published on npm as `@echopath-labs/forgerail@0.1.0-alpha.5` under `next`; `latest` remains alpha.4. See the [GitHub prerelease](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0-alpha.5). npm installation with explicit packaged-Skill loading is the current delivery route; Codex Marketplace registration and standalone binaries are deferred.
+
+Repository documentation was corrected after publication to reflect this release. The immutable alpha.5 package and tag retain their original documentation snapshot.
 
 - Make the main Plugin self-contained for AGW/WHR baseline guidance: Git lifecycle, impact checks, durable records, staged progress, handoff and optional structured exchanges.
 - Preserve unrelated working-tree and staged changes, stop unsafe integration, and keep workspace health review read-only until scoped edits are approved.

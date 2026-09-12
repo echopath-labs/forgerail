@@ -2,7 +2,7 @@
 
 ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执行授权**。安装 Plugin 只是让 Agent 能发现引导能力；不会编辑工作区 instructions、创建持久状态、启用 Capability Pack 或批准任何外部影响。
 
-本文对应候选版本 `0.1.0-alpha.4` / `v0.1.0-alpha.4`。是否已可安装以公开 Release 为准，源码文档本身不代表发布完成。
+本文对应已发布的 `0.1.0-alpha.5` / `v0.1.0-alpha.5`。按 [npm 安装说明](installation.zh-CN.md)安装并显式加载包内 Skill。npm 安装不会注册原生 Plugin；若绑定要求原生发现，必须另外核验该依赖。
 
 默认从 Plugin Only 开始。只有重复证据表明“小范围持久绑定”比每次显式调用更有价值时，才升级采用层级。
 
@@ -29,13 +29,13 @@ ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执�
 
 ```bash
 # 默认：只解析当前工作区中检测到的已注册宿主。
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --selection all-detected
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 adoption-plan --workspace . --selection all-detected
 
 # 从已验证的 Host Adapter Registry 中明确选择一部分。
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 adoption-plan --workspace . --host codex
 
 # 选择当前已验证 registry 中的全部 adapter。
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 adoption-plan --workspace . --selection all-available
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 adoption-plan --workspace . --selection all-available
 ```
 
 只读诊断不会跟随所选工作区内部的链接。它只读取有界的常规 `package.json` 和已注册 Host 绑定文件，每个文件最多 4 MiB；内容被消费前还会按 canonical workspace 复核已打开路径。不安全、发生变化、非常规或超限条目会作为“不可用证据”交给人类复核。只有安全受限的约定目录中至少存在一个有界常规 `.md` 文件时，才会报告 Markdown 记录实践；枚举上限为 4,096 项，空目录、超限目录、链接或非常规条目都不算 ADR 实践。
@@ -60,9 +60,9 @@ ForgeRail 目前不会创建 `.forgerail/`。未来设计必须先定义 ownersh
 
 ## 宿主支持
 
-| 宿主 | 原生目标 | Alpha.4 状态 | 验证边界 |
+| 宿主 | 原生目标 | Adapter 状态 | 验证边界 |
 | --- | --- | --- | --- |
-| Codex | `AGENTS.md` | `supported` | 新 Codex 任务发现全部四个主 Skills，且已批准绑定处于作用域内 |
+| Codex | `AGENTS.md` | `supported` | 保留 registry 支持状态；alpha.5 原生激活未验证。须在新任务核对实际加载方式及获批绑定 |
 | Claude Code | `CLAUDE.md` | `profile-only` | 已建模目标与薄绑定，不声称端到端激活已验证 |
 | Cursor | `.cursor/rules/forgerail.mdc` | `profile-only` | 已建模目标，不声称 Skill discovery 和端到端激活已验证 |
 

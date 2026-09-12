@@ -5,8 +5,8 @@ ForgeRail is alpha software maintained as an open-source project. Support is bes
 ## Start here
 
 1. Read the [README](README.md) and [installation guide](docs/installation.md).
-2. Confirm you installed the exact public tag `v0.1.0-alpha.4`.
-3. Start a new Codex task and verify the four ForgeRail Skills.
+2. Confirm you installed `@echopath-labs/forgerail@0.1.0-alpha.5` (source tag `v0.1.0-alpha.5`) and run `forgerail validate`.
+3. Explicitly load the applicable packaged Skill in your Agent and record the loading route.
 4. Reproduce the problem with Plugin Only and a read-only request when possible.
 5. Remove secrets, private paths, project memory, customer data, and production configuration before sharing evidence.
 
@@ -28,10 +28,10 @@ Screenshots and receipts must be redacted. Prefer copied error text over an imag
 
 ## Current support boundary
 
-- Codex is the verified host for `0.1.0-alpha.4`.
+- alpha.5 npm installation and CLI validation passed on Node.js 22 and 24. Codex can explicitly load the packaged guidance; native alpha.5 Plugin activation is unverified.
 - Claude Code and Cursor are `profile-only`; end-to-end support is not claimed.
 - Plugin Only and reviewed Lightweight Adoption are usable; persisted `.forgerail/` governance is deferred.
 - Capability Packs are independent Plugins and keep their own identity, permissions, and approval requirements.
-- Universal Plugins Directory publication is not currently available; exact-tag Marketplace installation is the supported route.
+- npm installation is the current route. Codex Marketplace registration and Universal Plugins Directory publication are deferred.
 
 If your case falls outside this boundary, an issue can still be useful as product evidence, but it may not receive an immediate fix.

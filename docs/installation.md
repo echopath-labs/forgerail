@@ -1,6 +1,6 @@
 # Install ForgeRail with npm
 
-The current installation route is the scoped npm package. The public version is `0.1.0-alpha.4` (source tag `v0.1.0-alpha.4`); alpha.5 is a local, unpublished candidate. Codex Marketplace registration and native Plugin activation are deferred for this release route.
+The current installation route is `@echopath-labs/forgerail@0.1.0-alpha.5`, published on 2026-09-12 with source tag `v0.1.0-alpha.5`. npm `next` points to alpha.5; `latest` remains alpha.4, so use the exact version below. Codex Marketplace registration and native Plugin activation are deferred for this release route.
 
 ## Requirements
 
@@ -8,9 +8,9 @@ Install Node.js 22 or newer on the machine running the CLI. Node.js 22 and 24 ar
 
 There is currently no standalone binary that bundles Node.js. The npm `forgerail` command is a Node.js executable entrypoint, not a runtime-free binary. A standalone binary is a future distribution option and does not block this npm release.
 
-## Install and verify alpha.5 after publication
+## Install and verify alpha.5
 
-These registry commands become available when alpha.5 is published. Before publication, use the reviewed local archive described below.
+Install the published package from the npm registry:
 
 ```bash
 npm install --global @echopath-labs/forgerail@0.1.0-alpha.5
@@ -57,22 +57,9 @@ Replace the placeholder with the actual installed path. `$forgerail` by itself i
 
 Project bindings and automatic recovery have their own adoption requirements. Do not apply a binding that demands a native Plugin unless that dependency has actually been met. See [adoption](adoption.md).
 
-## Alpha.5 candidate and release
+## Published package verification
 
-Before publication, use a reviewed local archive:
-
-```bash
-npm install --global /absolute/path/echopath-labs-forgerail-0.1.0-alpha.5.tgz
-forgerail validate
-```
-
-After the exact version is published:
-
-```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.5
-```
-
-The local candidate test uses a disposable npm prefix, verifies the command, read-only diagnosis and four installed Skill files against source, and uninstalls the package. It does not modify your global npm installation. See the [alpha.5 release scope](release-alpha5.md).
+The public npm archive was downloaded anonymously after publication and matched the approved SHA-256. All 258 installed files matched the archive; Node.js 22 and 24 passed CLI validation, read-only diagnosis and uninstall checks in a disposable tools prefix. See the [alpha.5 release evidence](release-alpha5.md).
 
 ## Upgrade, rollback and uninstall
 

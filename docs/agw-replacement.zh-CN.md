@@ -1,6 +1,6 @@
 # 完整取代 AGW：范围与验收
 
-本文描述**未发布的后续开发**。已发布 alpha.4 不因此获得完整替代资格；开发期间版本字段仍沿用发布基线，正式交付前必须形成新的不可变版本和证据。
+已发布的 [alpha.5](release-alpha5.zh-CN.md) 已包含自包含 AGW/WHR 指引，两个用户操作的 Agent 已通过显式源码加载提供行为证据，npm 包身份及安装也已验证。原生 Plugin 激活、严格会话隔离及项目实际旧格式消费者仍不在该证据范围内；替换项目激活入口前应逐项核验。
 
 ## 主包需要完整承接什么
 
@@ -22,10 +22,10 @@
 
 ## 如何接入已有项目
 
-- 每个受支持的 Codex 环境安装一次合格版本；项目克隆不会携带机器级 Plugin。
+- 按 [npm 安装说明](installation.zh-CN.md)安装 alpha.5，在新 Agent 任务中显式加载包内 Skill；项目克隆不会携带机器级工具。
 - 用项目现有 onboarding 文档记录固定版本、setup、发现检查和回退入口。
 - 根工作区保留共用政策，独立仓库保留自己的工程和交付政策。单独克隆或位于外部的 worktree 必须能自行找到必要规则；不能假设原父目录指令或嵌套 Skills 会被加载。
-- 从宿主实际输出确认 Skill 身份。既有 Codex 证据使用 `forgerail:forgerail`、`forgerail:forgerail-workspace-diagnosis`、`forgerail:workspace-health-review`、`forgerail:architecture-convergence-audit`；未来候选仍需重新验证。
+- 从宿主实际输出确认 Skill 身份。既有 Codex 证据使用 `forgerail:forgerail`、`forgerail:forgerail-workspace-diagnosis`、`forgerail:workspace-health-review`、`forgerail:architecture-convergence-audit`；该历史结果不证明 alpha.5 原生激活，npm 路线使用已安装 Skill 的实际路径显式加载。
 - 只切换获批项目的准确激活入口。同名 WHR 和 AGW/ForgeRail 各只能有一个有效 owner。回退副本若仍在自动发现目录中，不能声称旧入口已停用。
 - 缺少 Plugin 时明确报告依赖缺失，执行已批准的 setup 或恢复旧激活；不假装治理已生效。
 - 单宿主也可用 managed block，多宿主可用共享契约；初次验证无需写入。adoption-plan 不是完整 AGW 迁移器，不负责删除旧指令、处理同名 Skill 或证明父目录政策恢复。
