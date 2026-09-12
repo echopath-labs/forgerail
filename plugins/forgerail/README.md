@@ -16,6 +16,13 @@
 
 > **Status:** `0.1.0-alpha.4` is the current public prerelease. Codex is the verified host. Interfaces and guidance can change before a stable release.
 
+> **Source development:** this checkout also contains unreleased AGW replacement
+> guidance. Published alpha.4 has not been qualified as a full AGW replacement.
+> See [replacement status and acceptance](docs/agw-replacement.md) before changing
+> an existing AGW project's activation.
+
+> **Alpha.5 local candidate:** Generic AGW/WHR guidance and principal source-loaded behaviors have been verified. This candidate uses npm installation and explicit Agent loading; Marketplace activation is deferred. See the [release notes](docs/release-alpha5.md).
+
 ## Why ForgeRail?
 
 Coding agents are good at doing work. The hard part is keeping that work aligned with the real project:
@@ -31,25 +38,21 @@ ForgeRail is not an autonomous executor, a replacement for OpenSpec or `AGENTS.m
 
 ## Five-minute quickstart
 
-### 1. Install the exact Codex Plugin release
+### 1. Install alpha.5 after publication
+
+Use Node.js 22 or newer. The commands below are for alpha.5 after publication. Until then, use the reviewed local archive; the currently published version remains alpha.4.
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.4
-codex plugin add forgerail@echopath-labs
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.5
+forgerail validate
+forgerail diagnose --workspace .
 ```
 
-Start a **new Codex task** in the project you want to review. Plugin Only usage does not require Node.js, `package.json`, `node_modules`, or `.forgerail/` in that project.
+The target project does not require its own `package.json`, `node_modules`, or `.forgerail/`. Codex Marketplace registration is deferred. A standalone binary without Node.js is not currently available.
 
-### 2. Try it read-only
+### 2. Load guidance only when needed
 
-Send this request to Codex:
-
-```text
-Use $forgerail to assess this project read-only. Follow its existing AGENTS.md,
-specification, ADR, CI, and documentation habits first. Do not modify files or
-perform remote actions. Recommend Plugin Only or Lightweight Adoption, show the
-evidence and uncertainties, and wait for my confirmation before any write.
-```
+The installed package contains four Skills. Use `npm root --global` to locate it, then give your existing Agent the absolute path to `@echopath-labs/forgerail/skills/forgerail/SKILL.md` for a read-only assessment. Follow the project's existing instructions and records. Report `explicit_source` loading from the npm package; npm does not register a native Plugin. See [installation and Agent loading](docs/installation.md).
 
 ### 3. Review the result
 
@@ -128,6 +131,8 @@ The official package is scoped. The unscoped `forgerail` package is only a reser
 - [Migration from Agent Workflow Governance](docs/migration-from-agw.md)
 - [Architecture acceptance](docs/architecture-acceptance.md)
 - [Alpha.4 release notes and runbook](docs/release-alpha4.md)
+
+The experimental [Cursor Local Executor Canary](docs/cursor-local-executor-canary.md) validates capability-scoped local CLI behavior in disposable repositories. It does not promote the global Cursor adapter beyond `profile-only`.
 
 ## Project status
 

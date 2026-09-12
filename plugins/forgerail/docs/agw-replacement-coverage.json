@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 1,
+  "scope": "Unreleased AGW replacement work; published alpha.4 is not retroactively qualified.",
+  "baselineFamilies": [
+    "installed AGW legacy workflow",
+    "canonical AGW with expanded Git lifecycle and optional profile snapshot",
+    "established WHR with four references"
+  ],
+  "evidenceBoundary": "References and package reachability are structural evidence only. Behavior requires actual host execution and independent review.",
+  "behaviors": [
+    {
+      "id": "activation",
+      "behavior": "启用和跳过条件",
+      "legacySource": "SKILL.md#Quick Gate",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/SKILL.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "feature",
+        "docs-only"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "precedence",
+      "behavior": "规则优先级与项目扩展",
+      "legacySource": "SKILL.md#Rule Precedence",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/SKILL.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "feature",
+        "precedence"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "ownership",
+      "behavior": "最小属主和父子记录归属",
+      "legacySource": "references/durable-record-decision.md#Scope Selection",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/durable-record-decision.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "multi-owner"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "portable-discovery",
+      "behavior": "独立入口、必需政策和 Plugin 缺失恢复",
+      "legacySource": "AGW recovery guidance; replacement portable-discovery requirement",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/portable-entry.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "worktree"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "git-state",
+      "behavior": "真实 Git 状态及已有改动保护",
+      "legacySource": "references/git-lifecycle.md#Preflight",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/git-lifecycle.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "dirty-fix"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "branch-choice",
+      "behavior": "主分支识别、命名、选择与复用",
+      "legacySource": "references/git-lifecycle.md#Branch Choice",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/git-lifecycle.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "feature",
+        "worktree"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "commit",
+      "behavior": "范围内提交和 staged diff",
+      "legacySource": "references/git-lifecycle.md#Commit Rules",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/git-lifecycle.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "feature",
+        "dirty-fix"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "merge",
+      "behavior": "集成前验证、对比及授权",
+      "legacySource": "references/git-lifecycle.md#Merge And Closeout",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/git-lifecycle.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "feature",
+        "release-preparation",
+        "integration-restore"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "branch-restore",
+      "behavior": "收尾恢复主分支条件",
+      "legacySource": "references/git-lifecycle.md#Closeout Branch Restore",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/git-lifecycle.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "feature",
+        "dirty-fix",
+        "integration-restore"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "record-decision",
+      "behavior": "沿用记录系统、写入范围和授权",
+      "legacySource": "references/durable-record-decision.md",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/durable-record-decision.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "docs-only",
+        "no-record-system"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "root-index",
+      "behavior": "跨仓恢复导航和失效链接维护",
+      "legacySource": "references/durable-record-decision.md#Root Index For Cross-Workspace Recovery",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/durable-record-decision.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "multi-owner"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "relationships",
+      "behavior": "规格、代码、决策和交付关系",
+      "legacySource": "references/durable-record-decision.md#Relationship Index Maintenance",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/durable-record-decision.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "multi-owner"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "human-docs",
+      "behavior": "人类使用说明及收尾状态",
+      "legacySource": "SKILL.md#Required Workflow",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/SKILL.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "feature"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "impact",
+      "behavior": "已有行为影响和未验证风险",
+      "legacySource": "references/impact-review.md",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/impact-review.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "dirty-fix"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "authorization",
+      "behavior": "独立授权、已授权继续、无 runbook 不执行",
+      "legacySource": "references/risk-and-context.md#High-Risk Operations",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/risk-and-context.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "release-preparation",
+        "precedence"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "context-budget",
+      "behavior": "最小上下文与按需加载",
+      "legacySource": "references/risk-and-context.md#Context Budget",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/risk-and-context.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "docs-only"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "stage-summary",
+      "behavior": "长任务阶段摘要",
+      "legacySource": "references/risk-and-context.md#Stage Summaries",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/risk-and-context.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "resume"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "handoff",
+      "behavior": "原因、恢复集、范围、状态、风险和下一步",
+      "legacySource": "references/risk-and-context.md#Handoff Discipline",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/risk-and-context.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "resume"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "structured-workflow",
+      "behavior": "可选旧交换格式与真实 provider 身份",
+      "legacySource": "references/result-contract.md",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/result-contract.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "structured"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "optional-platform",
+      "behavior": "平台可选、来源和不可读限制",
+      "legacySource": "references/context-governance-platform.md",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/context-governance-platform.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "platform-unavailable"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "profile-snapshot",
+      "behavior": "新 AGW 的可选工程画像输入",
+      "legacySource": "references/engineering-profile-snapshot.md",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/references/engineering-profile-snapshot.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "platform-unavailable"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "health-areas",
+      "behavior": "独立 WHR 六项领域和 root index",
+      "legacySource": "WHR references/health-review.md",
+      "entry": "skills/workspace-health-review/SKILL.md",
+      "target": "skills/workspace-health-review/references/health-review.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "health"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "health-report",
+      "behavior": "可读模板、证据优先、分类状态",
+      "legacySource": "WHR references/report-template.md",
+      "entry": "skills/workspace-health-review/SKILL.md",
+      "target": "skills/workspace-health-review/references/report-template.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "health"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "health-structured",
+      "behavior": "可选机器可读健康报告",
+      "legacySource": "WHR references/result-contract.md",
+      "entry": "skills/workspace-health-review/SKILL.md",
+      "target": "skills/workspace-health-review/references/result-contract.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "health",
+        "structured"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "health-platform",
+      "behavior": "可选平台输入与项目扩展",
+      "legacySource": "WHR references/context-governance-platform.md",
+      "entry": "skills/workspace-health-review/SKILL.md",
+      "target": "skills/workspace-health-review/references/context-governance-platform.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "health",
+        "platform-unavailable"
+      ],
+      "behaviorStatus": "pending"
+    },
+    {
+      "id": "single-owner",
+      "behavior": "不重复执行等价治理或默认全量 WHR",
+      "legacySource": "SKILL.md#Rule Precedence",
+      "entry": "skills/forgerail/SKILL.md",
+      "target": "skills/forgerail/SKILL.md",
+      "disposition": "self-contained-guidance",
+      "scenarioIds": [
+        "precedence"
+      ],
+      "behaviorStatus": "pending"
+    }
+  ],
+  "readiness": {
+    "contentReview": "pending-independent-review",
+    "hostBehavior": "pending",
+    "portableDiscovery": "pending",
+    "releaseQualification": "pending",
+    "projectMigration": "not-authorized",
+    "legacyLifecycle": "separate-not-required-for-project-replacement"
+  }
+}

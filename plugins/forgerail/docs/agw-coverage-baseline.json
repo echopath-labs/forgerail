@@ -1,5 +1,7 @@
 {
   "schemaVersion": "1.0",
+  "evidenceStatus": "historical-architecture-baseline",
+  "currentReplacementQualification": "docs/agw-replacement.md",
   "source": "docs/agw-frozen-baseline.json",
   "allowedDispositions": ["forgerail-core", "workspace-diagnosis", "workspace-profile", "task-envelope", "return-receipt", "capability-pack", "source-reference", "unresolved"],
   "items": [

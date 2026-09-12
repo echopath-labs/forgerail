@@ -4,6 +4,19 @@
 
 No shipping changes yet.
 
+## 0.1.0-alpha.5 - 2026-09-12
+
+Local release candidate; not yet published. npm installation with explicit packaged-Skill loading is the current delivery route; Codex Marketplace registration and standalone binaries are deferred.
+
+- Make the main Plugin self-contained for AGW/WHR baseline guidance: Git lifecycle, impact checks, durable records, staged progress, handoff and optional structured exchanges.
+- Preserve unrelated working-tree and staged changes, stop unsafe integration, and keep workspace health review read-only until scoped edits are approved.
+- Add portable recovery guidance to shared and host binding templates, with regression checks that retain the recovery block in approved adoption output.
+- Keep main-package checks independent of optional external Packs; return structured CLI diagnostics when maintainer-only validation inputs are missing.
+- Reuse two user-operated source-loading behavior trials; distinguish this evidence from native Plugin activation and real consumer compatibility.
+- Exclude the Marketplace catalog from the npm payload so private-source and public-projection packages contain the same files.
+- Include the optional experimental Cursor local-executor canary and its scoped tests; this does not certify native Cursor Plugin support.
+- Keep optional external Capability Pack Plugins at alpha.4. Project migration, Directory submission and legacy AGW lifecycle remain separate actions.
+
 ## 0.1.0-alpha.4 - 2026-09-01
 
 - Make contract identifiers, calendar values and portable paths fail closed and align the CLI with the published schemas.

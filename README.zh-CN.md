@@ -16,6 +16,10 @@
 
 > **当前状态：** `0.1.0-alpha.4` 是当前公开预发布版本。Codex 是已经验证的宿主；稳定版之前，接口与引导方式仍可能变化。
 
+> **源码开发状态：**当前 checkout 包含尚未发布的 AGW 完整替代工作；公开 alpha.4 尚未通过完整替代验收。切换既有 AGW 项目前，请先核对[替代范围和验收门槛](docs/agw-replacement.zh-CN.md)。
+
+> **alpha.5 本地候选：** 通用 AGW/WHR 指引及主要源码行为已完成验证；本轮采用npm安装和Agent显式加载，暂不进行市场注册。见 [发布说明](docs/release-alpha5.zh-CN.md)。
+
 ## 为什么需要 ForgeRail？
 
 Coding Agent 很擅长执行任务，真正困难的是让执行始终忠于真实项目：
@@ -31,24 +35,21 @@ ForgeRail 不是自动执行器，不替代 OpenSpec 或 `AGENTS.md`，不提供
 
 ## 五分钟快速开始
 
-### 1. 安装精确版本的 Codex Plugin
+### 1. alpha.5 发布后通过 npm 安装
+
+运行环境需要Node.js 22或以上。以下命令在alpha.5发布后使用；发布前使用已核验的本地压缩包。当前公开版本仍为alpha.4。
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.4
-codex plugin add forgerail@echopath-labs
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.5
+forgerail validate
+forgerail diagnose --workspace .
 ```
 
-然后在目标项目中启动一个**新的 Codex 任务**。Plugin Only 不要求目标项目安装 Node.js，也不要求存在 `package.json`、`node_modules` 或 `.forgerail/`。
+目标项目不需要新增 `package.json`、`node_modules` 或 `.forgerail/`。本轮暂不注册Codex市场；目前没有免Node运行时的独立二进制。
 
-### 2. 先只读试用
+### 2. 按需加载工程指导
 
-把下面这段话发给 Codex：
-
-```text
-使用 $forgerail 对当前项目进行只读评估。优先沿用已有的 AGENTS.md、规格、
-ADR、CI 和文档习惯。不要修改文件，也不要执行远端操作。建议使用 Plugin Only
-还是 Lightweight Adoption，展示依据和不确定项，并在任何写入前等待我确认。
-```
+安装包带有四个Skill。用 `npm root --global` 查询位置，向已有Agent提供 `@echopath-labs/forgerail/skills/forgerail/SKILL.md` 的实际绝对路径，要求按项目已有规则做只读评估。注明从npm安装包 `explicit_source` 加载；npm不会自动注册原生Plugin。详见[安装与Agent加载说明](docs/installation.zh-CN.md)。
 
 ### 3. 判断结果
 
@@ -127,6 +128,8 @@ npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 diagnose --workspace .
 - [从 Agent Workflow Governance 迁移](docs/migration-from-agw.md)
 - [架构验收](docs/architecture-acceptance.md)
 - [alpha.4 发布说明与 Runbook](docs/release-alpha4.zh-CN.md)
+
+实验性的 [Cursor 本地 Executor Canary](docs/cursor-local-executor-canary.zh-CN.md)只验证 disposable repository 中逐项本地 CLI 能力，不会把 Cursor 全局 adapter 提升到 `profile-only` 以上。
 
 ## 项目状态
 

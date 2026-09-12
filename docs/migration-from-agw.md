@@ -1,5 +1,11 @@
 # Migration From Agent Workflow Governance
 
+**Development status:** the [replacement qualification guide](agw-replacement.md)
+and [behavior inventory](agw-replacement-coverage.json) describe unreleased work
+to make the main Plugin self-contained. They do not retroactively qualify the
+published alpha.4 package. Keep existing AGW activation until the required
+behavior, discovery and successor-release evidence is reviewed.
+
 ForgeRail does not rename AGW in place.
 
 1. Freeze the exact AGW/WHR source, installation, behavior, docs, and rollback baseline.

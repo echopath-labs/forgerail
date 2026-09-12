@@ -1,126 +1,85 @@
-# Install ForgeRail
+# Install ForgeRail with npm
 
-ForgeRail is primarily a Codex Agent Plugin. The default installation does not add Node.js, `package.json`, `node_modules`, or `.forgerail/` to the project you use it with.
+The current installation route is the scoped npm package. The public version is `0.1.0-alpha.4` (source tag `v0.1.0-alpha.4`); alpha.5 is a local, unpublished candidate. Codex Marketplace registration and native Plugin activation are deferred for this release route.
 
-The current public prerelease is `0.1.0-alpha.4`. Pin the immutable Git tag so another user can reproduce the same Plugin snapshot.
+## Requirements
 
-## Prerequisites
+Install Node.js 22 or newer on the machine running the CLI. Node.js 22 and 24 are tested. The target project does not require its own `package.json`, `node_modules`, or `.forgerail/`; install the tool globally or in a separate tools directory.
 
-- Codex with the `codex plugin` command available;
-- Git/network access to GitHub during installation;
-- a new Codex task after installation so Plugin discovery starts from a fresh host context.
+There is currently no standalone binary that bundles Node.js. The npm `forgerail` command is a Node.js executable entrypoint, not a runtime-free binary. A standalone binary is a future distribution option and does not block this npm release.
 
-The target project does not require Node.js, `package.json`, `node_modules`, or `.forgerail/`. Node.js 22 or newer is required only if you choose to run ForgeRail's optional npm CLI.
+## Install and verify alpha.5 after publication
 
-## Install the Codex Plugin
+These registry commands become available when alpha.5 is published. Before publication, use the reviewed local archive described below.
 
 ```bash
-codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.4
-codex plugin add forgerail@echopath-labs
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.5
+forgerail validate
+forgerail diagnose --workspace .
 ```
 
-Then start a new Codex task in the project you want to assess.
+`validate` checks the installed package. `diagnose` reads the selected project without adopting it or modifying its files. The unscoped `forgerail` package is a reservation, not an installation source.
 
-## Verify the installation
-
-Run:
+For a one-off CLI invocation:
 
 ```bash
-codex plugin list
+npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 diagnose --workspace .
 ```
 
-Confirm that the `forgerail@echopath-labs` Plugin is enabled. In the new task, Codex should discover these four namespaced Skills:
+## Load the packaged guidance in an Agent
 
-- `$forgerail`;
-- `$forgerail-workspace-diagnosis`;
-- `$workspace-health-review`;
-- `$architecture-convergence-audit`.
+The npm package includes all four Skills and their references. Installing npm does not register Skills in Codex or any other Agent. Find the global package directory with:
 
-If another Plugin defines the same short Skill name, use the exact namespaced name shown by Codex.
+```bash
+npm root --global
+```
 
-## First use: stay read-only
+Append `@echopath-labs/forgerail` to that directory. Its independent entrypoints are:
 
-Send this request to Codex:
+| Skill label | Path inside the installed package |
+| --- | --- |
+| `$forgerail` | `skills/forgerail/SKILL.md` |
+| `$forgerail-workspace-diagnosis` | `skills/forgerail-workspace-diagnosis/SKILL.md` |
+| `$workspace-health-review` | `skills/workspace-health-review/SKILL.md` |
+| `$architecture-convergence-audit` | `skills/architecture-convergence-audit/SKILL.md` |
+
+In a new task in your existing Agent, provide the absolute path to the appropriate installed Skill. For Core, ask:
 
 ```text
-Use $forgerail to assess this project read-only. Follow its existing AGENTS.md,
-specification, ADR, CI, and documentation habits first. Do not modify files or
-perform remote actions. Recommend Plugin Only or Lightweight Adoption, show the
-evidence and uncertainties, and wait for my confirmation before any write.
+Read <installed-package>/skills/forgerail/SKILL.md and only the references needed
+for a read-only assessment of this project. Follow the project's existing
+AGENTS.md and records. Identify ownership, scope, useful checks and the next step.
+Do not write files, install anything, or perform remote actions. Report loadingMode
+as explicit_source from the npm-installed package, not native Plugin discovery.
 ```
 
-A useful first result identifies the workspace and task boundary, applicable project rules, unresolved conflicts, the smallest suitable adoption level, validation evidence, explicit non-actions, and the next decision for a human. Installation alone never authorizes a write or remote operation.
+Replace the placeholder with the actual installed path. `$forgerail` by itself is not an automatic registration mechanism. CLI diagnosis is not the same as having an Agent execute the governance guidance. No new Codex task or login is needed for CLI use; a new Codex task is merely one possible host for explicit source loading.
 
-## Optional Capability Pack Plugins
+Project bindings and automatic recovery have their own adoption requirements. Do not apply a binding that demands a native Plugin unless that dependency has actually been met. See [adoption](adoption.md).
 
-Capability Packs are separate Plugins with separate authentication, risk, and lifecycle boundaries. Install only the ones the project actually needs:
+## Alpha.5 candidate and release
 
-```bash
-codex plugin add forgerail-github-rulesets@echopath-labs
-codex plugin add forgerail-release-safety@echopath-labs
-codex plugin add forgerail-thread-closure@echopath-labs
-codex plugin add forgerail-cross-workspace-orchestration@echopath-labs
-```
-
-Installation only makes a Pack available. It does not authenticate, enable, invoke, or approve the Pack, and it does not grant repository, release, deployment, or lifecycle authority.
-
-## Optional npm CLI
-
-The CLI is useful for deterministic validation or read-only diagnosis, but it is not required for Plugin use:
+Before publication, use a reviewed local archive:
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.4 diagnose --workspace .
-```
-
-For a global CLI:
-
-```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.4
+npm install --global /absolute/path/echopath-labs-forgerail-0.1.0-alpha.5.tgz
 forgerail validate
 ```
 
-The official package is scoped. The unscoped `forgerail` package is only a reservation and is not an installation source.
+After the exact version is published:
 
-## Upgrade or reinstall
+```bash
+npm install --global @echopath-labs/forgerail@0.1.0-alpha.5
+```
 
-Marketplace registrations are exact-tag snapshots. To move to a newer release, remove the installed Plugin and Marketplace registration using the current `codex plugin` command surface, register the new exact tag, reinstall the Plugin, and start a new task. Verify the four Skills and repeat the read-only smoke test before relying on it.
+The local candidate test uses a disposable npm prefix, verifies the command, read-only diagnosis and four installed Skill files against source, and uninstalls the package. It does not modify your global npm installation. See the [alpha.5 release scope](release-alpha5.md).
 
-Do not replace the exact tag with a mutable branch when reproducibility matters. An upgrade must not modify project files or persisted governance unless the user separately approves an exact adoption plan.
+## Upgrade, rollback and uninstall
 
-## Uninstall
-
-Use `codex plugin remove forgerail@echopath-labs`, then remove the `echopath-labs` Marketplace registration if you no longer use any Plugin from it. Remove the optional global CLI with:
+Use the exact scoped version for upgrades. Roll back by installing the previously verified exact version again; preserve project records and user changes. To remove the tool:
 
 ```bash
 npm uninstall --global @echopath-labs/forgerail
 ```
 
-Uninstalling ForgeRail must not delete project instructions, specifications, receipts, Git history, or other project records. Remove a previously approved Lightweight Adoption block only through a separate reviewed change.
-
-## Troubleshooting
-
-### The Skills do not appear
-
-1. Confirm the Marketplace and Plugin are listed and enabled with `codex plugin list`.
-2. Confirm the registration is pinned to `v0.1.0-alpha.4`.
-3. Start a new Codex task; an already-running task may not refresh Plugin discovery.
-4. Use the namespaced Skill name if another Plugin or personal Skill has the same short name.
-
-### The project asks for Node.js
-
-Plugin Only should not require project-local Node.js. Check that you are invoking the installed Plugin rather than running `npx`, `npm install`, or repository source. Please report a bug if normal Plugin use creates `package.json`, `node_modules`, or `.forgerail/`.
-
-### ForgeRail proposes too much process
-
-Ask it to remain read-only and explain why Plugin Only is insufficient. ForgeRail should recommend the smallest useful level and follow existing project governance before proposing new files.
-
-### A command requests credentials or remote authority
-
-Stop and review the exact Pack, identity, scope, and approval boundary. ForgeRail installation is never approval for login, publishing, repository administration, deployment, or lifecycle mutation.
-
-For more help, see [SUPPORT.md](../SUPPORT.md). Report security concerns privately using [SECURITY.md](../SECURITY.md).
-
-## Adoption is separate
-
-Installation makes ForgeRail available. It does not edit `AGENTS.md`, install OpenSpec, create `.forgerail/`, or make Workspace Health mandatory. See [Progressive Adoption](adoption.md) before approving any durable project integration.
+Uninstalling the package does not remove user project bindings or records. Review any previously approved binding separately. Existing historical Plugin instructions remain in prior release runbooks; Marketplace setup is not part of this npm installation flow.
