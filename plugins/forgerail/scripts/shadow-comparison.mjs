@@ -5,10 +5,6 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const core = readFileSync(resolve(root, "skills/forgerail/SKILL.md"), "utf8");
-const diagnosis = readFileSync(resolve(root, "skills/forgerail-workspace-diagnosis/SKILL.md"), "utf8");
-const health = readFileSync(resolve(root, "skills/workspace-health-review/SKILL.md"), "utf8");
-const frozen = JSON.parse(readFileSync(resolve(root, "docs/agw-frozen-baseline.json"), "utf8"));
 
 function externalSkill(plugin, skill = plugin) {
   const candidates = [
@@ -16,13 +12,10 @@ function externalSkill(plugin, skill = plugin) {
     resolve(root, `plugins/${plugin}/skills/${skill}/SKILL.md`),
   ];
   const path = candidates.find((candidate) => existsSync(candidate));
-  if (!path) throw new Error(`external Capability Pack entry is missing: ${plugin}`);
+  if (!path) throw new Error(`Full shadow comparison requires external Capability Pack ${plugin}. Run npm test for main-package checks; see CONTRIBUTING.md for maintainer inputs.`);
   return readFileSync(path, "utf8");
 }
 
-const rulesets = externalSkill("forgerail-github-rulesets");
-const releaseSafety = externalSkill("forgerail-release-safety");
-const threadClosure = externalSkill("forgerail-thread-closure");
 const expectedAgwEvidence = Object.freeze({
   featureBranchRecords: ["smallest child workspace", "durable records", "git status"],
   dirtyWorktreePreservation: ["Preserve user changes"],
@@ -33,59 +26,67 @@ const expectedAgwEvidence = Object.freeze({
   threadClosure: ["machine-readable closeout"],
 });
 
-const scenarioDefinitions = [
-  {
-    id: "feature-branch-records",
-    agwEvidence: expectedAgwEvidence.featureBranchRecords,
-    forgerailEvidence: ["smallest owner workspace", "Task Envelope", "existing habits"],
-    source: `${core}\n${diagnosis}`,
-    status: "covered",
-  },
-  {
-    id: "dirty-worktree-preservation",
-    agwEvidence: expectedAgwEvidence.dirtyWorktreePreservation,
-    forgerailEvidence: ["preserve unrelated user changes", "dirty-worktree state"],
-    source: core,
-    status: "covered",
-  },
-  {
-    id: "markdown-existing-habit",
-    agwEvidence: expectedAgwEvidence.existingRecordHabit,
-    forgerailEvidence: ["existing habits", "OpenSpec may be a preferred example"],
-    source: diagnosis,
-    status: "covered",
-  },
-  {
-    id: "workspace-health",
-    agwEvidence: expectedAgwEvidence.workspaceHealth,
-    forgerailEvidence: ["first built-in ForgeRail Capability Pack", "Analyze First"],
-    source: health,
-    status: "covered-with-follow-up",
-  },
-  {
-    id: "github-rulesets-read-first",
-    agwEvidence: expectedAgwEvidence.githubRulesets,
-    forgerailEvidence: ["read-only diagnosis", "Stop until the user explicitly approves"],
-    source: rulesets,
-    status: "covered",
-  },
-  {
-    id: "release-safety-project-runbook",
-    agwEvidence: expectedAgwEvidence.releaseSafety,
-    forgerailEvidence: ["project-owned release runbook", "does not contain publish, deploy"],
-    source: releaseSafety,
-    status: "covered",
-  },
-  {
-    id: "evidence-first-thread-closure",
-    agwEvidence: expectedAgwEvidence.threadClosure,
-    forgerailEvidence: ["Keep closeout incomplete", "Do not implement follow-up work"],
-    source: `${core}\n${threadClosure}`,
-    status: "covered",
-  },
-];
+export function evaluateShadowComparison(overrides = {}, baseline) {
+  const core = readFileSync(resolve(root, "skills/forgerail/SKILL.md"), "utf8");
+  const diagnosis = readFileSync(resolve(root, "skills/forgerail-workspace-diagnosis/SKILL.md"), "utf8");
+  const health = readFileSync(resolve(root, "skills/workspace-health-review/SKILL.md"), "utf8");
+  const frozen = JSON.parse(readFileSync(resolve(root, "docs/agw-frozen-baseline.json"), "utf8"));
 
-export function evaluateShadowComparison(overrides = {}, baseline = frozen) {
+  const rulesets = externalSkill("forgerail-github-rulesets");
+  const releaseSafety = externalSkill("forgerail-release-safety");
+  const threadClosure = externalSkill("forgerail-thread-closure");
+  const scenarioDefinitions = [
+    {
+      id: "feature-branch-records",
+      agwEvidence: expectedAgwEvidence.featureBranchRecords,
+      forgerailEvidence: ["smallest owner workspace", "Task Envelope", "existing habits"],
+      source: `${core}\n${diagnosis}`,
+      status: "covered",
+    },
+    {
+      id: "dirty-worktree-preservation",
+      agwEvidence: expectedAgwEvidence.dirtyWorktreePreservation,
+      forgerailEvidence: ["preserve unrelated user changes", "dirty-worktree state"],
+      source: core,
+      status: "covered",
+    },
+    {
+      id: "markdown-existing-habit",
+      agwEvidence: expectedAgwEvidence.existingRecordHabit,
+      forgerailEvidence: ["existing habits", "OpenSpec may be a preferred example"],
+      source: diagnosis,
+      status: "covered",
+    },
+    {
+      id: "workspace-health",
+      agwEvidence: expectedAgwEvidence.workspaceHealth,
+      forgerailEvidence: ["first built-in ForgeRail Capability Pack", "Analyze First"],
+      source: health,
+      status: "covered-with-follow-up",
+    },
+    {
+      id: "github-rulesets-read-first",
+      agwEvidence: expectedAgwEvidence.githubRulesets,
+      forgerailEvidence: ["read-only diagnosis", "Stop until the user explicitly approves"],
+      source: rulesets,
+      status: "covered",
+    },
+    {
+      id: "release-safety-project-runbook",
+      agwEvidence: expectedAgwEvidence.releaseSafety,
+      forgerailEvidence: ["project-owned release runbook", "does not contain publish, deploy"],
+      source: releaseSafety,
+      status: "covered",
+    },
+    {
+      id: "evidence-first-thread-closure",
+      agwEvidence: expectedAgwEvidence.threadClosure,
+      forgerailEvidence: ["Keep closeout incomplete", "Do not implement follow-up work"],
+      source: `${core}\n${threadClosure}`,
+      status: "covered",
+    },
+  ];
+  baseline ??= frozen;
   const baselineSource = JSON.stringify(baseline);
   const scenarios = scenarioDefinitions.map((definition) => {
     const source = overrides[definition.id] ?? definition.source;
@@ -98,8 +99,10 @@ export function evaluateShadowComparison(overrides = {}, baseline = frozen) {
   });
   return {
     schemaVersion: "1.0",
+    evidenceKind: "textual-structure-only",
+    interpretation: "behaviorCoverageReady is the legacy phrase-check result, not real Agent behavior or replacement qualification; see docs/agw-replacement.md",
     agwBaseline: "plugins/agent-workflow-governance@0.2.0-canonical",
-    forgeRailCandidate: "plugins/forgerail@0.1.0-alpha.4-canonical",
+    forgeRailCandidate: "plugins/forgerail@0.1.0-alpha.5-canonical",
     scenarios,
     covered: scenarios.filter((item) => item.passed).length,
     unresolved: scenarios.filter((item) => !item.passed).map((item) => item.id),
@@ -110,7 +113,12 @@ export function evaluateShadowComparison(overrides = {}, baseline = frozen) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const result = evaluateShadowComparison();
-  console.log(JSON.stringify(result, null, 2));
-  if (!result.behaviorCoverageReady) process.exitCode = 1;
+  try {
+    const result = evaluateShadowComparison();
+    console.log(JSON.stringify(result, null, 2));
+    if (!result.behaviorCoverageReady) process.exitCode = 1;
+  } catch (error) {
+    console.log(JSON.stringify({ valid: false, scope: "maintainer", errors: [error.message] }, null, 2));
+    process.exitCode = 1;
+  }
 }

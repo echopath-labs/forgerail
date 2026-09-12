@@ -58,6 +58,12 @@ const nonPortableHostPaths = [
 const hasExternalPackSources = externalPluginNames.every((name) =>
   existsSync(resolve(root, "plugins", name)) || existsSync(resolve(root, "..", name)),
 );
+if (bundleModule && !hasExternalPackSources) {
+  console.error(JSON.stringify({ valid: false, scope: "maintainer", errors: [
+    "Source integrity checks require all four external Pack sources beside the main Plugin or under its plugins/ directory. Run npm test for main-package checks; see CONTRIBUTING.md for full maintainer inputs.",
+  ] }, null, 2));
+  process.exit(1);
+}
 const evaluateShadowComparison = hasExternalPackSources
   ? (await import(pathToFileURL(resolve(root, "scripts/shadow-comparison.mjs")).href)).evaluateShadowComparison
   : null;
@@ -366,7 +372,7 @@ try {
       limitations: ["Synthetic future-adapter regression."],
     };
     writeFileSync(resolve(pluginRoot, "adapters/nova.json"), `${JSON.stringify(adapter, null, 2)}\n`);
-    writeFileSync(resolve(pluginRoot, "templates/bindings/nova-thin.md"), "<!-- forgerail:binding:nova:v1:start -->\nFollow `FORGERAIL.md`.\n<!-- forgerail:binding:nova:v1:end -->\n");
+    writeFileSync(resolve(pluginRoot, "templates/bindings/nova-thin.md"), "<!-- forgerail:binding:nova:v1:start -->\nFollow `FORGERAIL.md`.\n<!-- forgerail:portable-recovery:v1:start -->\nFixture recovery payload.\n<!-- forgerail:portable-recovery:v1:end -->\n<!-- forgerail:binding:nova:v1:end -->\n");
     const workspace = temporary("forgerail-future-adapter-workspace-");
     writeFileSync(resolve(workspace, "NOVA.md"), "Nova instructions\n");
     const plan = planAdoption(pluginRoot, workspace);
@@ -428,7 +434,7 @@ try {
     };
     for (const [target, expected] of [["AGENTS.md", "adapter"], ["agents.md", "adapter"], [".cursor", "adapter"], ["FORGERAIL.md", "reserved"], ["forgerail.md", "reserved"]]) {
       const pluginRoot = makeRoot(`forgerail-colliding-adapter-${expected}-`);
-      writeFileSync(resolve(pluginRoot, "templates/bindings/nova-thin.md"), "<!-- forgerail:binding:nova:v1:start -->\nFollow `FORGERAIL.md`.\n<!-- forgerail:binding:nova:v1:end -->\n");
+      writeFileSync(resolve(pluginRoot, "templates/bindings/nova-thin.md"), "<!-- forgerail:binding:nova:v1:start -->\nFollow `FORGERAIL.md`.\n<!-- forgerail:portable-recovery:v1:start -->\nFixture recovery payload.\n<!-- forgerail:portable-recovery:v1:end -->\n<!-- forgerail:binding:nova:v1:end -->\n");
       writeFileSync(resolve(pluginRoot, "adapters/nova.json"), `${JSON.stringify({ ...base, bindingTarget: target }, null, 2)}\n`);
       const registry = loadHostAdapters(pluginRoot);
       assert.equal(registry.valid, false);
@@ -1255,7 +1261,7 @@ try {
 
   if (!buildBundle) assertions.push("source-only-bundle-regressions-not-installed");
 
-  console.log(JSON.stringify({ valid: true, assertions, mutations: [], externalSideEffects: [] }, null, 2));
+  console.log(JSON.stringify({ valid: true, scope: buildBundle && evaluateShadowComparison ? "maintainer" : "installed-package", assertions, mutations: [], externalSideEffects: [] }, null, 2));
 } finally {
   for (const path of temporaryRoots.reverse()) rmSync(path, { recursive: true, force: true });
 }

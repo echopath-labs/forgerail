@@ -353,8 +353,7 @@ export function loadHostAdapters(pluginRoot) {
     if (validation.valid) {
       for (const mode of adapter.bindingModes) {
         try {
-          const content = readBindingTemplate(pluginRoot, adapter, mode);
-          validateBindingTemplateMarkers(adapter, mode, content);
+          readBindingTemplate(pluginRoot, adapter, mode);
         }
         catch (error) { errors.push(`${adapter.id}: ${error.message}`); }
       }
@@ -372,6 +371,16 @@ function validateBindingTemplateMarkers(adapter, mode, content) {
     throw new Error(`binding template for ${mode} must contain exactly one ordered ${adapter.managedMarker} boundary`);
   }
   const managed = content.slice(content.indexOf(start) + start.length, content.indexOf(end));
+  const recoveryStart = "<!-- forgerail:portable-recovery:v1:start -->";
+  const recoveryEnd = "<!-- forgerail:portable-recovery:v1:end -->";
+  const first = managed.indexOf(recoveryStart);
+  const last = managed.indexOf(recoveryEnd);
+  if (countLiteralOccurrences(content, recoveryStart) !== 1
+    || countLiteralOccurrences(content, recoveryEnd) !== 1
+    || first < 0 || last < first + recoveryStart.length
+    || !managed.slice(first + recoveryStart.length, last).trim()) {
+    throw new Error(`template for ${mode} must contain one non-empty portable recovery block inside its managed boundary`);
+  }
   if (mode === "thin-reference" && !/(?<![A-Za-z0-9_./\\-])FORGERAIL\.md(?![A-Za-z0-9_./\\-])/.test(managed)) {
     throw new Error("thin-reference template must contain the shared contract reference FORGERAIL.md inside its managed block");
   }
@@ -382,6 +391,12 @@ function readBindingTemplate(pluginRoot, adapter, mode) {
   if (typeof path !== "string" || !portableRelativePath.test(path)) {
     throw new Error(`binding template for ${mode} is missing or unsafe`);
   }
+  const content = readTemplate(pluginRoot, path);
+  validateBindingTemplateMarkers(adapter, mode, content);
+  return content;
+}
+
+function readTemplate(pluginRoot, path) {
   const templateRoot = realpathSync(resolve(pluginRoot, "templates"));
   let cursor = templateRoot;
   const segments = path.split("/");
@@ -721,7 +736,8 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
     const content = readBindingTemplate(pluginRoot, adapter, "managed-block");
     writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker, adapter.unmanagedBindingPolicy));
   } else if (strategy === "shared-contract-with-thin-bindings") {
-    const contract = read(resolve(pluginRoot, "templates/FORGERAIL.md")).replace("{{HOSTS}}", selected.map((adapter) => adapter.displayName).join(", "));
+    const contract = readTemplate(pluginRoot, "FORGERAIL.md").replace("{{HOSTS}}", selected.map((adapter) => adapter.displayName).join(", "));
+    validateBindingTemplateMarkers({ managedMarker: "forgerail:adoption-contract:v1" }, "shared-contract", contract);
     writes.push(proposedWrite(realRoot, binding.workspaceSha256, "FORGERAIL.md", contract, "forgerail:adoption-contract:v1"));
     for (const adapter of selected) {
       const content = readBindingTemplate(pluginRoot, adapter, "thin-reference");

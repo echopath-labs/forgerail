@@ -19,7 +19,40 @@ npm ci
 npm test
 ```
 
+`npm test` is the main-package suite: it runs without adjacent external Packs.
+Its fixture result reports `scope: core` and explicitly lists excluded external
+composition coverage. It does not qualify combined publication or host behavior.
+
+`npm run test:maintainer` is the full source/release gate and is also the
+`prepublishOnly` hook. It requires `tools/lib/bundle.mjs` and all four source
+Packs (`forgerail-cross-workspace-orchestration`, `forgerail-github-rulesets`,
+`forgerail-release-safety`, `forgerail-thread-closure`) beside the main Plugin
+in the private layout, or under `plugins/` in the public source layout. Missing
+or invalid required inputs fail this gate; copy only verified matching sources.
+
+`validate-fixtures` defaults to `--scope full` for compatibility; select
+`--scope core` explicitly for an isolated main package. `test:shadow` requires
+external Pack sources. `test:integrity` requires the complete source layout when
+source bundle tools are present; an installed npm package without those tools
+reports `scope: installed-package` and identifies unavailable source-only tests.
+That installed-package result is not the full maintainer gate.
+
 Plugin users do not need project-local Node.js; this development requirement applies only to contributors and optional CLI users.
+
+
+Adoption templates must contain one non-empty `forgerail:portable-recovery:v1`
+start/end block inside the outer managed block. The planner validates this
+boundary for each binding and the shared contract before proposing a write;
+the generated owner files retain the guidance when the Plugin is absent.
+`npm run test:adoption` runs in the main-package suite and covers removal,
+displacement, duplication, empty content, and approved output retention.
+These are structural and data-preservation checks; edits to the guidance's
+meaning still need content review and host behavior evidence.
+
+The shadow and release CLIs report input/evaluation exceptions on stdout as
+`{ valid: false, scope: "maintainer", errors: [...] }` and exit 1. Their exported
+validators throw to callers instead of terminating the process. Missing inputs
+never become a passing full check.
 
 Useful focused checks include:
 

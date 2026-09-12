@@ -2,6 +2,13 @@
 
 This is the initial deterministic owner map. Behavioral equivalence still requires shadow tasks.
 
+This historical map is retained as architecture provenance. Current unreleased
+replacement work has a [self-contained behavior inventory](agw-replacement-coverage.json)
+and [qualification protocol](agw-replacement-validation.md). In particular, the
+old Git `source-reference` below describes the compatibility baseline, not the
+new main-Plugin loading path. Historical publication and lifecycle blockers must
+not be reused as a current functional-replacement verdict.
+
 | AGW/WHR behavior | ForgeRail owner | State |
 | --- | --- | --- |
 | smallest owner workspace | Core | mapped |

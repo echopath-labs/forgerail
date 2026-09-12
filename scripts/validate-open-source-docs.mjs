@@ -36,7 +36,7 @@ const issueForms = [
   ".github/ISSUE_TEMPLATE/documentation.yml"
 ];
 const skills = ["$forgerail", "$forgerail-workspace-diagnosis", "$workspace-health-review", "$architecture-convergence-audit"];
-const exactInstall = "codex plugin marketplace add echopath-labs/forgerail --ref v0.1.0-alpha.4";
+const exactInstall = "npm install --global @echopath-labs/forgerail@0.1.0-alpha.5";
 
 function record(condition, message) {
   if (!condition) failures.push(message);
@@ -95,7 +95,7 @@ for (const path of entryFiles) {
 
 for (const path of ["README.md", "README.zh-CN.md", "docs/installation.md", "docs/installation.zh-CN.md"]) {
   const content = read(path);
-  record(content.includes(exactInstall), `exact alpha.4 Marketplace command is present: ${path}`);
+  record(content.includes(exactInstall), `exact alpha.5 npm command is present: ${path}`);
   for (const skill of skills) record(content.includes(skill), `${path} covers ${skill}`);
 }
 

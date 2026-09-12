@@ -1,5 +1,11 @@
 # External Capability Packs
 
+The main Plugin retains the portable AGW baseline: project-runbook-first release
+and shared-environment checks, independent authorization, ordinary task closeout,
+records, recovery and handoff. These baseline duties do not depend on an external
+Pack. The Packs below deepen the relevant review or composition workflow; they
+do not replace project runbooks or authorize operations.
+
 ForgeRail's first main Plugin keeps remote and release mutation domains outside its runtime payload.
 
 ## Cross-Workspace Orchestration

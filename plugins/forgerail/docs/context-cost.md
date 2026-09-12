@@ -7,7 +7,7 @@ At the first alpha implementation point:
 - Core `SKILL.md`: measured from the canonical file during validation;
 - Workspace Diagnosis `SKILL.md`: separate entry, loaded for first-use, explicit, drift, or conflict diagnosis;
 - Workspace Health `SKILL.md`: installed as `available` and independently invoked or enabled;
-- Core references load only for Task Envelope/Receipt or Profile conflict work;
+- Core references load at their explicit task triggers: Git before edits or delivery, records when preserving context, impact at completion, risk/progress at high-risk work or handoff, and contracts/Profile only when required. Do not load every reference at startup;
 - external GitHub Rulesets, Release Safety, and Thread Closure packs are absent from the main runtime payload and use separate, non-implicit Skill entrypoints.
 
 The fixture `profile-input.available-pack.json` proves that an installed Workspace Health pack in `available` state does not enter `activePacks`. The inactive-pack Launch fixture proves a task cannot request that pack until it is enabled or required.

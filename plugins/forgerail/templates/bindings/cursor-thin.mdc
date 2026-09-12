@@ -4,4 +4,11 @@ alwaysApply: true
 ---
 <!-- forgerail:binding:cursor:v1:start -->
 Follow `FORGERAIL.md` for non-trivial AI-assisted engineering work. This Cursor binding is a profile-only adapter in ForgeRail alpha.1 and requires host-specific verification before it can be treated as active.
+
+<!-- forgerail:portable-recovery:v1:start -->
+If `FORGERAIL.md` or its required ForgeRail Plugin is unavailable here, report
+the missing dependency and pause dependent governed execution. Prepare recovery
+from a verified source for exact authorization; independent read-only work may
+continue. Do not assume parent inheritance or silently fall back to AGW.
+<!-- forgerail:portable-recovery:v1:end -->
 <!-- forgerail:binding:cursor:v1:end -->

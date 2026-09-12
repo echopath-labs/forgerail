@@ -35,7 +35,7 @@ function args(name) {
 function validateCommandOptions(command) {
   const allowedByCommand = new Map([
     ["validate", []],
-    ["validate-fixtures", []],
+    ["validate-fixtures", ["--scope"]],
     ["validate-fixture-matrix", []],
     ["validate-adoption", []],
     ["validate-contract", ["--type", "--file"]],
@@ -266,7 +266,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.0-alpha.4") errors.push("Plugin version must be 0.1.0-alpha.4");
+  if (manifest.version !== "0.1.0-alpha.5") errors.push("Plugin version must be 0.1.0-alpha.5");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -572,7 +572,8 @@ function validateArchitectureConvergenceMatrix(fixtureRoot = resolve(root, "scri
   return { passed: errors.length === 0, errors, cases: matrix.cases?.length ?? 0, externalMutations: 0, persistedState: 0 };
 }
 
-function validateFixtures() {
+function validateFixtures(scope) {
+  const excluded = scope === "core" ? ["external-orchestration-composition"] : [];
   const fixtureRoot = resolve(root, "scripts/fixtures");
   const results = contractFixtureCases.map(([type, path, expected]) => {
     const result = validateContract(type, readJson(resolve(fixtureRoot, path)));
@@ -596,24 +597,26 @@ function validateFixtures() {
   results.push({ type: "composition", path: "contracts/profile-input.available-pack.json", expected: true, actual: available.valid && available.activePacks.length === 0 && available.profile.rules[0]?.value === "release", passed: available.valid && available.activePacks.length === 0 && available.profile.rules[0]?.value === "release", errors: available.errors });
   const conflict = resolveProfile(readJson(resolve(fixtureRoot, "contracts/profile-input.conflict.json")), manifests);
   results.push({ type: "composition", path: "contracts/profile-input.conflict.json", expected: false, actual: conflict.valid, passed: !conflict.valid && conflict.profile.conflicts.length === 1, errors: conflict.errors });
-  const orchestrationPackCandidates = [
-    resolve(root, "../forgerail-cross-workspace-orchestration/pack.json"),
-    resolve(root, "plugins/forgerail-cross-workspace-orchestration/pack.json"),
-  ];
-  const orchestrationPackPath = orchestrationPackCandidates.find((path) => existsSync(path));
-  if (orchestrationPackPath) {
-    const orchestrationPack = readJson(orchestrationPackPath);
-    const orchestrationPackValidation = validateContract("pack", orchestrationPack);
-    const orchestrationAvailable = resolveProfile(readJson(resolve(fixtureRoot, "contracts/profile-input.orchestration-available.json")), [...manifests, orchestrationPack]);
-    results.push({
-      type: "composition",
-      path: "contracts/profile-input.orchestration-available.json",
-      expected: true,
-      actual: orchestrationPackValidation.valid && orchestrationAvailable.valid && orchestrationAvailable.activePacks.length === 0,
-      passed: orchestrationPackValidation.valid && orchestrationAvailable.valid && orchestrationAvailable.activePacks.length === 0,
-      errors: [...orchestrationPackValidation.errors, ...orchestrationAvailable.errors],
-    });
-  } else results.push({ type: "composition", path: "cross-workspace-orchestration-manifest", expected: true, actual: false, passed: false, errors: ["external orchestration Pack manifest is unavailable"] });
+  if (scope === "full") {
+    const orchestrationPackCandidates = [
+      resolve(root, "../forgerail-cross-workspace-orchestration/pack.json"),
+      resolve(root, "plugins/forgerail-cross-workspace-orchestration/pack.json"),
+    ];
+    const orchestrationPackPath = orchestrationPackCandidates.find((path) => existsSync(path));
+    if (orchestrationPackPath) {
+      const orchestrationPack = readJson(orchestrationPackPath);
+      const orchestrationPackValidation = validateContract("pack", orchestrationPack);
+      const orchestrationAvailable = resolveProfile(readJson(resolve(fixtureRoot, "contracts/profile-input.orchestration-available.json")), [...manifests, orchestrationPack]);
+      results.push({
+        type: "composition",
+        path: "contracts/profile-input.orchestration-available.json",
+        expected: true,
+        actual: orchestrationPackValidation.valid && orchestrationAvailable.valid && orchestrationAvailable.activePacks.length === 0,
+        passed: orchestrationPackValidation.valid && orchestrationAvailable.valid && orchestrationAvailable.activePacks.length === 0,
+        errors: [...orchestrationPackValidation.errors, ...orchestrationAvailable.errors],
+      });
+    } else results.push({ type: "composition", path: "cross-workspace-orchestration-manifest", expected: true, actual: false, passed: false, errors: ["external orchestration Pack manifest is unavailable"] });
+  }
   const inactiveLaunch = createLaunchContract(available.profile, { ...readJson(resolve(fixtureRoot, "contracts/task-envelope.valid.json")), packs: ["workspace-health-review"] }, "Codex");
   results.push({ type: "launch", path: "inactive-pack", expected: false, actual: inactiveLaunch.valid, passed: !inactiveLaunch.valid && inactiveLaunch.errors.some((error) => error.includes("inactive pack")), errors: inactiveLaunch.errors });
   const receipt = readJson(resolve(fixtureRoot, "contracts/return-receipt.valid.json"));
@@ -621,7 +624,7 @@ function validateFixtures() {
   results.push({ type: "receipt-observation", path: "observable-git-mismatch", expected: false, actual: mismatch.valid, passed: !mismatch.valid && mismatch.closeout === "incomplete", errors: mismatch.errors });
   const adoption = validateAdoption();
   results.push({ type: "adoption", path: "read-only-planner", expected: true, actual: adoption.passed, passed: adoption.passed, errors: adoption.errors });
-  return { passed: results.every((item) => item.passed), results };
+  return { scope, excluded, passed: results.every((item) => item.passed), results };
 }
 
 function validateAdoption() {
@@ -665,7 +668,9 @@ validateCommandOptions(command);
 if (command === "validate") {
   const result = validatePlugin(); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "validate-fixtures") {
-  const result = validateFixtures(); emit(result); if (!result.passed) process.exitCode = 1;
+  const scope = arg("--scope") ?? "full";
+  if (!["core", "full"].includes(scope)) fail("--scope must be core or full");
+  const result = validateFixtures(scope); emit(result); if (!result.passed) process.exitCode = 1;
 } else if (command === "validate-fixture-matrix") {
   const result = validateTask29FixtureMatrix(); emit(result); if (!result.passed) process.exitCode = 1;
 } else if (command === "validate-adoption") {

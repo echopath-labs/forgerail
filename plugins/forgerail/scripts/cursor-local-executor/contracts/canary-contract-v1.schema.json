@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://echopath-labs.dev/forgerail/cursor-local-executor/canary-contract-v1.schema.json",
+  "title": "ForgeRail Cursor Local Executor Canary Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "canaryId",
+    "mode",
+    "workspace",
+    "prompt",
+    "allowedPaths",
+    "allowedOperations",
+    "prohibitedOperations",
+    "mutationAuthorized",
+    "timeoutMs",
+    "outputFormat",
+    "expected"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "canaryId": { "type": "string", "pattern": "^[a-z][a-z0-9._:-]+$" },
+    "mode": { "enum": ["read-only", "bounded-write", "resume"] },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspaceId", "canonicalRoot", "disposableRoot", "cwd"],
+      "properties": {
+        "workspaceId": { "type": "string", "minLength": 1 },
+        "canonicalRoot": { "type": "string", "minLength": 1 },
+        "disposableRoot": { "type": "string", "minLength": 1 },
+        "cwd": { "type": "string", "minLength": 1 }
+      }
+    },
+    "prompt": { "type": "string", "minLength": 1 },
+    "allowedPaths": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "allowedOperations": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "prohibitedOperations": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "mutationAuthorized": { "type": "boolean" },
+    "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 600000 },
+    "outputFormat": { "const": "stream-json" },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["changedPaths", "fileAssertions", "validation"],
+      "properties": {
+        "changedPaths": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "fileAssertions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "equals"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "equals": { "type": "string" }
+            }
+          }
+        },
+        "validation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command", "args"],
+            "properties": {
+              "command": { "type": "string", "minLength": 1 },
+              "args": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}
