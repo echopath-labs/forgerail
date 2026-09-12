@@ -1,9 +1,6 @@
 # AGW replacement qualification
 
-This is **unreleased replacement work**, not a claim that published alpha.4 has
-passed AGW migration acceptance. The source version still identifies the release
-baseline during development; a successor must receive its own immutable version
-and release evidence before installation is recommended.
+The published [alpha.5 release](release-alpha5.md) contains self-contained AGW/WHR guidance and evidence from two user-operated explicit-source behavior trials. Its npm package identity and installation have been verified. Native Plugin activation, strict session isolation and project-specific legacy consumers remain outside that evidence; qualify each project before replacing its existing activation.
 
 ## What complete replacement means
 
@@ -49,9 +46,7 @@ replacement and never follow automatically from test or migration success.
 
 ## Installation and portable project adoption
 
-Install the qualified main Plugin once per supported Codex environment, then
-verify it in a new task. Machine installation is not tracked by a project clone.
-Do not copy the Plugin or add npm dependencies to every child repository.
+Follow the [npm installation guide](installation.md), then explicitly load the installed Skill in a fresh Agent task. Machine installation is not tracked by a project clone. Do not copy the Plugin or add npm dependencies to every child repository.
 
 Before switching activation, write the approved exact version and setup/discovery
 instructions in the existing project onboarding system. Record the expected four
@@ -61,7 +56,7 @@ evidence has shown `forgerail:forgerail`,
 `forgerail:workspace-health-review` and
 `forgerail:architecture-convergence-audit`; verify the current host instead of
 guessing a short-name resolution order. Do not claim that this historical
-discovery proves the unreleased replacement candidate was discovered.
+discovery proves alpha.5 native activation. The npm route uses explicit loading of the installed Skill paths.
 
 Keep shared workspace policy at its owner and each independent project's
 development, records and deployment policy in that project. A standalone clone

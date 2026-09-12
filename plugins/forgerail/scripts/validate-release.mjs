@@ -219,14 +219,14 @@ export function validateRelease() {
       "The public candidate is an ordinary child of the observed remote `main`.",
       "an ordinary source-first successor commit",
       "The Draft PR base and publication comparison baseline remain bound to the observed remote `main`",
-      "The merged public `main` tree must equal the final signed projection tree",
+      "The merged public `main` tree must equal the final approved projection tree",
       "Install and discover each external Capability Pack separately",
     ]],
     ["chinese", releaseChinese, [
       "公共候选是已观测远端 `main` 的普通子 commit。",
       "普通的 source-first successor commit",
       "Draft PR base 与 publication comparison baseline 继续绑定已观测远端 `main`",
-      "合并后的公共 `main` tree 必须等于最终签名 projection tree",
+      "合并后的公共 `main` tree 必须等于最终批准的 projection tree",
       "每个外部 Capability Pack 分别安装与发现",
     ]],
   ]) {

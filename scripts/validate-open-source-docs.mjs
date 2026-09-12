@@ -87,7 +87,7 @@ for (const path of requiredFiles) record(existsSync(resolve(pluginRoot, path)), 
 
 for (const path of entryFiles) {
   const content = read(path);
-  record(content.includes("0.1.0-alpha.4") && content.includes("v0.1.0-alpha.4"), `released alpha.4 identity is explicit: ${path}`);
+  record(content.includes("0.1.0-alpha.5") && content.includes("v0.1.0-alpha.5"), `released alpha.5 identity is explicit: ${path}`);
   record(!classify("release-text", content).includes("stale-release"), `no stale alpha.2 current-install claim: ${path}`);
   record(classify("public-text", content).length === 0, `no private path: ${path}`);
   record(classify("markdown-link", content, dirname(resolve(pluginRoot, path))).length === 0, `relative Markdown links resolve: ${path}`);

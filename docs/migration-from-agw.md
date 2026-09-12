@@ -1,10 +1,6 @@
 # Migration From Agent Workflow Governance
 
-**Development status:** the [replacement qualification guide](agw-replacement.md)
-and [behavior inventory](agw-replacement-coverage.json) describe unreleased work
-to make the main Plugin self-contained. They do not retroactively qualify the
-published alpha.4 package. Keep existing AGW activation until the required
-behavior, discovery and successor-release evidence is reviewed.
+**Release status:** [alpha.5](release-alpha5.md) is published with self-contained baseline guidance and verified npm installation. Review the [replacement qualification guide](agw-replacement.md) and [behavior inventory](agw-replacement-coverage.json) for project-specific requirements. Keep existing AGW activation until the selected loading route, project rules and rollback plan have been checked and adoption approved.
 
 ForgeRail does not rename AGW in place.
 
