@@ -34,7 +34,9 @@ Otherwise use `inferred` and name the smallest verification that can resolve it.
 
 ## Required output
 
-Return:
+For a capability-owner convergence audit, return the following. Engineering
+paradigm assessments use the proportionate output in
+[engineering-paradigm.md](engineering-paradigm.md).
 
 1. baseline, freshness, allowed scope, and explicit non-mutations;
 2. already-owned capability map;
@@ -55,7 +57,7 @@ operational invariants remain.
 ## Routing and stopping conditions
 
 - Route source discovery to Workspace Diagnosis.
-- Route recurring stale or drift assessment to Workspace Health.
+- Route recurring workspace-wide stale or drift signals to Workspace Health; use engineering-paradigm.md for a bounded architectural comparison against accepted project choices.
 - Route deterministic transition decisions to ForgeRail Core.
 - Stop with inference when callers, durable fact ownership, or current behavior cannot be verified.
 - Do not block an otherwise safe functional path solely for incomplete convergence evidence.

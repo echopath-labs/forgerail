@@ -4,6 +4,15 @@
 
 No shipping changes yet.
 
+## 0.1.0 - 2026-09-15
+
+First stable release for npm installation and explicit packaged-Skill loading. The main package uses the `latest` channel; optional external Packs remain at alpha.4. Native Plugin activation, Marketplace submission, standalone binaries and persisted governance remain outside this release scope.
+
+- Add optional, language-independent engineering paradigm guidance to the existing architecture audit for planning, refactor assessment and bounded drift review, using accepted project choices without imposing a directory layout or new governance owner.
+- Make `npm test` work from installed archives; retain source documentation checks in CI and the maintainer gate, and test the installed suite in the disposable consumer lifecycle.
+- Document the existing repository-local Skill snapshot route, including exact source identity, project-rule preservation, paired rollback checks and fresh-session handoff.
+- Qualify the bounded MVP path with template generation and a real project workflow adoption task, existing workflow checks, rollback and a fresh project-root session. This does not certify native Plugin activation or every host/language.
+
 ## 0.1.0-alpha.5 - 2026-09-12
 
 Published on npm as `@echopath-labs/forgerail@0.1.0-alpha.5` under `next`; `latest` remains alpha.4. See the [GitHub prerelease](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0-alpha.5). npm installation with explicit packaged-Skill loading is the current delivery route; Codex Marketplace registration and standalone binaries are deferred.

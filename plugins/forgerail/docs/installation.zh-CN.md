@@ -1,6 +1,6 @@
 # 通过 npm 安装 ForgeRail
 
-当前使用已于 2026-09-12 发布的 `@echopath-labs/forgerail@0.1.0-alpha.5`，源码 tag 为 `v0.1.0-alpha.5`。npm `next` 指向 alpha.5，`latest` 保持 alpha.4，请使用下方精确版本命令。本轮暂不进行 Codex 市场注册，原生 Plugin 激活不作为这条交付路线的门槛。
+本文面向 `@echopath-labs/forgerail@0.1.0`，源码 tag 为 `v0.1.0`，正式发布通道为 npm `latest`。预发布 `next` 通道独立保留，请使用下方精确版本命令。本轮暂不进行 Codex 市场注册，原生 Plugin 激活不作为这条交付路线的门槛。
 
 ## 环境要求
 
@@ -8,12 +8,12 @@
 
 目前没有内置Node运行时的独立二进制。npm提供的 `forgerail` 是需要Node的命令入口，不能宣称为免Node二进制。独立二进制作为后续可选分发方式，不阻塞本次npm发布。
 
-## 安装并验证 alpha.5
+## 安装并验证 0.1.0
 
-从 npm registry 安装已发布的精确版本：
+从 npm registry 安装精确版本：
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.5
+npm install --global @echopath-labs/forgerail@0.1.0
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -23,7 +23,7 @@ forgerail diagnose --workspace .
 临时调用CLI可以使用：
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0 diagnose --workspace .
 ```
 
 ## 在 Agent 中加载包内指导
@@ -56,9 +56,9 @@ npm root --global
 
 项目绑定和自动恢复需要另行满足采用要求；如果某个绑定要求原生Plugin，应先满足依赖，不能把npm安装当成该Plugin已激活。见[采用说明](adoption.zh-CN.md)。
 
-## 已发布包验证
+## 发布验证
 
-发布后匿名下载公共 npm 包，SHA-256 与批准产物一致；258 个安装文件逐一匹配。已安装 CLI 在 Node.js 22 和 24 下均通过校验与只读诊断。独立工具目录完成了一次安装和卸载，未按每个 Node.js 版本分别重复。见 [alpha.5 发布证据](release-alpha5.zh-CN.md)。
+0.1.0 发布门禁在 Node.js 22 和 24 下验证实际安装包、CLI 校验、只读诊断及包内自检。发布收尾从公共渠道回下载并比对批准产物，最终结果见[本版发布说明](release-0.1.0.zh-CN.md)及 GitHub Release。alpha.5 历史回执保留在[原发布说明](release-alpha5.zh-CN.md)。
 
 ## 升级、回退和卸载
 

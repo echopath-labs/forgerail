@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "candidateType": "openai-universal-plugin-directory",
   "submissionType": "skills_only",
-  "status": "local_alpha5_replacement_candidate",
+  "status": "local_010_candidate",
   "approval": { "type": "submission_approval", "status": "not_granted" },
   "officialBaseline": {
     "observedAt": "2026-08-30",
@@ -13,7 +13,7 @@
   },
   "plugin": {
     "id": "forgerail",
-    "version": "0.1.0-alpha.5",
+    "version": "0.1.0",
     "manifest": ".codex-plugin/plugin.json",
     "skills": [
       "forgerail",
@@ -57,8 +57,8 @@
   },
   "releaseNotes": {
     "state": "candidate",
-    "path": "./directory/release-notes-alpha5.md",
-    "value": "ForgeRail alpha.5 brings self-contained AGW/WHR guidance, portable recovery, staged-work protection and independent main-package validation. Source-loaded behavior evidence does not certify every host or project migration. Local candidate only; no Directory submission approval."
+    "path": "./directory/release-notes-0.1.0.md",
+    "value": "ForgeRail 0.1.0: stable npm and explicit Skill-loading route, optional engineering paradigm guidance and installed-package self-tests. Local catalog only; Directory submission remains deferred and unapproved."
   },
   "evaluationFile": "./directory/evaluations.json",
   "unresolvedGates": [
