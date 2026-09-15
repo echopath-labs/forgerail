@@ -14,9 +14,9 @@
   <a href="CHANGELOG.md">变更记录</a>
 </p>
 
-> **当前状态：** `0.1.0-alpha.5` 已于 2026-09-12 发布到 npm `next`；`latest` 保持 alpha.4。请使用下方精确版本安装命令。稳定版之前，接口与引导方式仍可能变化。
+> **版本：** `0.1.0`，首个面向 npm 安装与包内 Skill 显式加载的正式版。使用下方精确版本安装；原生 Plugin 激活和实验性集成不属于正式支持范围。
 
-> **alpha.5 范围：** 通用 AGW/WHR 指引已自包含，主要行为已通过显式源码加载验证。本版采用 npm 安装和 Agent 显式加载，暂不进行原生 Plugin 激活认证或 Codex 市场注册。见[发布说明](docs/release-alpha5.zh-CN.md)和[项目替代要求](docs/agw-replacement.zh-CN.md)。
+> **0.1.0 范围：** 通用 AGW/WHR 指引已自包含，主要行为已通过显式源码加载验证。本版采用 npm 安装和 Agent 显式加载，暂不进行原生 Plugin 激活认证或 Codex 市场注册。见[发布说明](docs/release-0.1.0.zh-CN.md)和[项目替代要求](docs/agw-replacement.zh-CN.md)。
 
 ## 为什么需要 ForgeRail？
 
@@ -33,12 +33,12 @@ ForgeRail 不是自动执行器，不替代 OpenSpec 或 `AGENTS.md`，不提供
 
 ## 五分钟快速开始
 
-### 1. 通过 npm 安装 alpha.5
+### 1. 通过 npm 安装 0.1.0
 
-运行环境需要 Node.js 22 或以上，安装时固定已发布的精确版本：
+运行环境需要 Node.js 22 或以上，安装时固定精确版本：
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.5
+npm install --global @echopath-labs/forgerail@0.1.0
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -68,7 +68,9 @@ ForgeRail 应该返回：
 | `$forgerail` | 启动或治理一个非简单工程任务 | 给出任务、范围、审批和验证边界 |
 | `$forgerail-workspace-diagnosis` | 需要快速理解当前工作区 | 优先沿用已有习惯的有界只读诊断 |
 | `$workspace-health-review` | 复核恢复、所有权和治理债务 | 独立的只读工作区健康复核 |
-| `$architecture-convergence-audit` | 怀疑能力重复或存在多个 owner | 独立的只读 owner 与最小边界审计 |
+| `$architecture-convergence-audit` | 评估职责重复、工程范式或限定范围的架构漂移 | 独立的只读 owner 与最小边界审计 |
+
+**0.1.0 已包含：**现有架构审计新增可选[工程范式指导](skills/architecture-convergence-audit/references/engineering-paradigm.md)，用于规划、重构评估和限定范围的架构漂移复盘。以项目已确认的选择为依据，不强制语言或目录结构，保持只读。
 
 如果其他已安装 Plugin 定义了同名短 Skill，请使用 Codex 显示的完整 namespaced Skill 名称。
 
@@ -91,7 +93,7 @@ ForgeRail 将“能力可用”和“项目采用”分开：
 | --- | --- | --- |
 | Plugin Only | 什么都不修改 | 默认方式；偶尔使用引导或诊断 |
 | Lightweight Adoption | 一个经过评审的 managed instruction block，或 `FORGERAIL.md` 绑定 | 反复使用且长期指导确有价值 |
-| Persisted Governance | 当前 alpha 延期 | 只有机器配置具有明确 owner、迁移和删除规则后才考虑 |
+| Persisted Governance | 0.1.0 不包含 | 只有机器配置具有明确 owner、迁移和删除规则后才考虑 |
 
 ForgeRail 不会自行应用 Lightweight Adoption。Agent 必须展示精确路径与内容、取得确认、保护无关内容、在新任务中验证结果并返回 Receipt。详情见[渐进式采用](docs/adoption.zh-CN.md)。
 
@@ -111,8 +113,8 @@ ForgeRail 组合四层能力，但不会要求每个项目都持久化这些层�
 npm 包为维护者和 CI 提供确定性校验与诊断，**不是** Agent Plugin 或目标项目的必需条件。
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0 validate
+npx --yes @echopath-labs/forgerail@0.1.0 diagnose --workspace .
 ```
 
 正式包是带组织 scope 的 `@echopath-labs/forgerail`。不带 scope 的 `forgerail` 只是名称占位，不是安装来源。
@@ -125,21 +127,21 @@ npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 diagnose --workspace .
 - [Pack 开发](docs/pack-authoring.md)
 - [从 Agent Workflow Governance 迁移](docs/migration-from-agw.md)
 - [架构验收](docs/architecture-acceptance.md)
-- [alpha.5 发布说明](docs/release-alpha5.zh-CN.md)
+- [0.1.0 发布说明](docs/release-0.1.0.zh-CN.md)
 
 实验性的 [Cursor 本地 Executor Canary](docs/cursor-local-executor-canary.zh-CN.md)只验证 disposable repository 中逐项本地 CLI 能力，不会把 Cursor 全局 adapter 提升到 `profile-only` 以上。
 
 ## 项目状态
 
-ForgeRail alpha.5 已通过 npm 提供包内 Skill，可由 Agent 显式加载。从 Plugin Only 开始，持久项目绑定另行评审：
+ForgeRail 0.1.0 通过 npm 分发包内 Skill，由 Agent 显式加载。从 Plugin Only 开始，持久项目绑定另行评审：
 
-- Codex 可显式加载包内指导；alpha.5 原生 Plugin 激活尚未验证。Claude Code 和 Cursor adapter 仍为 `profile-only`；
+- Codex 可显式加载包内指导；原生 Plugin 激活尚未验证。Claude Code 和 Cursor adapter 仍为 `profile-only`；
 - 持久化 `.forgerail/` 治理仍延期；
 - 外部 Capability Packs 继续独立安装、显式调用；
 - 当前采用 npm 安装，Codex 市场注册与 Universal Plugins Directory 上架暂缓；
 - 缺陷通过新版本 forward fix，不改写已发布 tag 或 package。
 
-参见 [alpha.5 prerelease](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0-alpha.5)和[变更记录](CHANGELOG.md)。
+参见 [0.1.0 正式版](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0)和[变更记录](CHANGELOG.md)。
 
 ## 贡献与支持
 

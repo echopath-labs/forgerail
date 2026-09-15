@@ -1,21 +1,31 @@
 {
   "schemaVersion": "1.0",
   "id": "architecture-convergence-audit",
-  "purpose": "Trace capability ownership and return the smallest evidence-backed implementation boundary without changing the workspace.",
+  "purpose": "Assess engineering structure, accepted architecture choices and duplicate ownership; recommend the smallest useful change without changing the workspace.",
   "entry": "skills/architecture-convergence-audit/SKILL.md",
   "risk": "medium",
-  "states": ["available", "recommended", "enabled", "required", "blocked", "disabled"],
+  "states": [
+    "available",
+    "recommended",
+    "enabled",
+    "required",
+    "blocked",
+    "disabled"
+  ],
   "triggers": [
     "explicit architecture convergence request",
     "mature capability appears rebuilt in a new context",
-    "duplicate identity state recovery parser or schema ownership signal"
+    "duplicate identity state recovery parser or schema ownership signal",
+    "explicit engineering paradigm planning or refactor assessment",
+    "bounded architectural drift review against project choices"
   ],
   "inputs": [
     "requested outcomes and non-goals",
     "reproducible baseline and freshness",
     "governance source inventory",
     "effective profile and task envelope",
-    "implementation callers persistence lifecycle and validation evidence"
+    "implementation callers persistence lifecycle and validation evidence",
+    "accepted project architecture choices, proposals and any unresolved baseline"
   ],
   "dependencies": [],
   "conflicts": [],
@@ -24,7 +34,13 @@
     "analysis remains read-only and labels inference",
     "ownership map traces durable facts and current consumers",
     "deletion recommendations preserve required invariants and failure coverage",
-    "no profile task ledger receipt state or external tracker is created"
+    "no profile task ledger receipt state or external tracker is created",
+    "paradigm guidance does not impose a language framework or directory layout",
+    "drift requires accepted choices; missing baseline remains an initial assessment"
   ],
-  "receiptExtensions": ["convergenceStatus", "ownershipMap", "remainingBoundary"]
+  "receiptExtensions": [
+    "convergenceStatus",
+    "ownershipMap",
+    "remainingBoundary"
+  ]
 }

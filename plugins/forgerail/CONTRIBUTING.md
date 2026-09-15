@@ -12,18 +12,27 @@ Search existing issues first. Do not include credentials, private project memory
 
 ## Development setup
 
-ForgeRail's public package uses Node.js 22 or newer for deterministic validation and fixtures:
+From a ForgeRail source checkout, use Node.js 22 or newer for deterministic validation and fixtures:
 
 ```bash
 npm ci
 npm test
+npm run test:docs
 ```
 
-`npm test` is the main-package suite: it runs without adjacent external Packs.
+`npm test` is the main-package suite: it runs from both a source checkout and
+an installed npm package, without adjacent external Packs or GitHub templates.
 Its fixture result reports `scope: core` and explicitly lists excluded external
 composition coverage. It does not qualify combined publication or host behavior.
 
-`npm run test:maintainer` is the full source/release gate and is also the
+`npm run test:docs` checks source documentation, including `.github/` templates
+that are intentionally excluded from npm installations. Run it in a source
+checkout; missing source files remain failures. Source CI runs it separately,
+and the disposable consumer test runs `npm test` from the actual installed
+archive to protect the package-only path.
+
+`npm run test:maintainer` includes the documentation check, is the full
+source/release gate, and is also the
 `prepublishOnly` hook. It requires `tools/lib/bundle.mjs` and all four source
 Packs (`forgerail-cross-workspace-orchestration`, `forgerail-github-rulesets`,
 `forgerail-release-safety`, `forgerail-thread-closure`) beside the main Plugin

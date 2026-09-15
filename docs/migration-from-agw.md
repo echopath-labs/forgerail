@@ -1,6 +1,6 @@
 # Migration From Agent Workflow Governance
 
-**Release status:** [alpha.5](release-alpha5.md) is published with self-contained baseline guidance and verified npm installation. Review the [replacement qualification guide](agw-replacement.md) and [behavior inventory](agw-replacement-coverage.json) for project-specific requirements. Keep existing AGW activation until the selected loading route, project rules and rollback plan have been checked and adoption approved.
+**Release line:** [0.1.0](release-0.1.0.md) provides self-contained guidance, npm installation and a validated project-local snapshot adoption route. Review the [replacement qualification guide](agw-replacement.md) and [behavior inventory](agw-replacement-coverage.json) for project-specific requirements. Keep existing AGW activation until the selected loading route, project rules and rollback plan have been checked and adoption approved.
 
 ForgeRail does not rename AGW in place.
 

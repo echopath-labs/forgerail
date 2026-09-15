@@ -14,9 +14,9 @@
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Status:** `0.1.0-alpha.5` was published on 2026-09-12 under npm `next`; `latest` remains alpha.4. Install the exact version below. Interfaces and guidance can change before a stable release.
+> **Release line:** `0.1.0`, the first stable npm release with explicit packaged-Skill loading. Install the exact version below; native Plugin activation and experimental integrations remain outside the stable support boundary.
 
-> **Alpha.5 scope:** Generic AGW/WHR guidance is self-contained, and principal behaviors have been verified with explicit source loading. Use npm installation and explicit Agent loading; native Plugin activation and Codex Marketplace registration are deferred. See the [release notes](docs/release-alpha5.md) and [project replacement requirements](docs/agw-replacement.md).
+> **0.1.0 scope:** Generic AGW/WHR guidance is self-contained, and principal behaviors have been verified with explicit source loading. Use npm installation and explicit Agent loading; native Plugin activation and Codex Marketplace registration are deferred. See the [release notes](docs/release-0.1.0.md) and [project replacement requirements](docs/agw-replacement.md).
 
 ## Why ForgeRail?
 
@@ -33,12 +33,12 @@ ForgeRail is not an autonomous executor, a replacement for OpenSpec or `AGENTS.m
 
 ## Five-minute quickstart
 
-### 1. Install alpha.5 with npm
+### 1. Install 0.1.0 with npm
 
-Use Node.js 22 or newer and pin the published version explicitly:
+Use Node.js 22 or newer and pin the version explicitly:
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.0-alpha.5
+npm install --global @echopath-labs/forgerail@0.1.0
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -68,7 +68,9 @@ If it writes files, creates `.forgerail/`, performs a remote action, or treats i
 | `$forgerail` | Starting or governing a non-trivial engineering task | Guidance, scope, approval, and verification boundaries |
 | `$forgerail-workspace-diagnosis` | You need a bounded picture of the current workspace | Read-only diagnosis that follows existing habits first |
 | `$workspace-health-review` | You want to review recovery, ownership, and governance debt | Independent read-only health review |
-| `$architecture-convergence-audit` | You suspect duplicated capabilities or competing owners | Independent read-only ownership and minimal-boundary audit |
+| `$architecture-convergence-audit` | You need ownership, engineering paradigm or bounded drift assessment | Independent read-only ownership and minimal-boundary audit |
+
+**Included in 0.1.0:** the existing architecture audit also offers optional [engineering paradigm guidance](skills/architecture-convergence-audit/references/engineering-paradigm.md) for planning, refactor assessment and bounded drift review. It uses project-accepted choices, does not prescribe a language or directory layout, and remains read-only.
 
 Use the exact namespaced Skill name shown by Codex if another installed Plugin defines a Skill with the same short name.
 
@@ -91,7 +93,7 @@ ForgeRail separates **availability** from **project adoption**:
 | --- | --- | --- |
 | Plugin Only | Nothing | Default; occasional guidance and diagnosis |
 | Lightweight Adoption | One reviewed managed instruction block or `FORGERAIL.md` binding | Repeated use where durable guidance adds value |
-| Persisted Governance | Deferred in the current alpha | Only after machine-consumed configuration has evidence-backed ownership and migration rules |
+| Persisted Governance | Deferred beyond 0.1.0 | Only after machine-consumed configuration has evidence-backed ownership and migration rules |
 
 ForgeRail never applies a Lightweight Adoption plan by itself. The agent must show exact paths and content, obtain confirmation, preserve unrelated content, verify the result in a new task, and return a receipt. Read [Progressive Adoption](docs/adoption.md) for details.
 
@@ -111,8 +113,8 @@ Host instruction files are adapters, not ForgeRail Core. OpenSpec, ADRs, project
 The npm package exposes deterministic validation and diagnosis for maintainers and CI. It is **not** required for the Agent Plugin or target project.
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 validate
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.0 validate
+npx --yes @echopath-labs/forgerail@0.1.0 diagnose --workspace .
 ```
 
 The official package is scoped. The unscoped `forgerail` package is only a reservation and is not an install source.
@@ -125,21 +127,21 @@ The official package is scoped. The unscoped `forgerail` package is only a reser
 - [Pack authoring](docs/pack-authoring.md)
 - [Migration from Agent Workflow Governance](docs/migration-from-agw.md)
 - [Architecture acceptance](docs/architecture-acceptance.md)
-- [Alpha.5 release notes](docs/release-alpha5.md)
+- [0.1.0 release notes](docs/release-0.1.0.md)
 
 The experimental [Cursor Local Executor Canary](docs/cursor-local-executor-canary.md) validates capability-scoped local CLI behavior in disposable repositories. It does not promote the global Cursor adapter beyond `profile-only`.
 
 ## Project status
 
-ForgeRail alpha.5 is available through npm and explicit loading of the packaged Skills. Start with Plugin Only; review any durable project binding separately:
+ForgeRail 0.1.0 uses npm distribution and explicit loading of the packaged Skills. Start with Plugin Only; review any durable project binding separately:
 
-- Codex can load packaged guidance explicitly; alpha.5 native Plugin activation is unverified. Claude Code and Cursor adapters remain `profile-only`.
+- Codex can load packaged guidance explicitly; native Plugin activation is unverified. Claude Code and Cursor adapters remain `profile-only`.
 - Persisted `.forgerail/` governance is deferred.
 - External Capability Packs remain separately installed and explicitly invoked.
 - npm installation is the current route; Codex Marketplace registration and Universal Plugins Directory publication are deferred.
 - Defects are fixed forward in a new version; published tags and packages are not rewritten.
 
-See the [alpha.5 prerelease](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0-alpha.5) and [changelog](CHANGELOG.md).
+See the [0.1.0 release](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.0) and [changelog](CHANGELOG.md).
 
 ## Contributing and support
 

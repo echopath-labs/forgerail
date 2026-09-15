@@ -56,6 +56,9 @@ const pack = JSON.parse(run("npm", ["pack", root, "--json"], base))[0];
 const tarball = resolve(base, pack.filename);
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball]);
 const cli = resolve(consumer, "node_modules/.bin/forgerail");
+// Test the actual publication allowlist, not a source copy with .github files.
+run("npm", ["test"], installedPackageRoot);
+const installedMainSuite = true;
 const firstValidation = JSON.parse(run(cli, ["validate"]));
 const before = JSON.stringify(snapshot(target));
 const diagnosis = JSON.parse(run(cli, ["diagnose", "--workspace", target]));
@@ -110,6 +113,7 @@ const result = {
   sourceVersion: pack.version,
   tarball: { files: pack.entryCount, bytes: pack.size, shasum: pack.shasum, integrity: pack.integrity },
   install: firstValidation.valid,
+  installedMainSuite,
   binaryShim: cli.endsWith("node_modules/.bin/forgerail"),
   priorInstall: priorInstalled,
   discovery: firstValidation.skills,
@@ -131,6 +135,6 @@ const result = {
   uninstall: !existsSync(installedPackageRoot),
   disposableRoot: "[disposable]",
 };
-result.passed = result.priorInstall && result.install && result.binaryShim && result.diagnosis && result.targetUnchangedByDiagnosis && result.adoptionPlan && result.targetUnchangedByPlanner && result.explicitApprovedWrite && result.equivalentNewTaskDiscovery && result.bindingReceipt && result.noPersistedGovernance && result.launch && result.upgrade && result.rollback && result.reinstall && result.installedIntegrity && result.uninstall;
+result.passed = result.installedMainSuite && result.priorInstall && result.install && result.binaryShim && result.diagnosis && result.targetUnchangedByDiagnosis && result.adoptionPlan && result.targetUnchangedByPlanner && result.explicitApprovedWrite && result.equivalentNewTaskDiscovery && result.bindingReceipt && result.noPersistedGovernance && result.launch && result.upgrade && result.rollback && result.reinstall && result.installedIntegrity && result.uninstall;
 console.log(JSON.stringify(result, null, 2));
 if (!result.passed) process.exitCode = 1;

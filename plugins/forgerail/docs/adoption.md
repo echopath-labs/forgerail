@@ -2,7 +2,7 @@
 
 ForgeRail separates **installation**, **availability**, **project adoption**, and **execution approval**. Installing the Plugin exposes guidance to the Agent; it does not edit workspace instructions, create durable state, enable Capability Packs, or authorize external effects.
 
-This guide accompanies the published `0.1.0-alpha.5` / `v0.1.0-alpha.5` release. Follow the [npm installation guide](installation.md) and explicitly load the packaged Skills. npm installation does not register a native Plugin; any binding that requires native discovery must have that prerequisite verified separately.
+This guide accompanies `0.1.0` / `v0.1.0` release. Follow the [npm installation guide](installation.md) and explicitly load the packaged Skills. npm installation does not register a native Plugin; any binding that requires native discovery must have that prerequisite verified separately.
 
 Start with Plugin Only. Move up only when repeated evidence shows that a small durable project binding is more useful than asking explicitly each time.
 
@@ -29,13 +29,13 @@ The optional planner is read-only:
 
 ```bash
 # Default: resolve only registered hosts detected in this workspace.
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 adoption-plan --workspace . --selection all-detected
+npx --yes @echopath-labs/forgerail@0.1.0 adoption-plan --workspace . --selection all-detected
 
 # Explicit subset chosen from the validated Host Adapter Registry.
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.0 adoption-plan --workspace . --host codex
 
 # Every adapter in the current validated registry.
-npx --yes @echopath-labs/forgerail@0.1.0-alpha.5 adoption-plan --workspace . --selection all-available
+npx --yes @echopath-labs/forgerail@0.1.0 adoption-plan --workspace . --selection all-available
 ```
 
 Read-only diagnosis never follows links inside the selected workspace. It reads only bounded regular `package.json` and registered Host binding files, with a 4 MiB per-file limit; opened paths are revalidated against the canonical workspace before content is consumed. Unsafe, changed, non-regular, or oversized entries are reported as unavailable evidence for human review. A Markdown record practice is reported only when a safely confined well-known directory contains at least one bounded regular `.md` file; enumeration is capped at 4,096 entries, and empty, oversized, linked, or non-regular evidence is not treated as an ADR practice.
@@ -54,7 +54,7 @@ Before approving or applying **any** write from a received plan, validate the co
 
 ## Level 2 — Persisted Governance
 
-Persisted machine-consumed ForgeRail state is deferred in the current alpha. It should be considered only when important evidence cannot be represented coherently through existing project sources, such as repeated cross-host conflicts or genuinely machine-enforced policy.
+Persisted machine-consumed ForgeRail state is deferred beyond 0.1.0. It should be considered only when important evidence cannot be represented coherently through existing project sources, such as repeated cross-host conflicts or genuinely machine-enforced policy.
 
 ForgeRail does not create `.forgerail/` at this level today. A future design must define ownership, precedence, migration, recovery, and deletion before enabling it.
 
@@ -62,7 +62,7 @@ ForgeRail does not create `.forgerail/` at this level today. A future design mus
 
 | Host | Native target | Adapter status | Verification boundary |
 | --- | --- | --- | --- |
-| Codex | `AGENTS.md` | `supported` | Registry status retained; alpha.5 native activation is unverified. Verify the selected loading route and approved binding in a fresh task |
+| Codex | `AGENTS.md` | `supported` | Registry status retained; 0.1.0 native activation is unverified. Verify the selected loading route and approved binding in a fresh task |
 | Claude Code | `CLAUDE.md` | `profile-only` | Target and thin binding are modeled; end-to-end activation is not claimed |
 | Cursor | `.cursor/rules/forgerail.mdc` | `profile-only` | Target is modeled; Skill discovery and end-to-end activation are not claimed |
 
@@ -86,3 +86,9 @@ A Lightweight Adoption is complete only when:
 Uninstalling the Plugin does not silently remove adopted instructions. Revise or remove managed blocks through another exact, reviewed plan so unrelated project content is preserved.
 
 For normal use, begin with the [installation guide](installation.md) and stay at Plugin Only until a real project need appears.
+
+## Repository-local Skill snapshots
+
+Projects that already version local Skills may copy the four unmodified `skills/` trees from an exact, hash-verified npm archive into their existing Skill directory. Preserve LICENSE/NOTICE outside those trees; record the version/archive identity in the existing lock or onboarding record. Point the root instruction file to the local Core Skill, retain project rules, and remove the competing AGW activation only within approved adoption scope. Use existing snapshot/contract checks and verify a fresh session rooted at the project; explicit file loading is sufficient for this route.
+
+This does not activate Pack state machinery or require copying all schemas/adapters. Rollback must include paired instruction files, lock/snapshot records, check scripts and tests, licensing, and adoption-specific navigation/generator edits. Review the fixed adoption diff and later adoption corrections; preserve unrelated later edits instead of resetting the repository.
