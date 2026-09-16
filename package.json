@@ -1,6 +1,6 @@
 {
   "name": "@echopath-labs/forgerail",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
   "license": "Apache-2.0",
   "type": "module",
@@ -50,7 +50,7 @@
     "test:scope": "node --test scripts/validation-scope.test.mjs",
     "test:maintainer": "npm test && npm run test:docs && node scripts/forgerail.mjs validate-fixtures --scope full && npm run test:integrity && npm run test:shadow && npm run test:release && npm run test:consumer && npm run test:directory",
     "test:adoption": "node --test scripts/adoption-closeout-regressions.mjs",
-    "test:reliability": "node --test scripts/reliability-regressions.mjs scripts/adoption-reliability-regressions.mjs"
+    "test:reliability": "node --test scripts/reliability-regressions.mjs scripts/adoption-reliability-regressions.mjs scripts/local-observation-regressions.mjs"
   },
   "repository": {
     "type": "git",

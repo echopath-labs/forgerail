@@ -4,6 +4,14 @@
 
 No shipping changes yet.
 
+## 0.1.2 - 2026-09-16
+
+Local observation and Envelope validation patch candidate. Publication is confirmed by npm and the versioned GitHub Release. See [release notes](docs/release-0.1.2.md) and [compatibility details](docs/reliability.md).
+
+- Make local receipt observation independent of untracked-file display preferences; distinguish damaged Git metadata from ordinary non-Git directories.
+- Disable Git fsmonitor, optional index writes and lazy object retrieval during receipt observation. Return unavailable for active external clean/process filters, submodules, hidden index entries or non-UTF-8 Git output instead of certifying clean. Unused filter configuration remains supported.
+- Return field diagnostics for malformed Envelope operations, including embedded Launch inputs, before semantic checks.
+
 ## 0.1.1 - 2026-09-16
 
 Reliability patch candidate; publication is confirmed by npm and the versioned GitHub Release. See [release notes](docs/release-0.1.1.md) and [compatibility details](docs/reliability.md).

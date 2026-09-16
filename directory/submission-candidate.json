@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "candidateType": "openai-universal-plugin-directory",
   "submissionType": "skills_only",
-  "status": "local_011_candidate",
+  "status": "local_012_candidate",
   "approval": { "type": "submission_approval", "status": "not_granted" },
   "officialBaseline": {
     "observedAt": "2026-08-30",
@@ -13,7 +13,7 @@
   },
   "plugin": {
     "id": "forgerail",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "manifest": ".codex-plugin/plugin.json",
     "skills": [
       "forgerail",
@@ -57,8 +57,8 @@
   },
   "releaseNotes": {
     "state": "candidate",
-    "path": "./directory/release-notes-0.1.1.md",
-    "value": "ForgeRail 0.1.1: receipt, Profile and approved binding reliability fixes. Local catalog only; Directory submission remains deferred and unapproved."
+    "path": "./directory/release-notes-0.1.2.md",
+    "value": "ForgeRail 0.1.2: Git observation and Envelope validation fixes. Local catalog only; Directory submission remains deferred and unapproved."
   },
   "evaluationFile": "./directory/evaluations.json",
   "unresolvedGates": [

@@ -112,4 +112,4 @@ Be respectful and follow the [Code of Conduct](CODE_OF_CONDUCT.md). Usage questi
 
 Unless stated otherwise, contributions are accepted under the [Apache License 2.0](LICENSE).
 
-Receipt/Profile and approved-write compatibility changes for the 0.1.1 candidate are described in [reliability notes](docs/reliability.md). The immutable 0.1.0 package is unchanged; publication of the candidate requires separate release approval.
+Receipt observation, Envelope, Profile and approved-write compatibility details through the 0.1.2 candidate are described in [reliability notes](docs/reliability.md). The immutable 0.1.0 package is unchanged; publication of the candidate requires separate release approval.
