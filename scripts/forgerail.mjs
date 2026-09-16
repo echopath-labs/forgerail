@@ -11,7 +11,7 @@ import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-function fail(message) { console.error(`forgerail: ${message}`); process.exit(1); }
+function fail(message, code = "INVALID_INPUT") { emit({ valid: false, code, errors: [message] }); process.exit(1); }
 function emit(value) { console.log(JSON.stringify(value, null, 2)); }
 function optionValues(name) {
   const values = [];
@@ -266,7 +266,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.0") errors.push("Plugin version must be 0.1.0");
+  if (manifest.version !== "0.1.1") errors.push("Plugin version must be 0.1.1");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -663,6 +663,7 @@ function validateAdoption() {
   return { passed: errors.length === 0, errors, adapters: registry.adapters.map(({ id, status }) => ({ id, status })), single, multi };
 }
 
+try {
 const [command] = process.argv.slice(2);
 validateCommandOptions(command);
 if (command === "validate") {
@@ -711,3 +712,8 @@ if (command === "validate") {
   if (!receipt || !workspace) fail("verify-receipt requires --receipt and --workspace");
   const result = verifyReceipt(readJson(resolve(receipt)), workspace); emit(result); if (!result.valid) process.exitCode = 1;
 } else fail("usage: forgerail.mjs validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");
+
+} catch (error) {
+  const code = error instanceof SyntaxError ? "INVALID_JSON" : ["ENOENT", "EACCES", "EPERM", "EISDIR", "ENOTDIR"].includes(error.code) ? "INPUT_UNAVAILABLE" : "INTERNAL_ERROR";
+  fail(`${error.code && !error.message.startsWith(`${error.code}: `) ? `${error.code}: ` : ""}${error.message}`, code);
+}

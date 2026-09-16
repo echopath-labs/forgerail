@@ -69,10 +69,11 @@ function exactKeys(value, required, optional, label, errors) {
     errors.push(`${label} must be an object`);
     return false;
   }
+  const before = errors.length;
   for (const key of required) if (!Object.hasOwn(value, key)) errors.push(`${label}.${key} is required`);
   const allowed = new Set([...required, ...optional]);
   for (const key of Object.keys(value)) if (!allowed.has(key)) errors.push(`${label}.${key} is unsupported`);
-  return true;
+  return errors.length === before;
 }
 
 function string(value, label, errors, pattern) {
@@ -191,6 +192,7 @@ function validatePack(value, errors) {
 
 function validateProfile(value, errors) {
   if (!exactKeys(value, ["schemaVersion", "workspace", "computed", "rules", "packs", "conflicts"], [], "profile", errors)) return;
+  const before = errors.length;
   schemaVersion(value.schemaVersion, "profile", errors);
   string(value.workspace, "profile.workspace", errors);
   if (value.computed !== true) errors.push("profile.computed must equal true");
@@ -212,6 +214,8 @@ function validateProfile(value, errors) {
     string(pack.reason, `${label}.reason`, errors);
   });
   strings(value.conflicts, "profile.conflicts", errors);
+  // Semantic checks require the entire collection shape, including its elements.
+  if (errors.length !== before) return;
   const ids = value.rules?.map((rule) => rule.id) ?? [];
   if (new Set(ids).size !== ids.length) errors.push("profile.rules contains duplicate ids");
   const profilePacks = object(value.packs) ? Object.entries(value.packs) : [];
