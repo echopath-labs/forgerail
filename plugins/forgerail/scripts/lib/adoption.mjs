@@ -5,12 +5,14 @@ import {
   existsSync,
   fchmodSync,
   fstatSync,
+  ftruncateSync,
   fsyncSync,
   linkSync,
   lstatSync,
   mkdirSync,
   openSync,
   readFileSync,
+  readSync,
   readdirSync,
   realpathSync,
   renameSync,
@@ -533,13 +535,47 @@ function renderApprovedWriteContent(write, prior) {
   const content = approvedContent(write);
   if (write.operation === "create") return content;
   if (sha256(prior) !== write.baseSha256) throw new Error(`base digest drifted for ${write.path}`);
-  if (write.operation === "append-managed-block") return `${prior.replace(/\s*$/, "")}\n\n${content}`;
+  if (write.operation === "append-managed-block") return `${prior}${prior.length === 0 ? "" : prior.endsWith("\n\n") || prior.endsWith("\r\n\r\n") ? "" : prior.endsWith("\n") ? "\n" : "\n\n"}${content}`;
   const start = `<!-- ${write.managedMarker}:start -->`;
   const end = `<!-- ${write.managedMarker}:end -->`;
+  if (countLiteralOccurrences(content, start) !== 1 || countLiteralOccurrences(content, end) !== 1 || content.indexOf(start) > content.indexOf(end)) {
+    throw new Error(`approved content must contain exactly one ordered managed boundary for ${write.path}`);
+  }
   const startIndex = prior.indexOf(start);
   const endIndex = prior.indexOf(end, startIndex);
   if (startIndex < 0 || endIndex < 0) throw new Error(`managed block is missing for ${write.path}`);
-  return `${prior.slice(0, startIndex)}${content}${prior.slice(endIndex + end.length)}`;
+  // The existing suffix owns its newline; template trailing newlines do not.
+  const managedEnd = content.indexOf(end) + end.length;
+  return `${prior.slice(0, startIndex)}${content.slice(0, managedEnd)}${prior.slice(endIndex + end.length)}`;
+}
+
+function readSourceVersion(descriptor) {
+  const before = fstatSync(descriptor);
+  const bytes = Buffer.alloc(before.size);
+  let offset = 0;
+  while (offset < bytes.length) {
+    const count = readSync(descriptor, bytes, offset, bytes.length - offset, offset);
+    if (count === 0) throw new Error("adoption source changed during read");
+    offset += count;
+  }
+  const after = fstatSync(descriptor);
+  if (before.size !== after.size || before.mtimeMs !== after.mtimeMs || before.ctimeMs !== after.ctimeMs) throw new Error("adoption source changed during read");
+  return { bytes, metadata: after };
+}
+
+function sourceMatches(version, baseline, digest, detached = false) {
+  return version.metadata.size === baseline.size && version.metadata.mtimeMs === baseline.mtimeMs
+    && (detached || version.metadata.ctimeMs === baseline.ctimeMs) && sha256(version.bytes) === digest;
+}
+
+function targetContentMatches(path, identity, content) {
+  let descriptor;
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    if (!sameFile(fstatSync(descriptor), identity)) return false;
+    return readSourceVersion(descriptor).bytes.equals(Buffer.from(content, "utf8"));
+  } catch { return false; }
+  finally { if (descriptor !== undefined) closeSync(descriptor); }
 }
 
 export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest, testHooks = {}) {
@@ -556,6 +592,10 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
     const temporary = `.forgerail-${identity}.tmp`;
     let backup;
     let sourceDescriptor;
+    let backupDescriptor;
+    let lockDescriptor;
+    let lockStat;
+    const lockPath = `.forgerail-${sha256(approvedWrite.path).slice(0, 24)}.lock`;
     let temporaryDescriptor;
     let directoryDescriptor;
     let temporaryExists = false;
@@ -565,8 +605,34 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
     let preserveBackup = false;
     let temporaryStat;
     let sourceStat;
+    let originalBytes;
     let content;
+    const sourceRecovery = `.forgerail-${identity}.source`;
+    let sourceRecoveryExists = false;
+    let preserveSourceRecovery = false;
+    const refreshRecovery = () => {
+      const latest = readSourceVersion(sourceDescriptor);
+      if (sourceMatches(latest, sourceStat, approvedWrite.baseSha256, true)) return false;
+      ftruncateSync(backupDescriptor, 0);
+      let offset = 0;
+      while (offset < latest.bytes.length) {
+        const count = writeSync(backupDescriptor, latest.bytes, offset, latest.bytes.length - offset, offset);
+        if (count <= 0) throw new Error("adoption recovery write made no progress");
+        offset += count;
+      }
+      fsyncSync(backupDescriptor);
+      return true;
+    };
     try {
+      try {
+        lockDescriptor = openSync(lockPath, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+      } catch (error) {
+        if (error.code === "EEXIST") throw new Error(`adoption target is locked; inspect an in-progress or interrupted write: ${approvedWrite.path}`);
+        throw error;
+      }
+      lockStat = fstatSync(lockDescriptor);
+      writeAll(lockDescriptor, JSON.stringify({ pid: process.pid, path: approvedWrite.path, approvalSha256: approvedWriteDigest }));
+      fsyncSync(lockDescriptor);
       const pathStat = linkAwareStat(leaf);
       if (creating) {
         if (pathStat !== null) throw new Error(`adoption target changed before write: ${approvedWrite.path}`);
@@ -582,8 +648,17 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         }
         const observed = realpathSync(leaf);
         if (!confined(root, observed)) throw new Error(`adoption target escapes workspace before write: ${approvedWrite.path}`);
-        const current = readFileSync(sourceDescriptor, "utf8");
+        const source = readSourceVersion(sourceDescriptor);
+        sourceStat = source.metadata;
+        originalBytes = source.bytes;
+        const current = originalBytes.toString("utf8");
+        if (!Buffer.from(current, "utf8").equals(originalBytes)) throw new Error(`adoption target is not valid UTF-8: ${approvedWrite.path}`);
         content = renderApprovedWriteContent(approvedWrite, current);
+        if (content === current) {
+          verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
+          if (!targetContentMatches(leaf, sourceStat, current)) throw new Error(`adoption source drifted before no-op: ${approvedWrite.path}`);
+          return { path: approvedWrite.path, contentSha256: sha256(content), unchanged: true };
+        }
       }
 
       const mode = creating ? 0o644 : sourceStat.mode & 0o777;
@@ -613,12 +688,18 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         }
         backup = `.forgerail-${randomBytes(12).toString("hex")}.bak`;
         if (linkAwareStat(backup) !== null) throw new Error(`adoption recovery path already exists: ${approvedWrite.path}`);
-        linkSync(leaf, backup);
+        // An independent snapshot must not share edits to the original inode.
+        backupDescriptor = openSync(backup, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, mode);
         backupExists = true;
-        const detached = lstatSync(backup);
-        if (detached.isSymbolicLink() || !sameFile(sourceStat, detached)) {
-          throw new Error(`adoption target changed while preparing replacement: ${approvedWrite.path}`);
-        }
+        fchmodSync(backupDescriptor, mode);
+        writeAll(backupDescriptor, originalBytes);
+        fsyncSync(backupDescriptor);
+        // Keep the original inode reachable if a late edit cannot be snapshotted.
+        linkSync(leaf, sourceRecovery);
+        sourceRecoveryExists = true;
+        if (!sameFile(lstatSync(sourceRecovery), sourceStat)) throw new Error(`adoption target changed while preparing recovery: ${approvedWrite.path}`);
+        sourceStat = fstatSync(sourceDescriptor); // Our hard link changes ctime.
+        fsyncSync(directoryDescriptor);
         const beforeReplace = lstatSync(leaf);
         if (beforeReplace.isSymbolicLink() || !sameFile(sourceStat, beforeReplace)) {
           throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
@@ -628,16 +709,26 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         if (installPathStat.isSymbolicLink() || !sameFile(sourceStat, installPathStat)) {
           throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
         }
+        if (!sourceMatches(readSourceVersion(sourceDescriptor), sourceStat, approvedWrite.baseSha256)) throw new Error(`adoption source drifted before replace: ${approvedWrite.path}`);
+        const checkedPath = lstatSync(leaf);
+        if (checkedPath.isSymbolicLink() || !sameFile(sourceStat, checkedPath)) throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
         renameSync(temporary, leaf);
         temporaryExists = false;
         replacementInstalled = true;
       }
       if (typeof testHooks.afterInstall === "function") testHooks.afterInstall();
+      if (!creating) {
+        // Our rename detaches the old inode and itself changes ctime/link count.
+        if (refreshRecovery()) {
+          throw new Error(`adoption source drifted during replace: ${approvedWrite.path}`);
+        }
+      }
       verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
       const installed = linkAwareStat(leaf);
       if (installed === null || installed.isSymbolicLink() || !sameFile(temporaryStat, installed)) {
         throw new Error(`adoption target identity mismatch after write: ${approvedWrite.path}`);
       }
+      if (!targetContentMatches(leaf, temporaryStat, content)) throw new Error(`adoption target content changed after write: ${approvedWrite.path}`);
       fsyncSync(directoryDescriptor);
       if (creating) {
         unlinkSync(temporary);
@@ -652,12 +743,19 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
     } catch (error) {
       if (replacementInstalled && backupExists) {
         try {
+          // Hooks and OS errors can fail before the normal post-install check.
+          try { refreshRecovery(); }
+          catch (recoveryError) {
+            preserveSourceRecovery = sourceRecoveryExists;
+            preserveBackup = true;
+            throw recoveryError;
+          }
           const installed = linkAwareStat(leaf);
           if (installed === null) {
             renameSync(backup, leaf);
             backupExists = false;
             replacementInstalled = false;
-          } else if (temporaryStat !== undefined && !installed.isSymbolicLink() && sameFile(temporaryStat, installed)) {
+          } else if (temporaryStat !== undefined && !installed.isSymbolicLink() && sameFile(temporaryStat, installed) && targetContentMatches(leaf, temporaryStat, content)) {
             renameSync(backup, leaf);
             backupExists = false;
             replacementInstalled = false;
@@ -671,7 +769,7 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
       } else if (createdTarget) {
         try {
           const installed = lstatSync(leaf);
-          if (temporaryStat !== undefined && sameFile(temporaryStat, installed)) unlinkSync(leaf);
+          if (temporaryStat !== undefined && sameFile(temporaryStat, installed) && targetContentMatches(leaf, temporaryStat, content)) unlinkSync(leaf);
         } catch {}
       }
       if (preserveBackup && backup !== undefined && error instanceof Error) {
@@ -679,9 +777,11 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         const recoveryPath = parent === "." ? backup : `${parent}/${backup}`;
         error.message = `${error.message}; recovery evidence retained at ${recoveryPath}`;
       }
+      if (preserveSourceRecovery && error instanceof Error) error.message += `; original source retained at ${resolve(boundParent, sourceRecovery)}`;
       throw error;
     } finally {
       if (sourceDescriptor !== undefined) closeSync(sourceDescriptor);
+      if (backupDescriptor !== undefined) closeSync(backupDescriptor);
       if (temporaryDescriptor !== undefined) closeSync(temporaryDescriptor);
       if (directoryDescriptor !== undefined) closeSync(directoryDescriptor);
       if (temporaryExists) {
@@ -689,6 +789,14 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
       }
       if (backupExists && !preserveBackup) {
         try { unlinkSync(backup); } catch {}
+      }
+      if (sourceRecoveryExists && !preserveSourceRecovery) {
+        try { unlinkSync(sourceRecovery); } catch {}
+      }
+      if (lockDescriptor !== undefined) {
+        closeSync(lockDescriptor);
+        const currentLock = linkAwareStat(lockPath);
+        if (currentLock !== null && !currentLock.isSymbolicLink() && sameFile(lockStat, currentLock)) unlinkSync(lockPath);
       }
     }
     });

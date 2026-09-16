@@ -4,6 +4,17 @@
 
 No shipping changes yet.
 
+## 0.1.1 - 2026-09-16
+
+Reliability patch candidate; publication is confirmed by npm and the versioned GitHub Release. See [release notes](docs/release-0.1.1.md) and [compatibility details](docs/reliability.md).
+
+- Validate every Profile candidate, including overridden inputs; make effective rule selection and conflict reporting independent of input order.
+- Fail receipt verification on invalid paths or unavailable Git; retain non-Git and unborn-branch support and explicitly classify self-reported claims. A v1 `complete` request now returns `valid=false` and `closeout=incomplete` because its task/evidence strings are not independently verified.
+- Return malformed Profile and CLI input diagnostics safely. CLI errors now use JSON on stdout and a nonzero exit status; stderr parsers must migrate.
+- Protect approved binding writes with cooperating-writer locks, source/content drift checks and independent recovery snapshots; preserve edited targets on unsafe rollback. This is a controlled single-writer protocol, not atomic CAS against arbitrary editors.
+- Preserve bytes outside managed blocks and trailing whitespace; repeated unchanged writes are no-ops. Reject invalid UTF-8 targets and malformed approved replacement boundaries before writing.
+- Add regression coverage to installed-package and maintainer checks on Node.js 22 and 24. Optional external Packs remain at alpha.4.
+
 ## 0.1.0 - 2026-09-15
 
 First stable release for npm installation and explicit packaged-Skill loading. The main package uses the `latest` channel; optional external Packs remain at alpha.4. Native Plugin activation, Marketplace submission, standalone binaries and persisted governance remain outside this release scope.

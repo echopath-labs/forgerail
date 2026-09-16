@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
+import { accessSync, constants, realpathSync, statSync } from "node:fs";
 import { validateContract } from "./contracts.mjs";
 
 function canonicalValue(value) {
@@ -51,17 +52,45 @@ export function resolveProfile(input, packManifests = []) {
   if (!input || typeof input !== "object" || Array.isArray(input)) return { profile: null, activePacks: [], valid: false, errors: ["profile input must be an object"] };
   const manifestValidation = validatePackManifests(packManifests);
   if (!manifestValidation.valid) return { profile: null, activePacks: [], valid: false, errors: manifestValidation.errors };
+  const inputErrors = [];
+  for (const field of ["rules", "packs"]) {
+    if (input[field] !== undefined && !Array.isArray(input[field])) inputErrors.push(`profile input.${field} must be an array`);
+  }
+  if (inputErrors.length) return { profile: null, activePacks: [], valid: false, errors: inputErrors };
+  // Validate every source before reduction, including sources that will lose.
+  for (const [index, rule] of (input.rules ?? []).entries()) {
+    const result = validateContract("profile", { schemaVersion: "1.0", workspace: input.workspace, computed: true, rules: [rule], packs: {}, conflicts: [] });
+    inputErrors.push(...result.errors.map(error => `input.rules[${index}]: ${error}`));
+  }
+  for (const [index, pack] of (input.packs ?? []).entries()) {
+    if (!pack || typeof pack !== "object" || Array.isArray(pack) || typeof pack.id !== "string") {
+      inputErrors.push(`input.packs[${index}] must be a pack state with an id`);
+      continue;
+    }
+    const result = validateContract("profile", { schemaVersion: "1.0", workspace: input.workspace, computed: true, rules: [], packs: { [pack.id]: { state: pack.state, reason: pack.reason } }, conflicts: [] });
+    inputErrors.push(...result.errors.map(error => `input.packs[${index}]: ${error}`));
+  }
+  if (inputErrors.length) return { profile: null, activePacks: [], valid: false, errors: inputErrors };
   for (const id of duplicateIds((input.packs ?? []).map((pack) => pack?.id))) conflicts.push(`${id}: duplicate pack state identity`);
   for (const identity of duplicateIds((input.rules ?? []).map((rule) => `${rule?.id}\u0000${rule?.source}`))) {
     const [id, source] = identity.split("\u0000");
     conflicts.push(`${id}: duplicate rule source identity (${source})`);
   }
-  const selected = new Map();
+  const groups = new Map();
   for (const rule of input.rules ?? []) {
-    const prior = selected.get(rule.id);
-    if (!prior || rule.precedence < prior.precedence) selected.set(rule.id, rule);
-    else if (rule.precedence === prior.precedence && !equalValue(rule.value, prior.value)) {
-      conflicts.push(`${rule.id}: equal-precedence sources disagree (${prior.source} vs ${rule.source})`);
+    if (!groups.has(rule.id)) groups.set(rule.id, []);
+    groups.get(rule.id).push(rule);
+  }
+  const selected = new Map();
+  for (const [id, rules] of groups) {
+    const precedence = Math.min(...rules.map(rule => rule.precedence));
+    const effective = rules.filter(rule => rule.precedence === precedence).sort((a, b) => {
+      const left = JSON.stringify(canonicalValue(a)), right = JSON.stringify(canonicalValue(b));
+      return left < right ? -1 : left > right ? 1 : 0;
+    });
+    selected.set(id, canonicalValue(effective[0]));
+    for (const rule of effective.slice(1)) {
+      if (!equalValue(effective[0].value, rule.value)) conflicts.push(`${id}: equal-precedence sources disagree (${effective[0].source} vs ${rule.source})`);
     }
   }
 
@@ -137,30 +166,76 @@ export function createLaunchContract(profile, envelope, hostAgent, packManifests
 }
 
 function git(workspace, ...args) {
-  const result = spawnSync("git", args, { cwd: workspace, encoding: "utf8", timeout: 10_000, maxBuffer: 1024 * 1024 });
-  return result.status === 0 ? result.stdout.trim() : null;
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")));
+  const result = spawnSync("git", args, { cwd: workspace, env: { ...env, LC_ALL: "C", LANG: "C" }, encoding: "utf8", timeout: 10_000, maxBuffer: 1024 * 1024 });
+  return { ok: result.status === 0 && !result.error, value: result.stdout?.trim() ?? "", status: result.status, code: result.error?.code ?? null, stderr: result.stderr?.trim().slice(0, 512) ?? "" };
 }
 
 export function verifyReceipt(receipt, workspace) {
   const validation = validateContract("receipt", receipt);
   const errors = [...validation.errors];
   const observations = {};
-  if (!validation.valid) return { valid: false, closeout: "incomplete", observations, errors };
-  const root = resolve(workspace);
-  const inside = git(root, "rev-parse", "--is-inside-work-tree") === "true";
-  observations.git = inside;
-  if (inside) {
-    observations.branch = git(root, "branch", "--show-current");
-    observations.commit = git(root, "rev-parse", "HEAD");
-    observations.worktree = git(root, "status", "--porcelain=v1") === "" ? "clean" : "dirty";
+  const verifiedClaims = [], unverifiedClaims = [];
+  let observationStatus = "not-observed";
+  const result = () => ({ valid: errors.length === 0, schemaValid: validation.valid, verificationScope: "local-observation", observationStatus, closeout: errors.length === 0 ? receipt.closeout : "incomplete", observations, verifiedClaims, unverifiedClaims, errors });
+  if (!validation.valid) return result();
+  unverifiedClaims.push("ownerWorkspace", "taskId", "changedScope", "validationEvidence", "externalSideEffects", "residualRisks", "rollbackOrRecovery", "deviations");
+  // A v1 receipt contains strings, not independently verified task/evidence bindings.
+  if (receipt.closeout === "complete") {
+    unverifiedClaims.push("closeout");
+    errors.push("complete cannot be verified from self-reported v1 task and validation evidence");
+  }
+  let root;
+  try {
+    root = realpathSync(resolve(workspace));
+    if (!statSync(root).isDirectory()) {
+      observationStatus = "invalid-workspace";
+      errors.push("workspace must be an existing directory");
+      return result();
+    }
+    accessSync(root, constants.R_OK | constants.X_OK);
+    observations.workspace = root;
+  } catch (error) {
+    observationStatus = ["ENOENT", "ENOTDIR", "ERR_INVALID_ARG_TYPE"].includes(error.code) ? "invalid-workspace" : "unavailable";
+    errors.push(`workspace observation failed: ${error.code ?? "UNKNOWN"}`);
+    return result();
+  }
+  const probe = git(root, "rev-parse", "--is-inside-work-tree");
+  const unavailable = observation => {
+    observationStatus = "unavailable";
+    observations.gitError = { status: observation.status, code: observation.code, stderr: observation.stderr };
+    errors.push(`Git observation failed: ${observation.code ?? `exit ${observation.status}`}`);
+  };
+  const nonGit = !probe.code && probe.status === 128 && /^fatal: not a git repository(?:\s|\()/i.test(probe.stderr);
+  if (!probe.ok && !nonGit) { unavailable(probe); return result(); }
+  observations.git = probe.ok && probe.value === "true";
+  if (observations.git) {
+    observationStatus = "available";
+    for (const [field, args] of [["branch", ["branch", "--show-current"]], ["commit", ["rev-parse", "--verify", "--quiet", "HEAD"]], ["worktree", ["status", "--porcelain=v1"]]]) {
+      const observation = git(root, ...args);
+      if (field === "commit" && observation.status === 1 && !observation.code) {
+        // An unborn branch has a symbolic HEAD but no branch ref. Do not infer
+        // this from stderr alone or swallow corrupt refs / Git failures.
+        const head = git(root, "symbolic-ref", "--quiet", "HEAD");
+        if (head.ok && head.value.startsWith("refs/heads/")) {
+          const ref = git(root, "show-ref", "--verify", "--quiet", head.value);
+          if (ref.status === 1 && !ref.code) { observations.commit = null; continue; }
+        }
+      }
+      if (!observation.ok) { unavailable(observation); return result(); }
+      observations[field] = field === "worktree" ? (observation.value === "" ? "clean" : "dirty") : observation.value;
+    }
     if (receipt.branch !== null && receipt.branch !== observations.branch) errors.push(`receipt branch mismatch: ${receipt.branch} != ${observations.branch}`);
     if (receipt.commit !== null && receipt.commit !== observations.commit) errors.push(`receipt commit mismatch: ${receipt.commit} != ${observations.commit}`);
     if (receipt.confirmedNonMutations.includes("clean worktree") && observations.worktree !== "clean") errors.push("receipt claims clean worktree but observable Git state is dirty");
-  } else if (receipt.branch !== null || receipt.commit !== null) errors.push("receipt declares Git identity for a non-Git workspace");
-  return {
-    valid: errors.length === 0,
-    closeout: errors.length === 0 ? receipt.closeout : "incomplete",
-    observations,
-    errors,
-  };
+    for (const field of ["branch", "commit"]) {
+      (receipt[field] !== null && receipt[field] === observations[field] ? verifiedClaims : unverifiedClaims).push(field);
+    }
+    if (receipt.confirmedNonMutations.includes("clean worktree") && observations.worktree === "clean") verifiedClaims.push("confirmedNonMutations:clean worktree");
+  } else {
+    observationStatus = "not-a-git-workspace";
+    if (receipt.branch !== null || receipt.commit !== null) errors.push("receipt declares Git identity for a non-Git workspace");
+  }
+  unverifiedClaims.push(...receipt.confirmedNonMutations.filter(claim => claim !== "clean worktree" || !observations.git).map(claim => `confirmedNonMutations:${claim}`));
+  return result();
 }

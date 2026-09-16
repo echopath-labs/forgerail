@@ -532,7 +532,9 @@ try {
     ]) {
       const execution = spawnSync(process.execPath, [resolve(root, "scripts/forgerail.mjs"), ...argv], { encoding: "utf8" });
       assert.equal(execution.status, 1);
-      assert.match(execution.stderr, new RegExp(`${option} requires a value`));
+      assert.equal(execution.stderr, "");
+      assert.equal(JSON.parse(execution.stdout).code, "INVALID_INPUT");
+      assert.match(JSON.parse(execution.stdout).errors.join("; "), new RegExp(`${option} requires a value`));
     }
   });
 
@@ -546,7 +548,9 @@ try {
     ]) {
       const execution = spawnSync(process.execPath, [resolve(root, "scripts/forgerail.mjs"), ...argv], { encoding: "utf8" });
       assert.equal(execution.status, 1);
-      assert.match(execution.stderr, /option values must be provided separately|unknown option/);
+      assert.equal(execution.stderr, "");
+      assert.equal(JSON.parse(execution.stdout).code, "INVALID_INPUT");
+      assert.match(JSON.parse(execution.stdout).errors.join("; "), /option values must be provided separately|unknown option/);
     }
   });
 
