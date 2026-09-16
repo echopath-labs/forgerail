@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { resolve } from "node:path";
-import { accessSync, constants, realpathSync, statSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { accessSync, constants, lstatSync, realpathSync, statSync } from "node:fs";
 import { validateContract } from "./contracts.mjs";
 
 function canonicalValue(value) {
@@ -165,10 +165,70 @@ export function createLaunchContract(profile, envelope, hostAgent, packManifests
   return { launch, valid: errors.length === 0, errors };
 }
 
-function git(workspace, ...args) {
+function git(workspace, args, input) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")));
-  const result = spawnSync("git", args, { cwd: workspace, env: { ...env, LC_ALL: "C", LANG: "C" }, encoding: "utf8", timeout: 10_000, maxBuffer: 1024 * 1024 });
-  return { ok: result.status === 0 && !result.error, value: result.stdout?.trim() ?? "", status: result.status, code: result.error?.code ?? null, stderr: result.stderr?.trim().slice(0, 512) ?? "" };
+  const result = spawnSync("git", ["--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false", ...args], {
+    cwd: workspace, input, env: { ...env, LC_ALL: "C", LANG: "C", GIT_NO_LAZY_FETCH: "1", GIT_TERMINAL_PROMPT: "0", GIT_ALLOW_PROTOCOL: "" }, timeout: 10_000, maxBuffer: 1024 * 1024,
+  });
+  let output = "", code = result.error?.code ?? null;
+  // Attribute queries must round-trip index paths and driver names without
+  // replacement characters silently turning them into different inputs.
+  try { output = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(result.stdout ?? Buffer.alloc(0)); }
+  catch { code = "GIT_OUTPUT_ENCODING"; }
+  return { ok: result.status === 0 && !code, value: output.trim(), output, status: result.status, code, stderr: result.stderr?.toString("utf8").trim().slice(0, 512) ?? "" };
+}
+
+function metadataOwner(workspace) {
+  const present = path => {
+    try { lstatSync(path); return true; }
+    catch (error) { if (error.code === "ENOENT") return false; throw error; }
+  };
+  let bareCandidate = null;
+  for (let path = workspace; ; path = dirname(path)) {
+    if (present(resolve(path, ".git"))) return path;
+    // Bare-layout hints must not shadow a real parent worktree merely because
+    // a normal project subdirectory is named objects/refs.
+    if (bareCandidate === null && ["objects", "refs", "HEAD", "config"].filter(name => present(resolve(path, name))).length >= 2) bareCandidate = path;
+    if (dirname(path) === path) return bareCandidate;
+  }
+}
+
+function observationFailure(code, stderr) {
+  return { ok: false, status: null, code, stderr };
+}
+
+function safeWorktreeStatus(workspace) {
+  const index = git(workspace, ["ls-files", "--stage", "-v", "-z"]);
+  if (!index.ok) return index;
+  const paths = new Set();
+  for (const record of index.output.split("\0").filter(Boolean)) {
+    const entry = /^([A-Za-z?]) ([0-7]{6}) [0-9a-f]+ [0-3]\t([\s\S]+)$/.exec(record);
+    if (!entry) return observationFailure("GIT_INDEX_UNSUPPORTED", "Cannot interpret Git index entries");
+    if (entry[2] === "160000" || entry[1] === "S" || entry[1] === entry[1].toLowerCase()) {
+      return observationFailure("GIT_INDEX_UNSUPPORTED", "Submodules, skip-worktree and assume-unchanged entries cannot certify local worktree state");
+    }
+    paths.add(entry[3]);
+  }
+  // Git itself resolves includes, worktree/global configuration and attribute
+  // macros. Do not print executable configuration values or disable filters and
+  // then misrepresent their transformed content as a clean worktree.
+  const configured = git(workspace, ["config", "--null", "--name-only", "--get-regexp", "^filter\\..*\\.(clean|process)$"]);
+  if (!configured.ok && (configured.code || configured.status !== 1)) return configured;
+  if (configured.ok && paths.size) {
+    const drivers = new Set(configured.output.split("\0").filter(Boolean).map(key => key.slice(7, key.lastIndexOf("."))));
+    const attributes = git(workspace, ["check-attr", "-z", "--stdin", "filter"], `${[...paths].join("\0")}\0`);
+    if (!attributes.ok) return attributes;
+    const fields = attributes.output.split("\0");
+    if (fields.pop() !== "" || fields.length !== paths.size * 3) return observationFailure("GIT_ATTRIBUTES_UNAVAILABLE", "Cannot interpret Git attributes");
+    for (let i = 0; i < fields.length; i += 3) {
+      if (!paths.has(fields[i]) || fields[i + 1] !== "filter") return observationFailure("GIT_ATTRIBUTES_UNAVAILABLE", "Cannot interpret Git attributes");
+      if (drivers.has(fields[i + 2])) return observationFailure("GIT_EXTERNAL_FILTER", "An indexed path uses a configured clean/process filter; safe local observation is unavailable");
+    }
+  }
+  // No submodule recursion even if unsupported metadata changes after preflight.
+  // This bounded observer assumes stable configuration/index/attributes, not an
+  // adversarial concurrent writer or an atomic filesystem snapshot.
+  return git(workspace, ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignore-submodules=all"]);
 }
 
 export function verifyReceipt(receipt, workspace) {
@@ -200,30 +260,44 @@ export function verifyReceipt(receipt, workspace) {
     errors.push(`workspace observation failed: ${error.code ?? "UNKNOWN"}`);
     return result();
   }
-  const probe = git(root, "rev-parse", "--is-inside-work-tree");
   const unavailable = observation => {
     observationStatus = "unavailable";
     observations.gitError = { status: observation.status, code: observation.code, stderr: observation.stderr };
     errors.push(`Git observation failed: ${observation.code ?? `exit ${observation.status}`}`);
   };
+  let owner;
+  try { owner = metadataOwner(root); }
+  catch (error) { unavailable(observationFailure(error.code ?? "GIT_METADATA_UNAVAILABLE", "Cannot inspect Git metadata")); return result(); }
+  const probe = git(root, ["rev-parse", "--is-inside-work-tree"]);
   const nonGit = !probe.code && probe.status === 128 && /^fatal: not a git repository(?:\s|\()/i.test(probe.stderr);
   if (!probe.ok && !nonGit) { unavailable(probe); return result(); }
+  if ((nonGit && owner !== null) || (probe.ok && probe.value !== "true")) {
+    unavailable(observationFailure("GIT_METADATA_UNAVAILABLE", "Git metadata is damaged or does not describe a supported worktree")); return result();
+  }
   observations.git = probe.ok && probe.value === "true";
   if (observations.git) {
+    const top = git(root, ["rev-parse", "--show-toplevel"]);
+    if (!top.ok) { unavailable(top); return result(); }
+    let topLevel;
+    try { topLevel = realpathSync(top.output.replace(/\n$/, "")); }
+    catch (error) { unavailable(observationFailure(error.code ?? "GIT_METADATA_UNAVAILABLE", "Cannot resolve Git worktree root")); return result(); }
+    if (topLevel !== owner) {
+      unavailable(observationFailure("GIT_METADATA_UNAVAILABLE", "Git worktree root does not match the nearest workspace metadata")); return result();
+    }
     observationStatus = "available";
-    for (const [field, args] of [["branch", ["branch", "--show-current"]], ["commit", ["rev-parse", "--verify", "--quiet", "HEAD"]], ["worktree", ["status", "--porcelain=v1"]]]) {
-      const observation = git(root, ...args);
+    for (const [field, args] of [["branch", ["branch", "--show-current"]], ["commit", ["rev-parse", "--verify", "--quiet", "HEAD"]], ["worktree", null]]) {
+      const observation = field === "worktree" ? safeWorktreeStatus(topLevel) : git(topLevel, args);
       if (field === "commit" && observation.status === 1 && !observation.code) {
         // An unborn branch has a symbolic HEAD but no branch ref. Do not infer
         // this from stderr alone or swallow corrupt refs / Git failures.
-        const head = git(root, "symbolic-ref", "--quiet", "HEAD");
+        const head = git(topLevel, ["symbolic-ref", "--quiet", "HEAD"]);
         if (head.ok && head.value.startsWith("refs/heads/")) {
-          const ref = git(root, "show-ref", "--verify", "--quiet", head.value);
+          const ref = git(topLevel, ["show-ref", "--verify", "--quiet", head.value]);
           if (ref.status === 1 && !ref.code) { observations.commit = null; continue; }
         }
       }
       if (!observation.ok) { unavailable(observation); return result(); }
-      observations[field] = field === "worktree" ? (observation.value === "" ? "clean" : "dirty") : observation.value;
+      observations[field] = field === "worktree" ? (observation.output === "" ? "clean" : "dirty") : observation.value;
     }
     if (receipt.branch !== null && receipt.branch !== observations.branch) errors.push(`receipt branch mismatch: ${receipt.branch} != ${observations.branch}`);
     if (receipt.commit !== null && receipt.commit !== observations.commit) errors.push(`receipt commit mismatch: ${receipt.commit} != ${observations.commit}`);

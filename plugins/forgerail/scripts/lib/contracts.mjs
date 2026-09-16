@@ -229,6 +229,7 @@ function validateProfile(value, errors) {
 function validateEnvelope(value, errors, label = "envelope", packsMode = "ids") {
   const keys = ["schemaVersion", "taskId", "intent", "nonGoals", "ownerWorkspace", "allowedOperations", "prohibitedOperations", "packs", "approvalGates", "validation", "returnContract"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   schemaVersion(value.schemaVersion, label, errors);
   string(value.taskId, `${label}.taskId`, errors, taskIdPattern);
   string(value.intent, `${label}.intent`, errors);
@@ -248,6 +249,7 @@ function validateEnvelope(value, errors, label = "envelope", packsMode = "ids") 
   strings(value.approvalGates, `${label}.approvalGates`, errors, { pattern: idPattern, unique: true });
   strings(value.validation, `${label}.validation`, errors);
   if (value.returnContract !== "forgerail-return-receipt-v1") errors.push(`${label}.returnContract is invalid`);
+  if (errors.length !== before) return;
   const overlap = (value.allowedOperations ?? []).filter((item) => (value.prohibitedOperations ?? []).includes(item));
   if (overlap.length > 0) errors.push(`${label} allows and prohibits the same operations: ${overlap.join(", ")}`);
 }
