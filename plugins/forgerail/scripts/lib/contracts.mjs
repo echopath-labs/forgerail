@@ -323,7 +323,9 @@ function validateHostAdapter(value, errors) {
   if (!["agent-plugin-skills", "agent-skills", "explicit-only", "unknown"].includes(value.skillDiscovery)) errors.push("hostAdapter.skillDiscovery is invalid");
   string(value.bindingTarget, "hostAdapter.bindingTarget", errors, portableHostPathPattern);
   strings(value.detectionTargets, "hostAdapter.detectionTargets", errors, { min: 1, pattern: portableHostPathPattern, unique: true });
+  const beforeBindingModes = errors.length;
   strings(value.bindingModes, "hostAdapter.bindingModes", errors, { min: 1, unique: true });
+  if (errors.length !== beforeBindingModes) return;
   if (!value.bindingModes?.includes("thin-reference")) errors.push("hostAdapter must support thin-reference for all-Host adoption");
   for (const mode of value.bindingModes ?? []) if (!["managed-block", "thin-reference"].includes(mode)) errors.push(`hostAdapter.bindingModes contains invalid mode: ${mode}`);
   if (exactKeys(value.bindingTemplates, [], ["managed-block", "thin-reference"], "hostAdapter.bindingTemplates", errors)) {

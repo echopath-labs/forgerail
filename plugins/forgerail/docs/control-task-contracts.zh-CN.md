@@ -1,5 +1,7 @@
 # Control Task 合同
 
+> Status: versioned schemas and field validation. Full control-system evaluators and persistent runtime are deferred; see [current product boundaries](product-boundary.md).
+
 ForgeRail 在同一个 package 内增加版本化 Control System 任务合同，同时保持 alpha Task Envelope 与 Return Receipt 不变。
 
 | 合同 | Schema 版本 | 文件 |

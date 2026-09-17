@@ -6,6 +6,17 @@ ForgeRail is not a general automation framework. Contributions should preserve i
 
 ## Before opening work
 
+Read [product boundaries](docs/product-boundary.md). Describe the capability owner,
+actual consumer, side effects and persistent state in the PR. Explain why the host
+or an existing product does not already own the behavior. Instruction adapters do
+not own Agent execution. Deferred Control System designs are not current features
+or an automatic implementation backlog.
+
+Script modules are explicitly listed in `package.json.files`; keep experiments
+outside published inputs. `npm run test:boundary` checks source/installed scripts,
+and release/consumer checks inspect the npm inventory. Changing an allowed module
+still needs semantic review; the inventory check cannot decide product ownership.
+
 Use a GitHub issue when the change affects product behavior, contracts, adoption semantics, supported hosts, Capability Packs, security boundaries, or release compatibility. Small documentation corrections may go directly to a pull request.
 
 Search existing issues first. Do not include credentials, private project memory, customer data, production configuration, private repository paths, or unredacted receipts.
@@ -112,4 +123,4 @@ Be respectful and follow the [Code of Conduct](CODE_OF_CONDUCT.md). Usage questi
 
 Unless stated otherwise, contributions are accepted under the [Apache License 2.0](LICENSE).
 
-Receipt observation, Envelope, Profile and approved-write compatibility details through the 0.1.2 candidate are described in [reliability notes](docs/reliability.md). The immutable 0.1.0 package is unchanged; publication of the candidate requires separate release approval.
+Receipt observation, Envelope, Profile and approved-write compatibility details through the 0.1.3 candidate are described in [reliability notes](docs/reliability.md). The immutable 0.1.0 package is unchanged; publication of the candidate requires separate release approval.

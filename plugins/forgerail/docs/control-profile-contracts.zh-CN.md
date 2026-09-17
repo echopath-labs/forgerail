@@ -1,5 +1,7 @@
 # Control Profile 合同
 
+> Status: versioned schemas and field validation. Full control-system evaluators and persistent runtime are deferred; see [current product boundaries](product-boundary.md).
+
 ForgeRail 在同一个 package 内增加首批版本化 Control System 合同，同时保持现有 alpha 合同不变。
 
 | 合同 | Schema 版本 | 文件 |

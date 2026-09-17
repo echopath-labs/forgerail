@@ -1,8 +1,8 @@
 # 通过 npm 安装 ForgeRail
 
-> 0.1.2 尚为候选，实际发布以 npm 和版本化 GitHub Release 为准。如 0.1.2 尚未发布，可使用既有 0.1.1 包。
+> 0.1.3 尚为候选，实际发布以 npm 和版本化 GitHub Release 为准。如 0.1.3 尚未发布，可使用既有 0.1.2 包。
 
-本文面向 `@echopath-labs/forgerail@0.1.2`，源码 tag 为 `v0.1.2`，正式发布通道为 npm `latest`。预发布 `next` 通道独立保留，请使用下方精确版本命令。本轮暂不进行 Codex 市场注册，原生 Plugin 激活不作为这条交付路线的门槛。
+本文面向 `@echopath-labs/forgerail@0.1.3`，源码 tag 为 `v0.1.3`，正式发布通道为 npm `latest`。预发布 `next` 通道独立保留，请使用下方精确版本命令。本轮暂不进行 Codex 市场注册，原生 Plugin 激活不作为这条交付路线的门槛。
 
 ## 环境要求
 
@@ -10,12 +10,12 @@
 
 目前没有内置Node运行时的独立二进制。npm提供的 `forgerail` 是需要Node的命令入口，不能宣称为免Node二进制。独立二进制作为后续可选分发方式，不阻塞本次npm发布。
 
-## 安装并验证 0.1.2
+## 安装并验证 0.1.3
 
 从 npm registry 安装精确版本：
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.2
+npm install --global @echopath-labs/forgerail@0.1.3
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -25,7 +25,7 @@ forgerail diagnose --workspace .
 临时调用CLI可以使用：
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.2 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.3 diagnose --workspace .
 ```
 
 ## 在 Agent 中加载包内指导
@@ -60,7 +60,7 @@ npm root --global
 
 ## 发布验证
 
-0.1.2 发布门禁在 Node.js 22 和 24 下验证实际安装包、CLI 校验、只读诊断及包内自检。发布收尾从公共渠道回下载并比对批准产物，最终结果见[本版发布说明](release-0.1.2.zh-CN.md)及 GitHub Release。alpha.5 历史回执保留在[原发布说明](release-alpha5.zh-CN.md)。
+0.1.3 发布门禁在 Node.js 22 和 24 下验证实际安装包、CLI 校验、只读诊断及包内自检。发布收尾从公共渠道回下载并比对批准产物，最终结果见[本版发布说明](release-0.1.3.zh-CN.md)及 GitHub Release。alpha.5 历史回执保留在[原发布说明](release-alpha5.zh-CN.md)。
 
 ## 升级、回退和卸载
 

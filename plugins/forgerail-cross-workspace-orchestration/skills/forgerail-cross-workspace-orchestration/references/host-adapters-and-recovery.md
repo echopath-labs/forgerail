@@ -4,6 +4,10 @@
 
 Treat these as Host Adapter capabilities with explicit support status:
 
+These are capabilities supplied by the host or a delegation tool, not executor
+implementations shipped by this Pack. ForgeRail's instruction profiles do not
+implement task creation, process waiting, cancellation or session recovery.
+
 - `create`: create an independent task/session;
 - `inspect`: read its current state and stable output;
 - `wait`: wait without busy polling;
@@ -14,7 +18,7 @@ Do not assume Codex task/thread APIs exist in Claude Code, Cursor, or another ho
 
 ## Optional integrations
 
-- RelayPact may transport delegation, execution requests, status, and returns. It does not own ForgeRail approvals, writer locks, review, or acceptance.
+- RelayPact owns its delegation and execution lifecycle and Host terminal decision. ForgeRail supplies engineering approval, writer-conflict and receipt-review requirements; the host and responsible people apply them. Neither product's acceptance substitutes for the other's required evidence. This Pack has no persistent writer-lock service.
 - EchoPath may supply user-authorized recovery and context evidence. An unavailable binding is not empty history, and EchoPath is not required to operate this Pack.
 
 ## Recovery rules

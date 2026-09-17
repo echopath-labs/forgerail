@@ -6,6 +6,7 @@ import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, 
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { validateProductSurface } from "./lib/product-surface.mjs";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const base = mkdtempSync(resolve(tmpdir(), "forgerail-consumer-"));
@@ -53,6 +54,8 @@ const priorTarball = resolve(base, priorPack.filename);
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", priorTarball]);
 const priorInstalled = JSON.parse(readFileSync(resolve(installedPackageRoot, "package.json"), "utf8")).version === "0.1.0-alpha.0";
 const pack = JSON.parse(run("npm", ["pack", root, "--json"], base))[0];
+const surfaceErrors = validateProductSurface(JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")), pack.files.map(({ path }) => path));
+if (surfaceErrors.length) throw new Error(surfaceErrors.join("\n"));
 const tarball = resolve(base, pack.filename);
 run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", tarball]);
 const cli = resolve(consumer, "node_modules/.bin/forgerail");
@@ -114,6 +117,7 @@ const result = {
   tarball: { files: pack.entryCount, bytes: pack.size, shasum: pack.shasum, integrity: pack.integrity },
   install: firstValidation.valid,
   installedMainSuite,
+  packageScriptSurface: surfaceErrors.length === 0,
   binaryShim: cli.endsWith("node_modules/.bin/forgerail"),
   priorInstall: priorInstalled,
   discovery: firstValidation.skills,

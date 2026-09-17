@@ -179,16 +179,28 @@ function git(workspace, args, input) {
 }
 
 function metadataOwner(workspace) {
-  const present = path => {
-    try { lstatSync(path); return true; }
-    catch (error) { if (error.code === "ENOENT") return false; throw error; }
+  const metadata = path => {
+    try { return lstatSync(path); }
+    catch (error) { if (error.code === "ENOENT") return null; throw error; }
   };
   let bareCandidate = null;
   for (let path = workspace; ; path = dirname(path)) {
-    if (present(resolve(path, ".git"))) return path;
+    if (metadata(resolve(path, ".git"))) return path;
     // Bare-layout hints must not shadow a real parent worktree merely because
     // a normal project subdirectory is named objects/refs.
-    if (bareCandidate === null && ["objects", "refs", "HEAD", "config"].filter(name => present(resolve(path, name))).length >= 2) bareCandidate = path;
+    if (bareCandidate === null) {
+      // Ordinary directories alone are not metadata. Keep damaged/link-like
+      // metadata conservative without following links or reading special files.
+      const fileHint = ["HEAD", "config"].some(name => {
+        const entry = metadata(resolve(path, name));
+        return entry !== null && !entry.isDirectory();
+      });
+      const directoryHint = ["objects", "refs"].some(name => {
+        const entry = metadata(resolve(path, name));
+        return entry?.isDirectory() || entry?.isSymbolicLink();
+      });
+      if (fileHint && directoryHint) bareCandidate = path;
+    }
     if (dirname(path) === path) return bareCandidate;
   }
 }
@@ -272,7 +284,7 @@ export function verifyReceipt(receipt, workspace) {
   const nonGit = !probe.code && probe.status === 128 && /^fatal: not a git repository(?:\s|\()/i.test(probe.stderr);
   if (!probe.ok && !nonGit) { unavailable(probe); return result(); }
   if ((nonGit && owner !== null) || (probe.ok && probe.value !== "true")) {
-    unavailable(observationFailure("GIT_METADATA_UNAVAILABLE", "Git metadata is damaged or does not describe a supported worktree")); return result();
+    unavailable(observationFailure("GIT_METADATA_UNAVAILABLE", "Git metadata hints could not be confirmed as a supported worktree")); return result();
   }
   observations.git = probe.ok && probe.value === "true";
   if (observations.git) {
