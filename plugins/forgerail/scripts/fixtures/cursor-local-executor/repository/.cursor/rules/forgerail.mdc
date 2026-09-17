@@ -1,5 +1,0 @@
----
-description: Apply the disposable ForgeRail Cursor canary boundary
-alwaysApply: true
----
-Follow `AGENTS.md` and `FORGERAIL.md`. Never operate outside this disposable repository or perform network, credential, remote, publication, release or deployment actions.

@@ -1,5 +1,7 @@
 # Control Authority 与 Validation 合同
 
+> Status: versioned schemas and field validation. Full control-system evaluators and persistent runtime are deferred; see [current product boundaries](product-boundary.md).
+
 ForgeRail 新增八个版本化 Control System 合同，不改变 alpha 合同、task-control 合同或任何 Host Adapter profile。
 
 | 合同 | Schema 版本 | 文件 |

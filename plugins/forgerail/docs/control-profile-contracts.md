@@ -1,5 +1,7 @@
 # Control Profile Contracts
 
+> Status: versioned schemas and field validation. Full control-system evaluators and persistent runtime are deferred; see [current product boundaries](product-boundary.md).
+
 ForgeRail keeps the alpha contracts intact while introducing the first versioned Control System contracts inside the same package.
 
 | Contract | Schema version | File |

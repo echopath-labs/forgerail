@@ -174,6 +174,41 @@ test("non-UTF8 index paths are unavailable instead of replacement-decoded attrib
   assert.equal(unavailable(dir).observations.gitError.code, "GIT_OUTPUT_ENCODING");
 });
 
+test("ordinary metadata-named directories remain non-Git from root and child", t => {
+  const names = ["objects", "refs", "HEAD", "config"];
+  for (let a = 0; a < names.length; a++) for (let b = a + 1; b < names.length; b++) {
+    const dir = fixture(t, false);
+    for (const name of [names[a], names[b], "child"]) mkdirSync(join(dir, name));
+    for (const workspace of [dir, join(dir, "child")]) {
+      const result = verifyReceipt({ ...receipt, confirmedNonMutations: [] }, workspace);
+      assert.equal(result.observationStatus, "not-a-git-workspace", `${names[a]} + ${names[b]}`);
+      assert.equal(result.valid, true);
+      assert.equal(result.verifiedClaims.includes("confirmedNonMutations:clean worktree"), false);
+    }
+  }
+});
+
+test("Host Adapter malformed bindingModes returns field errors through library and CLI", t => {
+  const dir = fixture(t, false), input = join(dir, "adapter.json");
+  const original = JSON.parse(readFileSync(join(root, "adapters/codex.json")));
+  assert.equal(validateContract("host-adapter", original).valid, true);
+  for (const bad of [{}, 1, false, null, [], [null], "thin-reference", [1], [{}]]) {
+    const value = { ...original, bindingModes: bad };
+    const result = validateContract("host-adapter", value);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => error.includes("hostAdapter.bindingModes")));
+    writeFileSync(input, JSON.stringify(value));
+    const cli = spawnSync(process.execPath, [join(root, "scripts/forgerail.mjs"), "validate-contract", "--type", "host-adapter", "--file", input], { encoding: "utf8" });
+    assert.equal(cli.status, 1); assert.equal(cli.stderr, "");
+    const output = JSON.parse(cli.stdout);
+    assert.notEqual(output.code, "INTERNAL_ERROR");
+    assert.ok(output.errors.some(error => error.includes("hostAdapter.bindingModes")));
+  }
+  for (const bindingModes of [["managed-block"], ["thin-reference", "unknown"]]) {
+    assert.equal(validateContract("host-adapter", { ...original, bindingModes }).valid, false);
+  }
+});
+
 test("Envelope and embedded Launch return field errors before semantic operations", t => {
   const dir = fixture(t, false), input = join(dir, "input.json");
   for (const type of ["envelope", "launch"]) {

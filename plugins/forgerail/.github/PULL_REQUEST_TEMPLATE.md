@@ -2,6 +2,8 @@
 
 <!-- What user problem does this solve? Which ForgeRail capability, Pack, Host Adapter, or document owns it? -->
 
+<!-- Identify the actual consumer and any new side effects/persistent state. Explain why this belongs in ForgeRail rather than the host or another product. For new published scripts, review package.json.files; experiments and deferred designs do not become supported runtime by inclusion. -->
+
 ## What changed
 
 <!-- Keep the list precise and bounded. -->

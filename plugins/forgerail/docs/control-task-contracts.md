@@ -1,5 +1,7 @@
 # Control Task Contracts
 
+> Status: versioned schemas and field validation. Full control-system evaluators and persistent runtime are deferred; see [current product boundaries](product-boundary.md).
+
 ForgeRail keeps the alpha Task Envelope and Return Receipt intact while adding versioned Control System task contracts in the same package.
 
 | Contract | Schema version | File |

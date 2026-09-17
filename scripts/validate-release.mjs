@@ -5,13 +5,14 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { validateProductSurface } from "./lib/product-surface.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export function validateRelease() {
   const expectedPackageName = "@echopath-labs/forgerail";
-  const expectedVersion = "0.1.2";
+  const expectedVersion = "0.1.3";
   const expectedTag = `v${expectedVersion}`;
-  const expectedDate = "2026-09-16";
+  const expectedDate = "2026-09-17";
   const expectedPlugins = [
     "forgerail",
     "forgerail-cross-workspace-orchestration",
@@ -94,6 +95,8 @@ export function validateRelease() {
   record("npm-latest-tag", packageJson.publishConfig?.tag === "latest", packageJson.publishConfig?.tag ?? null);
   record("no-public-bundle-builder-command", !publicCli.includes('command === "build-bundle"'), "source-repository maintainer tool only");
   record("npm-pack-dry-run", packResult.status === 0 && packedFiles.length > 0, packResult.status === 0 ? `${packedFiles.length} files` : packResult.stderr.trim());
+  const surfaceErrors = validateProductSurface(packageJson, packedFiles);
+  record("package-script-surface", surfaceErrors.length === 0, surfaceErrors);
   record("bundle-builder-source-only", existsSync(resolve(root, "tools/lib/bundle.mjs")) && !packedFiles.includes("tools/lib/bundle.mjs"), "tools/lib/bundle.mjs");
   record(
     "launch-requested-pack-schema-native-binding",
@@ -196,8 +199,8 @@ export function validateRelease() {
   record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
   record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-  const releaseEnglish = read("docs/release-0.1.2.md");
-  const releaseChinese = read("docs/release-0.1.2.zh-CN.md");
+  const releaseEnglish = read("docs/release-0.1.3.md");
+  const releaseChinese = read("docs/release-0.1.3.zh-CN.md");
   const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
   for (const phrase of [
     "remote_integration_approval",
@@ -206,7 +209,7 @@ export function validateRelease() {
     expectedVersion,
     expectedTag,
     "Node.js 22 and 24",
-    "codex/forgerail-0.1.2",
+    "codex/forgerail-0.1.3",
     "Do not unpublish",
     "AGW",
     "Host Binding Receipt",

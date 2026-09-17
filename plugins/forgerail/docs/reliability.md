@@ -24,11 +24,21 @@ This is a bounded local check using a trusted Git executable. Configuration, att
 
 ## Profile resolution and errors
 
+0.1.3 candidate: bare-layout hints combine filesystem types, not just names.
+Ordinary directories named HEAD/config/objects/refs remain ordinary non-Git
+workspaces. A metadata-like file/link plus object/ref directory remains a
+conservative hint; Git must still confirm a supported worktree. The hint is not
+proof of corruption. No Git clean claim can be verified for a non-Git workspace.
+
 Every candidate is checked before selection, even if overridden. Only the effective highest-priority level contributes equal-precedence value conflicts. A stable canonical ordering selects the representative of equal candidates; input discovery order does not change the result. Duplicate source identities remain invalid.
 
 Malformed Profile structure returns field errors before semantic access. CLI usage and exception errors use JSON with valid=false, a code and errors. INVALID_INPUT, INVALID_JSON, INPUT_UNAVAILABLE and INTERNAL_ERROR distinguish those failure paths; an internal exception remains a failure, never a successful validation. Consumers previously parsing stderr should read this JSON result instead.
 
 0.1.2: malformed `allowedOperations` / `prohibitedOperations` return field diagnostics for both Envelope and embedded Launch validation. Valid operation arrays still undergo overlap checks.
+
+0.1.3 candidate: Host Adapter `bindingModes` structure is checked before array
+operations. Malformed collections return field errors through library and CLI;
+valid collections still require thin-reference and matching templates.
 
 ## Approved adoption writes
 

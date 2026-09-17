@@ -1,8 +1,8 @@
 # ForgeRail 可组合自治架构记录
 
-状态：公开产品架构说明
+状态：长期架构设计记录；未实现的 Control System 部分暂缓，不是当前能力清单
 
-更新：2026-08-31
+更新：2026-09-17
 
 Owner：ForgeRail
 
@@ -12,17 +12,19 @@ Owner：ForgeRail
 
 ## 1. 目的与适用范围
 
+当前产品范围见[产品边界](product-boundary.zh-CN.md)。下文的完整 Authority/Topology 求值、持久 Control Revision 与 Provider 循环属于设计目标；现有 schema 和字段校验不证明它们已经实现。旧设计不自动授权续做这些运行时。
+
 本文记录 ForgeRail 在 EchoPath Labs 可组合自治体系中的产品边界、独立最小闭环、可选输入输出、降级行为和互操作约束。它不替代 ForgeRail Control System 的 versioned schemas、实现或验证证据。
 
 本文是公开架构说明，不构成实现、远端操作、发布、迁移或生命周期变更的授权。
 
-## 2. 产品结论
+## 2. 设计目标（不代表当前实现）
 
-ForgeRail 是 local-first、宿主无关的 Engineering Governance Model and Control System。它回答：
+本架构设想 ForgeRail 形成 local-first、宿主无关的 Engineering Governance Model and Control System。它回答：
 
 > 对一个 exact workspace、subject、operation 与 revision，当前工程治理条件是否足以接受这次状态转换？
 
-ForgeRail 的独立最小闭环是：
+该长期设计的目标闭环是（完整 evaluator 尚未实现）：
 
 ```text
 discover bounded workspace governance sources

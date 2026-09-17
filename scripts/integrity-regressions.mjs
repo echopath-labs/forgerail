@@ -1014,9 +1014,11 @@ try {
     writeFileSync(resolve(publicRoot, ".env"), "SHOULD_NOT_APPEAR=true\n");
     mkdirSync(resolve(publicRoot, "plugins/forgerail-release-safety/.git"), { recursive: true });
     writeFileSync(resolve(publicRoot, "plugins/forgerail-release-safety/.git/config"), "private\n");
+    writeFileSync(resolve(publicRoot, "scripts/experimental-transport.mjs"), "throw new Error('not a product entrypoint');\n");
     const publicOutput = resolve(temporary("forgerail-public-output-parent-"), "bundle");
     const publicResult = buildBundle(publicRoot, publicOutput);
     assert.equal(publicResult.digest, first.digest);
+    assert.equal(publicResult.files.some((item) => item.path.endsWith("scripts/experimental-transport.mjs")), false);
     assert.ok(publicResult.files.some((item) => item.path === "package-lock.json"));
     assert.ok(publicResult.files.some((item) => item.path === "plugins/forgerail/package-lock.json"));
     assert.equal(publicResult.files.some((item) => item.path.includes(".env") || item.path.includes("/.git/")), false);
@@ -1118,12 +1120,12 @@ try {
 
   if (buildBundle) pass("bundle-rejects-environment-and-npmrc-filename-families", () => {
     for (const path of [
-      "scripts/.env.local",
+      "scripts/fixtures/.env.local",
       "docs/.env.production",
-      "scripts/.npmrc.backup",
-      "scripts/SECRET.KEY",
+      "scripts/fixtures/.npmrc.backup",
+      "scripts/fixtures/SECRET.KEY",
       "docs/config.PEM",
-      "scripts/.ENV.production",
+      "scripts/fixtures/.ENV.production",
     ]) {
       const publicRoot = publicLayoutFixture();
       writeFileSync(resolve(publicRoot, path), "PRIVATE_VALUE=should-not-project\n");
@@ -1134,7 +1136,7 @@ try {
   });
 
   if (buildBundle) pass("bundle-applies-directory-denylist-case-insensitively", () => {
-    for (const path of ["scripts/NODE_MODULES/private.txt", "docs/COVERAGE/private.txt", "scripts/.CACHE/private.txt"]) {
+    for (const path of ["scripts/fixtures/NODE_MODULES/private.txt", "docs/COVERAGE/private.txt", "scripts/fixtures/.CACHE/private.txt"]) {
       const publicRoot = publicLayoutFixture();
       mkdirSync(dirname(resolve(publicRoot, path)), { recursive: true });
       writeFileSync(resolve(publicRoot, path), "private\n");

@@ -4,6 +4,15 @@
 
 No shipping changes yet.
 
+## 0.1.3 - 2026-09-17
+
+Product boundary and reliability patch candidate; publication is confirmed by npm and the versioned GitHub Release. See [release notes](docs/release-0.1.3.md).
+
+- Preserve ordinary non-Git directories named config, HEAD, objects and refs; retain conservative handling of real damaged metadata.
+- Return Host Adapter bindingModes field errors before semantic operations, through both library and CLI.
+- Remove the experimental Cursor executor CLI/runtime, dedicated schemas and tests from the next candidate. Direct experimental-path consumers must use a separately supported host/delegation facility. Cursor instruction bindings and published releases remain unchanged.
+- Make script publication explicit and check source and npm artifact inventories; clarify governance ownership and deferred Control System plans.
+
 ## 0.1.2 - 2026-09-16
 
 Local observation and Envelope validation patch candidate. Publication is confirmed by npm and the versioned GitHub Release. See [release notes](docs/release-0.1.2.md) and [compatibility details](docs/reliability.md).

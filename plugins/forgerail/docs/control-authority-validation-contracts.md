@@ -1,5 +1,7 @@
 # Control Authority And Validation Contracts
 
+> Status: versioned schemas and field validation. Full control-system evaluators and persistent runtime are deferred; see [current product boundaries](product-boundary.md).
+
 ForgeRail adds eight versioned Control System contracts without changing the alpha contracts, the task-control contracts, or any Host Adapter profile.
 
 | Contract | Schema version | File |
