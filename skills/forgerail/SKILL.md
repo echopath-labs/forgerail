@@ -53,9 +53,12 @@ startup.
 
 Continue while an executable next step remains within the user's requested outcome
 and valid authorization. Analysis, scoped edits, verification, review preparation,
-and fixing review findings normally belong to that work. Carry an authorized
-review through findings, fixes and revalidation; do not end with only “next, run
-review” or “shall I continue?” when that next step is already covered. Progress
+and fixing review findings belong to that work only when the request covers
+implementation or remediation. A review-only request authorizes inspection and
+reporting findings, not edits. When review is part of already-authorized
+implementation or repair, carry it through findings, scoped fixes and revalidation;
+do not end with only “next, run review” or “shall I continue?” when that next step
+is already covered. Progress
 updates are not handoffs. Do not add unrelated improvements or endless review
 rounds after the agreed acceptance checks pass.
 

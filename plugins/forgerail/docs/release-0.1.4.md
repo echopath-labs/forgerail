@@ -7,7 +7,7 @@ This patch clarifies continuous progress and authorization reuse in Core. Public
 - Ask for material decisions, scope changes or missing authorization. Passing CI, bot approval and low risk are not permission to merge or publish.
 - Preserve unrelated dirty files and reuse a suitable branch without redundant confirmation. Stop at the requested outcome, user pause or a genuine blocker; do not add endless review rounds.
 
-This is instruction-level guidance, not an auto-approval runtime or bypass for host permissions. No new Skill, executor, schema or CLI operation is added. Existing releases and project snapshots do not upgrade automatically. Validation includes bounded simulated behavior checks; it cannot guarantee every host/model will comply in every task.
+This is instruction-level guidance, not an auto-approval runtime or bypass for host permissions. No new Skill, executor, schema or CLI operation is added. Existing releases and project snapshots do not upgrade automatically. Public automated gates validate structure, package contents and existing regressions; they do not certify the new policy's model behavior. The release preparation also used limited local scenario rehearsals, not a public automated behavioral suite or a guarantee of compliance.
 
 After publication:
 
