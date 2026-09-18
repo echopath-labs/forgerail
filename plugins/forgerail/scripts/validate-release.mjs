@@ -10,9 +10,9 @@ import { validateProductSurface } from "./lib/product-surface.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export function validateRelease() {
   const expectedPackageName = "@echopath-labs/forgerail";
-  const expectedVersion = "0.1.3";
+  const expectedVersion = "0.1.4";
   const expectedTag = `v${expectedVersion}`;
-  const expectedDate = "2026-09-17";
+  const expectedDate = "2026-09-18";
   const expectedPlugins = [
     "forgerail",
     "forgerail-cross-workspace-orchestration",
@@ -199,8 +199,8 @@ export function validateRelease() {
   record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
   record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-  const releaseEnglish = read("docs/release-0.1.3.md");
-  const releaseChinese = read("docs/release-0.1.3.zh-CN.md");
+  const releaseEnglish = read("docs/release-0.1.4.md");
+  const releaseChinese = read("docs/release-0.1.4.zh-CN.md");
   const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
   for (const phrase of [
     "remote_integration_approval",
@@ -209,7 +209,7 @@ export function validateRelease() {
     expectedVersion,
     expectedTag,
     "Node.js 22 and 24",
-    "codex/forgerail-0.1.3",
+    "codex/forgerail-0.1.4",
     "Do not unpublish",
     "AGW",
     "Host Binding Receipt",

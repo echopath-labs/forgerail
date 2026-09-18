@@ -1,13 +1,13 @@
 # ForgeRail Support
 
-> 0.1.3 is a release candidate until npm and the versioned GitHub Release confirm publication. If 0.1.3 is not yet published, use the existing 0.1.2 package.
+> 0.1.4 is a release candidate until npm and the versioned GitHub Release confirm publication. If 0.1.4 is not yet published, use the existing 0.1.3 package.
 
-ForgeRail is maintained as an open-source project. The 0.1.3 stable support scope is npm installation and explicit packaged-Skill loading. Support is best effort; no response-time or resolution-time service level is promised.
+ForgeRail is maintained as an open-source project. The 0.1.4 stable support scope is npm installation and explicit packaged-Skill loading. Support is best effort; no response-time or resolution-time service level is promised.
 
 ## Start here
 
 1. Read the [README](README.md) and [installation guide](docs/installation.md).
-2. Confirm you installed `@echopath-labs/forgerail@0.1.3` (source tag `v0.1.3`) and run `forgerail validate`.
+2. Confirm you installed `@echopath-labs/forgerail@0.1.4` (source tag `v0.1.4`) and run `forgerail validate`.
 3. Explicitly load the applicable packaged Skill in your Agent and record the loading route.
 4. Reproduce the problem with Plugin Only and a read-only request when possible.
 5. Remove secrets, private paths, project memory, customer data, and production configuration before sharing evidence.
@@ -30,7 +30,7 @@ Screenshots and receipts must be redacted. Prefer copied error text over an imag
 
 ## Current support boundary
 
-- The 0.1.3 release gate covers npm installation and CLI validation on Node.js 22 and 24. Codex can explicitly load the packaged guidance; native 0.1.3 Plugin activation is unverified.
+- The 0.1.4 release gate covers npm installation and CLI validation on Node.js 22 and 24. Codex can explicitly load the packaged guidance; native 0.1.4 Plugin activation is unverified.
 - Claude Code and Cursor are `profile-only`; end-to-end support is not claimed.
 - Plugin Only and reviewed Lightweight Adoption are usable; persisted `.forgerail/` governance is deferred.
 - Capability Packs are independent Plugins and keep their own identity, permissions, and approval requirements.

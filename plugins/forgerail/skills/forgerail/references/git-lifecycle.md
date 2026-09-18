@@ -132,8 +132,10 @@ portable defaults:
 Do not automatically create or switch branches when the worktree is dirty, the
 current branch has unrelated work, branch ownership or scope is ambiguous, the
 primary branch is unknown, the branch is tied to a different release, or a
-nearer rule requires confirmation. Report the state, suggest a branch decision,
-and wait for confirmation.
+nearer rule requires confirmation. Preserve that state. Reuse the current branch
+when it is suitable for the authorized scope; ask for a branch decision only if ownership or isolation remains
+materially ambiguous. Do not require confirmation merely because unrelated dirty
+files exist when they can safely remain untouched.
 
 Branch creation authorization does not authorize merge, push, branch deletion,
 release, or deployment.
@@ -198,7 +200,10 @@ Avoid one commit that mixes code, unrelated formatting, durable-record archive c
 
 Do not treat task implementation, validation, or branch creation as implicit
 authorization to merge or push. Follow the user's request, repository workflow,
-and hosting protections.
+and hosting protections. If the current request already explicitly covers these
+operations for the target, reuse that authorization after required checks; do not
+ask again merely because work reached the next stage. Follow the Core continuous
+progress policy for review, fixes and revalidation.
 
 If unrelated user changes block integration or a branch switch, preserve the
 working tree and index and report the blocker. Do not force cleanup to satisfy

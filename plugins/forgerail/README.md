@@ -1,5 +1,7 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
+The 0.1.4 Core clarifies continuous progress: proceed through already-authorized work and review fixes without repeated confirmation. An explicit delivery request can cover multiple stages; passing checks alone never grants merge or release authority. Earlier published snapshots remain unchanged.
+
 </p>
 
 <h1 align="center">ForgeRail</h1>
@@ -14,9 +16,9 @@
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Release line:** `0.1.3` reliability patch candidate for npm installation and explicit packaged-Skill loading. Check the versioned GitHub Release and npm registry for publication status. Install the exact version below; native Plugin activation and experimental integrations remain outside the stable support boundary.
+> **Release line:** `0.1.4` continuous-progress patch candidate for npm installation and explicit packaged-Skill loading. Check the versioned GitHub Release and npm registry for publication status. Install the exact version below; native Plugin activation and experimental integrations remain outside the stable support boundary.
 
-> **0.1.3 scope:** Generic AGW/WHR guidance is self-contained, and principal behaviors have been verified with explicit source loading. Use npm installation and explicit Agent loading; native Plugin activation and Codex Marketplace registration are deferred. See the [release notes](docs/release-0.1.3.md) and [project replacement requirements](docs/agw-replacement.md).
+> **0.1.4 scope:** Generic AGW/WHR guidance is self-contained, and principal behaviors have been verified with explicit source loading. Use npm installation and explicit Agent loading; native Plugin activation and Codex Marketplace registration are deferred. See the [release notes](docs/release-0.1.4.md) and [project replacement requirements](docs/agw-replacement.md).
 
 ## Why ForgeRail?
 
@@ -33,12 +35,12 @@ ForgeRail is not an autonomous executor, a replacement for OpenSpec or `AGENTS.m
 
 ## Five-minute quickstart
 
-### 1. Install 0.1.3 with npm
+### 1. Install 0.1.4 with npm
 
 Use Node.js 22 or newer and pin the version explicitly:
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.3
+npm install --global @echopath-labs/forgerail@0.1.4
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -93,7 +95,7 @@ ForgeRail separates **availability** from **project adoption**:
 | --- | --- | --- |
 | Plugin Only | Nothing | Default; occasional guidance and diagnosis |
 | Lightweight Adoption | One reviewed managed instruction block or `FORGERAIL.md` binding | Repeated use where durable guidance adds value |
-| Persisted Governance | Deferred beyond 0.1.3 | Only after machine-consumed configuration has evidence-backed ownership and migration rules |
+| Persisted Governance | Deferred beyond 0.1.4 | Only after machine-consumed configuration has evidence-backed ownership and migration rules |
 
 ForgeRail never applies a Lightweight Adoption plan by itself. The agent must show exact paths and content, obtain confirmation, preserve unrelated content, verify the result in a new task, and return a receipt. Read [Progressive Adoption](docs/adoption.md) for details.
 
@@ -113,8 +115,8 @@ Host instruction files are adapters, not ForgeRail Core. OpenSpec, ADRs, project
 The npm package exposes deterministic validation and diagnosis for maintainers and CI. It is **not** required for the Agent Plugin or target project.
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.3 validate
-npx --yes @echopath-labs/forgerail@0.1.3 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.4 validate
+npx --yes @echopath-labs/forgerail@0.1.4 diagnose --workspace .
 ```
 
 The official package is scoped. The unscoped `forgerail` package is only a reservation and is not an install source.
@@ -127,13 +129,13 @@ The official package is scoped. The unscoped `forgerail` package is only a reser
 - [Pack authoring](docs/pack-authoring.md)
 - [Migration from Agent Workflow Governance](docs/migration-from-agw.md)
 - [Architecture acceptance](docs/architecture-acceptance.md)
-- [0.1.3 release notes](docs/release-0.1.3.md)
+- [0.1.4 release notes](docs/release-0.1.4.md)
 
 See [product boundaries and current capability status](docs/product-boundary.md). The [Cursor executor experiment](docs/cursor-local-executor-canary.md) is retired from the next source candidate; Cursor instruction binding remains `profile-only`.
 
 ## Project status
 
-ForgeRail 0.1.3 uses npm distribution and explicit loading of the packaged Skills. Start with Plugin Only; review any durable project binding separately:
+ForgeRail 0.1.4 uses npm distribution and explicit loading of the packaged Skills. Start with Plugin Only; review any durable project binding separately:
 
 - Codex can load packaged guidance explicitly; native Plugin activation is unverified. Claude Code and Cursor adapters remain `profile-only`.
 - Persisted `.forgerail/` governance is deferred.
@@ -141,7 +143,7 @@ ForgeRail 0.1.3 uses npm distribution and explicit loading of the packaged Skill
 - npm installation is the current route; Codex Marketplace registration and Universal Plugins Directory publication are deferred.
 - Defects are fixed forward in a new version; published tags and packages are not rewritten.
 
-See the [0.1.3 release](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.3) and [changelog](CHANGELOG.md).
+See the [0.1.4 release](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.4) and [changelog](CHANGELOG.md).
 
 ## Contributing and support
 

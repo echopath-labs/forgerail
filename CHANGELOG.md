@@ -4,6 +4,12 @@
 
 No shipping changes yet.
 
+## 0.1.4 - 2026-09-18
+
+Continuous-progress policy patch; publication is confirmed by npm and the versioned GitHub Release. See [release notes](docs/release-0.1.4.md).
+
+- Clarify Core continuous progress and authorization reuse: complete covered review/fix/verification steps without repetitive confirmation, while retaining scope-specific delivery authorization and host controls.
+
 ## 0.1.3 - 2026-09-17
 
 Product boundary and reliability patch candidate; publication is confirmed by npm and the versioned GitHub Release. See [release notes](docs/release-0.1.3.md).
