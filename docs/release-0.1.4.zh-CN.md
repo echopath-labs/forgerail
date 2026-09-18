@@ -9,14 +9,14 @@
 
 这是指令层策略，不是自动批准运行时，也不绕过宿主权限。没有新增 Skill、executor、schema 或 CLI 操作。既有发布与项目快照不会自动升级。公开自动门禁覆盖结构、包内容和既有回归，不证明新增策略的模型行为。发布准备另做了有限的本地场景演练，它不是公开自动行为套件，也不保证模型服从。
 
-发布后安装：
+安装精确版本：
 
 ```sh
 npm install --global @echopath-labs/forgerail@0.1.4
 forgerail validate
 ```
 
-发布前使用既有 0.1.3。按[安装](installation.zh-CN.md)与[采用](adoption.zh-CN.md)说明加载 Skill；安装不自动激活 Skill 或创建 Host Binding Receipt。原生 Plugin 激活、市场/Directory 提交、独立二进制及 `.forgerail/` 持久治理继续暂缓。每个外部 Capability Pack 分别安装与发现，身份保留 alpha.4；主包目标为 `latest`，`next` 独立保留。不会自动迁移 AGW。
+按[安装](installation.zh-CN.md)与[采用](adoption.zh-CN.md)说明加载 Skill；安装不自动激活 Skill 或创建 Host Binding Receipt。原生 Plugin 激活、市场/Directory 提交、独立二进制及 `.forgerail/` 持久治理继续暂缓。每个外部 Capability Pack 分别安装与发现，身份保留 alpha.4；主包目标为 `latest`，`next` 独立保留。不会自动迁移 AGW。
 
 ## 维护者发布流程
 

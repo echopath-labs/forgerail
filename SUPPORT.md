@@ -1,6 +1,6 @@
 # ForgeRail Support
 
-> 0.1.4 is a release candidate until npm and the versioned GitHub Release confirm publication. If 0.1.4 is not yet published, use the existing 0.1.3 package.
+> This guide targets 0.1.4. Consult npm and the versioned GitHub Release for publication status.
 
 ForgeRail is maintained as an open-source project. The 0.1.4 stable support scope is npm installation and explicit packaged-Skill loading. Support is best effort; no response-time or resolution-time service level is promised.
 

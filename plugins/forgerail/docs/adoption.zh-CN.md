@@ -1,6 +1,6 @@
 # 渐进式采用
 
-> 0.1.4 尚为候选，实际发布以 npm 和版本化 GitHub Release 为准。如 0.1.4 尚未发布，可使用既有 0.1.3 包。
+> 本文面向 0.1.4，实际发布状态以 npm 和版本化 GitHub Release 为准。
 
 ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执行授权**。安装 Plugin 只是让 Agent 能发现引导能力；不会编辑工作区 instructions、创建持久状态、启用 Capability Pack 或批准任何外部影响。
 

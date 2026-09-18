@@ -16,7 +16,7 @@ The 0.1.4 Core clarifies continuous progress: proceed through already-authorized
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Release line:** `0.1.4` continuous-progress patch candidate for npm installation and explicit packaged-Skill loading. Check the versioned GitHub Release and npm registry for publication status. Install the exact version below; native Plugin activation and experimental integrations remain outside the stable support boundary.
+> **Release line:** `0.1.4` continuous-progress patch for npm installation and explicit packaged-Skill loading. Check the versioned GitHub Release and npm registry for publication status. Install the exact version below; native Plugin activation and experimental integrations remain outside the stable support boundary.
 
 > **0.1.4 scope:** Generic AGW/WHR guidance is self-contained, and principal behaviors have been verified with explicit source loading. Use npm installation and explicit Agent loading; native Plugin activation and Codex Marketplace registration are deferred. See the [release notes](docs/release-0.1.4.md) and [project replacement requirements](docs/agw-replacement.md).
 

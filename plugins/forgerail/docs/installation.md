@@ -1,6 +1,6 @@
 # Install ForgeRail with npm
 
-> 0.1.4 is a release candidate until npm and the versioned GitHub Release confirm publication. If 0.1.4 is not yet published, use the existing 0.1.3 package.
+> This guide targets 0.1.4. Consult npm and the versioned GitHub Release for publication status.
 
 This guide targets `@echopath-labs/forgerail@0.1.4`, source tag `v0.1.4`, on npm `latest`. The prerelease `next` channel remains separate; use the exact version below. Codex Marketplace registration and native Plugin activation are deferred for this release route.
 

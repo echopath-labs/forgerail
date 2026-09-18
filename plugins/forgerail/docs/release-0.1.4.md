@@ -1,6 +1,6 @@
 # ForgeRail 0.1.4
 
-This patch clarifies continuous progress and authorization reuse in Core. Publication is confirmed by the versioned GitHub Release and npm registry.
+This patch clarifies continuous progress and authorization reuse in Core. For publication status, consult the versioned GitHub Release and npm registry.
 
 - Continue authorized engineering work, review fixes and revalidation instead of stopping at a next-step suggestion.
 - One explicit request can cover multiple stages; independent gates do not require repeated prompts when each action and target is already covered.
@@ -9,14 +9,14 @@ This patch clarifies continuous progress and authorization reuse in Core. Public
 
 This is instruction-level guidance, not an auto-approval runtime or bypass for host permissions. No new Skill, executor, schema or CLI operation is added. Existing releases and project snapshots do not upgrade automatically. Public automated gates validate structure, package contents and existing regressions; they do not certify the new policy's model behavior. The release preparation also used limited local scenario rehearsals, not a public automated behavioral suite or a guarantee of compliance.
 
-After publication:
+Install the exact release:
 
 ```sh
 npm install --global @echopath-labs/forgerail@0.1.4
 forgerail validate
 ```
 
-Until then use published 0.1.3. Follow [installation](installation.md) and [adoption](adoption.md); installation does not activate Skills or create a Host Binding Receipt. Native Plugin activation, Marketplace/Directory submission, standalone binaries and persisted `.forgerail/` governance remain deferred. Install and discover each external Capability Pack separately; external Packs retain alpha.4 identities. The main package targets `latest`; `next` remains separate. AGW migration is not automatic.
+Follow [installation](installation.md) and [adoption](adoption.md); installation does not activate Skills or create a Host Binding Receipt. Native Plugin activation, Marketplace/Directory submission, standalone binaries and persisted `.forgerail/` governance remain deferred. Install and discover each external Capability Pack separately; external Packs retain alpha.4 identities. The main package targets `latest`; `next` remains separate. AGW migration is not automatic.
 
 ## Maintainer release procedure
 

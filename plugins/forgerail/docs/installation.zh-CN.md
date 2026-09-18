@@ -1,6 +1,6 @@
 # 通过 npm 安装 ForgeRail
 
-> 0.1.4 尚为候选，实际发布以 npm 和版本化 GitHub Release 为准。如 0.1.4 尚未发布，可使用既有 0.1.3 包。
+> 本文面向 0.1.4，实际发布状态以 npm 和版本化 GitHub Release 为准。
 
 本文面向 `@echopath-labs/forgerail@0.1.4`，源码 tag 为 `v0.1.4`，正式发布通道为 npm `latest`。预发布 `next` 通道独立保留，请使用下方精确版本命令。本轮暂不进行 Codex 市场注册，原生 Plugin 激活不作为这条交付路线的门槛。
 

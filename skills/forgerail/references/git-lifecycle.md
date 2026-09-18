@@ -119,9 +119,12 @@ Reuse the current branch when it owns the requested work. In particular:
 Do not mechanically create `hotfix/*` from the primary branch for a defect that
 exists only in unreleased feature or release-candidate code.
 
-When the Agent is on a clean primary branch, an explicit implementation request
-authorizes creating the repository-appropriate task branch before editing if
-task type, scope, ownership, and repository rules are unambiguous. Under the
+When the Agent is on the verified primary branch, an explicit implementation
+request authorizes creating the repository-appropriate task branch at its current
+HEAD before editing if task type, scope, ownership and repository rules are
+unambiguous. A clean worktree is sufficient; unrelated dirty files are also
+acceptable when their content and existing index entries can be preserved exactly.
+Record and verify that preservation when creating the branch. Under the
 portable defaults:
 
 - Create `feat/<short-scope>` for a new capability or iteration.
@@ -129,13 +132,13 @@ portable defaults:
   primary branch.
 - Use the applicable maintenance or documentation prefix for other work.
 
-Do not automatically create or switch branches when the worktree is dirty, the
-current branch has unrelated work, branch ownership or scope is ambiguous, the
-primary branch is unknown, the branch is tied to a different release, or a
-nearer rule requires confirmation. Preserve that state. Reuse the current branch
-when it is suitable for the authorized scope; ask for a branch decision only if ownership or isolation remains
-materially ambiguous. Do not require confirmation merely because unrelated dirty
-files exist when they can safely remain untouched.
+Do not automatically create or switch branches when ownership or isolation is
+ambiguous, the primary baseline is unknown, the branch belongs to unrelated
+committed work or a different release, or a nearer rule requires confirmation.
+If unrelated dirty files cannot be safely preserved, stop the affected branch
+operation and explain the concrete conflict; never clean or stash them to proceed.
+Reuse an existing task branch when it owns the authorized work. Do not ask for a
+branch decision merely because safely preservable unrelated dirty files exist.
 
 Branch creation authorization does not authorize merge, push, branch deletion,
 release, or deployment.

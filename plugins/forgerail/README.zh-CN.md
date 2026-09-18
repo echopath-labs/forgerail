@@ -16,7 +16,7 @@
   <a href="CHANGELOG.md">变更记录</a>
 </p>
 
-> **版本：** `0.1.4` 连续推进策略补丁候选，面向 npm 安装与包内 Skill 显式加载；实际发布状态以版本化 GitHub Release 和 npm registry 为准。使用下方精确版本安装；原生 Plugin 激活和实验性集成不属于正式支持范围。
+> **版本：** `0.1.4` 连续推进策略补丁，面向 npm 安装与包内 Skill 显式加载；实际发布状态以版本化 GitHub Release 和 npm registry 为准。使用下方精确版本安装；原生 Plugin 激活和实验性集成不属于正式支持范围。
 
 > **0.1.4 范围：** 通用 AGW/WHR 指引已自包含，主要行为已通过显式源码加载验证。本版采用 npm 安装和 Agent 显式加载，暂不进行原生 Plugin 激活认证或 Codex 市场注册。见[发布说明](docs/release-0.1.4.zh-CN.md)和[项目替代要求](docs/agw-replacement.zh-CN.md)。
 

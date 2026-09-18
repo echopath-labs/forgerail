@@ -1,6 +1,6 @@
 # Progressive Adoption
 
-> 0.1.4 is a release candidate until npm and the versioned GitHub Release confirm publication. If 0.1.4 is not yet published, use the existing 0.1.3 package.
+> This guide targets 0.1.4. Consult npm and the versioned GitHub Release for publication status.
 
 ForgeRail separates **installation**, **availability**, **project adoption**, and **execution approval**. Installing the Plugin exposes guidance to the Agent; it does not edit workspace instructions, create durable state, enable Capability Packs, or authorize external effects.
 
