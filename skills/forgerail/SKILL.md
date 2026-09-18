@@ -27,7 +27,7 @@ keep one owner for each equivalent workflow.
 2. **Diagnose only when needed**: first important use, explicit request, material drift, or rule conflict. Use `$forgerail-workspace-diagnosis` rather than broad scanning.
 3. **Compose** the effective Profile from authoritative sources and load only applicable Capability Packs.
 4. **Launch** work with a Task Envelope: goal, owner, allowed scope, prohibited operations, approval gates, validation, and Return Contract.
-5. **Guard** independent approval gates. Local integration, push, release, production, destructive, and lifecycle authorization do not inherit from one another.
+5. **Guard** independent approval gates. Local integration, push, release, production, destructive, and lifecycle authorization do not inherit from one another; check whether the current user request already explicitly covers each applicable action. Separate gates do not require separate prompts.
 6. **Verify** observable files, Git state, tests, logs, and external receipts against the Agent's Return Receipt.
 7. **Learn carefully**: propose reusable Profile changes with provenance. Do not persist them without user confirmation.
 
@@ -48,6 +48,37 @@ Envelope or Receipt can be expressed in the conversation and existing project
 records; do not require new JSON files, a second task history, or a new record
 system. Read the relevant reference below at its trigger, not all references at
 startup.
+
+## Continuous Progress And Authorization Reuse
+
+Continue while an executable next step remains within the user's requested outcome
+and valid authorization. Analysis, scoped edits, verification, review preparation,
+and fixing review findings belong to that work only when the request covers
+implementation or remediation. A review-only request authorizes inspection and
+reporting findings, not edits. When review is part of already-authorized
+implementation or repair, carry it through findings, scoped fixes and revalidation;
+do not end with only “next, run review” or “shall I continue?” when that next step
+is already covered. Progress
+updates are not handoffs. Do not add unrelated improvements or endless review
+rounds after the agreed acceptance checks pass.
+
+One explicit request may authorize several stages. For “fix and publish version X”,
+reuse authorization for the identified target and covered delivery operations once
+required reviews, checks and the applicable runbook are satisfied. A request only
+to prepare a PR does not authorize merge or publication. A passing CI run, bot
+approval, low risk, or the Agent's plan is never user authorization by itself.
+
+Ask only for a material unresolved decision or missing authorization: changed
+scope/target/impact, conflicting authoritative instructions, an uncovered external
+operation, or a platform permission requirement. Reassess only the affected step
+when facts change; preserve still-valid authorization for the rest. Never simulate
+approval or bypass host controls. Stop at an explicit user pause, a real blocker,
+or the requested outcome; avoid blind retries of failed external mutations.
+
+Before requesting a decision, finish independent authorized preparation and show
+the concrete choice, recommendation, and why input is necessary. Report the actual
+blocker and completed checks; do not present ordinary remaining authorized work
+as a reason to hand control back to the user.
 
 | Trigger | Required reference |
 | --- | --- |
