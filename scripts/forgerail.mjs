@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { loadHostAdapters, planAdoption } from "./lib/adoption.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
 import { contractSchemaNames, contractTypes, readJson, validateContract } from "./lib/contracts.mjs";
+import { planProject, doctorProject, applyProject, planRecovery, recoverProject, releaseInterruptedLock } from "./lib/project-adoption.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -35,6 +36,9 @@ function args(name) {
 function validateCommandOptions(command) {
   const allowedByCommand = new Map([
     ["validate", []],
+    ...["init", "update", "remove"].map((name) => [name, ["--workspace", "--apply", "--legacy-lock", "--legacy-source"]]),
+    ["doctor", ["--workspace"]],
+    ["recover", ["--workspace", "--apply", "--release-lock"]],
     ["validate-fixtures", ["--scope"]],
     ["validate-fixture-matrix", []],
     ["validate-adoption", []],
@@ -666,7 +670,18 @@ function validateAdoption() {
 try {
 const [command] = process.argv.slice(2);
 validateCommandOptions(command);
-if (command === "validate") {
+if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
+  const workspace = arg("--workspace");
+  if (!workspace) fail(`${command} requires --workspace`);
+  const options = { legacyLock: arg("--legacy-lock") ?? null, legacySource: arg("--legacy-source") ?? null };
+  const approved = arg("--apply");
+  const unlock = arg("--release-lock");
+  if (unlock && approved) fail("lock release and recovery apply must be separate");
+  const result = command === "doctor" ? doctorProject(root, workspace)
+    : command === "recover" ? unlock ? releaseInterruptedLock(workspace, unlock) : approved ? recoverProject(workspace, approved) : planRecovery(workspace)
+    : approved ? applyProject(root, workspace, command, approved, options) : planProject(root, workspace, command, options);
+  emit(result); if (result.valid === false) process.exitCode = 1;
+} else if (command === "validate") {
   const result = validatePlugin(); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "validate-fixtures") {
   const scope = arg("--scope") ?? "full";
@@ -711,7 +726,7 @@ if (command === "validate") {
   const receipt = arg("--receipt"); const workspace = arg("--workspace");
   if (!receipt || !workspace) fail("verify-receipt requires --receipt and --workspace");
   const result = verifyReceipt(readJson(resolve(receipt)), workspace); emit(result); if (!result.valid) process.exitCode = 1;
-} else fail("usage: forgerail.mjs validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");
+} else fail("usage: forgerail.mjs init | update | doctor | remove | recover | validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");
 
 } catch (error) {
   const code = error instanceof SyntaxError ? "INVALID_JSON" : ["ENOENT", "EACCES", "EPERM", "EISDIR", "ENOTDIR"].includes(error.code) ? "INPUT_UNAVAILABLE" : "INTERNAL_ERROR";

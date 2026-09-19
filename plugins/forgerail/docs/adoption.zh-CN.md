@@ -58,7 +58,7 @@ npx --yes @echopath-labs/forgerail@0.1.4 adoption-plan --workspace . --selection
 
 0.1.4 不启用机器消费的 ForgeRail 持久状态。只有重要证据无法通过项目现有来源表达，例如反复出现跨宿主冲突或确有机器强制策略需求时，才应考虑这一层。
 
-ForgeRail 目前不会创建 `.forgerail/`。未来设计必须先定义 ownership、precedence、migration、recovery 和 deletion 语义。
+已发布 0.1.4 与上述 v1 绑定流程不会创建 `.forgerail/`。未发布的显式项目接入闭环可维护有限安装元数据，具体 ownership、migration、recovery 和 deletion 见下方说明；它不启用持久治理。
 
 ## 宿主支持
 
@@ -94,3 +94,7 @@ Lightweight Adoption 只有满足以下条件才算完成：
 已有项目内 Skill 管理机制的项目，可从精确版本、摘要核验的 npm 归档原样复制四棵 `skills/` 树到既有目录。LICENSE/NOTICE 放在 Skill 树外，在现有锁定或开发指引中记录版本及产物身份。根指令指向项目内 Core Skill，保留项目规则，仅在获批采用范围内撤换竞争的 AGW 入口。沿用已有快照和契约检查，并在只打开项目根的新会话验证；此路线允许显式读取文件。
 
 这不启用 Pack 状态机制，也不要求复制全部 schema/adapter。回退需包含配套入口、锁定/快照、检查脚本及测试、许可、采用时修改的导航/生成器。审阅固定采用差异及后续采用修正，保留无关的后续修改，不能整仓 reset。
+
+## Unreleased lifecycle distinction
+
+The v1 binding-only workflow above remains supported. Explicit project snapshot adoption uses a separate [lifecycle contract](project-adoption.zh-CN.md), which may create bounded project installation metadata. It does not activate persisted governance. Published 0.1.4 retains its original behavior.

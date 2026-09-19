@@ -197,6 +197,7 @@ export function validateRelease() {
   }
   record("package-adapters", packageJson.files?.includes("adapters/"), packageJson.files ?? null);
   record("package-templates", packageJson.files?.includes("templates/"), packageJson.files ?? null);
+  record("project-lifecycle-publication", ["scripts/lib/project-adoption.mjs", "scripts/lib/project-state.mjs", "scripts/project-adoption.test.mjs"].every((path) => packageJson.files.includes(path)) && packageJson.scripts.test.includes("npm run test:project-adoption"), "explicit lifecycle modules and installed regression suite");
   record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
   const releaseEnglish = read("docs/release-0.1.4.md");

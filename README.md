@@ -156,3 +156,7 @@ Participation is governed by the [Code of Conduct](CODE_OF_CONDUCT.md).
 ## License
 
 ForgeRail is licensed under [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution information.
+
+## Unreleased project adoption
+
+Development source adds an opt-in Codex project lifecycle; published 0.1.4 does not include these commands. See [project adoption and recovery](docs/project-adoption.md). Existing read-only assessment and explicit source loading remain available.

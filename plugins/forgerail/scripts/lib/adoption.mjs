@@ -23,6 +23,7 @@ import {
 } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { validateContract } from "./contracts.mjs";
+import { projectAdoptionObservation, assertNoProjectLifecycle, statIdentity } from "./project-state.mjs";
 import { inspectBoundedPath } from "./bounded-read.mjs";
 
 const levels = ["plugin-only", "lightweight-adoption", "persisted-governance"];
@@ -192,7 +193,7 @@ export function adoptionWriteApprovalDigest(write) {
   return sha256(JSON.stringify(approvalBoundWrite(snapshotAdoptionWrite(write))));
 }
 
-function verifyApprovedWrite(write, approvedWriteDigest, workspaceSha256) {
+function verifyApprovedWrite(write, approvedWriteDigest, workspaceSha256, operations = adoptionOperations) {
   const snapshot = snapshotAdoptionWrite(write);
   const currentDigest = sha256(JSON.stringify(approvalBoundWrite(snapshot)));
   if (
@@ -203,7 +204,7 @@ function verifyApprovedWrite(write, approvedWriteDigest, workspaceSha256) {
   ) {
     throw new Error("approved write digest does not match the proposed write");
   }
-  if (!adoptionOperations.has(snapshot.operation)) {
+  if (!operations.has(snapshot.operation)) {
     throw new Error(`approved adoption operation is unsupported: ${snapshot.operation}`);
   }
   return snapshot;
@@ -473,7 +474,7 @@ function resolveHostSelection(root, adapters, hostIds, selectionMode) {
 
 export function observeAdoptionLevel(workspace, adapters = []) {
   const root = realpathSync(resolve(workspace));
-  if (existsSync(resolve(root, ".forgerail"))) return "persisted-governance";
+  if (projectAdoptionObservation(root).adopted) return "lightweight-adoption";
   if (existsSync(resolve(root, "FORGERAIL.md"))) return "lightweight-adoption";
   for (const adapter of adapters) {
     const target = adoptionTarget(root, adapter.bindingTarget);
@@ -535,6 +536,7 @@ function renderApprovedWriteContent(write, prior) {
   const content = approvedContent(write);
   if (write.operation === "create") return content;
   if (sha256(prior) !== write.baseSha256) throw new Error(`base digest drifted for ${write.path}`);
+  if (write.operation === "replace-file") return content;
   if (write.operation === "append-managed-block") return `${prior}${prior.length === 0 ? "" : prior.endsWith("\n\n") || prior.endsWith("\r\n\r\n") ? "" : prior.endsWith("\n") ? "\n" : "\n\n"}${content}`;
   const start = `<!-- ${write.managedMarker}:start -->`;
   const end = `<!-- ${write.managedMarker}:end -->`;
@@ -579,10 +581,15 @@ function targetContentMatches(path, identity, content) {
 }
 
 export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest, testHooks = {}) {
+  assertNoProjectLifecycle(workspace);
+  return applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, adoptionOperations);
+}
+
+function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, operations, expectedIdentity) {
   const binding = openBoundWorkspace(workspace);
   try {
     const { root } = binding;
-    const approvedWrite = verifyApprovedWrite(write, approvedWriteDigest, binding.workspaceSha256);
+    const approvedWrite = verifyApprovedWrite(write, approvedWriteDigest, binding.workspaceSha256, operations);
     verifyBoundWorkspacePath(binding);
     const creating = approvedWrite.operation === "create";
     return withBoundAdoptionParent(root, approvedWrite.path, binding.metadata, (leaf, parentBinding) => {
@@ -643,6 +650,7 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         }
         sourceDescriptor = openSync(leaf, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
         sourceStat = fstatSync(sourceDescriptor);
+        if (expectedIdentity !== undefined && JSON.stringify(statIdentity(fstatSync(sourceDescriptor, { bigint: true }))) !== JSON.stringify(expectedIdentity)) throw new Error(`target ownership changed: ${approvedWrite.path}`);
         if (!sourceStat.isFile() || pathStat.isSymbolicLink() || !sameFile(sourceStat, pathStat)) {
           throw new Error(`adoption target changed before write: ${approvedWrite.path}`);
         }
@@ -739,7 +747,9 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
         fsyncSync(directoryDescriptor);
       }
       verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
-      return { path: approvedWrite.path, contentSha256: sha256(content) };
+      const installedIdentity = lstatSync(leaf, { bigint: true });
+      if (String(installedIdentity.dev) !== String(temporaryStat.dev) || String(installedIdentity.ino) !== String(temporaryStat.ino)) throw new Error(`installed ownership changed: ${approvedWrite.path}`);
+      return { path: approvedWrite.path, contentSha256: sha256(content), identity: statIdentity(installedIdentity) };
     } catch (error) {
       if (replacementInstalled && backupExists) {
         try {
@@ -811,6 +821,7 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
   const binding = openBoundWorkspace(root);
   const realRoot = binding.root;
   try {
+  assertNoProjectLifecycle(realRoot);
   if (!levels.includes(proposedLevel)) throw new Error(`unknown adoption level: ${proposedLevel}`);
   if (proposedLevel === "persisted-governance") throw new Error("persisted-governance is evidence-gated and deferred in ForgeRail alpha.1");
   const registry = loadHostAdapters(pluginRoot);
@@ -894,4 +905,96 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
   } finally {
     closeSync(binding.descriptor);
   }
+}
+
+// Lifecycle-only primitives. The public v1 writer retains its original operation set.
+export function adoptionWorkspaceIdentity(workspace) {
+  const binding = openBoundWorkspace(workspace);
+  try { return binding.workspaceSha256; }
+  finally { closeSync(binding.descriptor); }
+}
+
+export function applyProjectFile(workspace, path, before, after, testHooks = {}, expectedWorkspaceSha256 = adoptionWorkspaceIdentity(workspace), expectedIdentity) {
+  adoptionTarget(workspace, path);
+  if (after === null) return removeProjectFile(workspace, path, before, testHooks, expectedWorkspaceSha256, expectedIdentity);
+  const write = {
+    workspaceSha256: expectedWorkspaceSha256, path,
+    operation: before === null ? "create" : "replace-file",
+    baseSha256: before === null ? null : sha256(before), content: after,
+    contentSha256: sha256(after), managedMarker: null,
+  };
+  write.approvalSha256 = adoptionWriteApprovalDigest(write);
+  return applyBoundWrite(workspace, write, write.approvalSha256, testHooks, new Set(["create", "replace-file"]), expectedIdentity);
+}
+
+function removeProjectFile(workspace, path, before, hooks, expectedWorkspaceSha256, expectedIdentity) {
+  if (typeof before !== "string") throw new Error("removal requires a known baseline");
+  const binding = openBoundWorkspace(workspace);
+  try {
+    if (binding.workspaceSha256 !== expectedWorkspaceSha256) throw new Error("project workspace identity changed");
+    return withBoundAdoptionParent(binding.root, path, binding.metadata, (leaf, parent) => {
+      const lock = `.forgerail-${sha256(path).slice(0, 24)}.lock`;
+      const fd = openSync(lock, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+      const lockStat = fstatSync(fd);
+      const recovery = `.forgerail-${randomBytes(12).toString("hex")}.removed`;
+      let moved = false;
+      try {
+        const original = lstatSync(leaf);
+        if (!original.isFile() || original.isSymbolicLink() || !targetContentMatches(leaf, original, before)) throw new Error(`removal baseline drift: ${path}`);
+        hooks.beforeRemove?.();
+        verifyBoundAdoptionParentPath(binding, parent, path);
+        if (!targetContentMatches(leaf, original, before)) throw new Error(`removal baseline drift: ${path}`);
+        if (expectedIdentity !== undefined && JSON.stringify(statIdentity(lstatSync(leaf, { bigint: true }))) !== JSON.stringify(expectedIdentity)) throw new Error(`removal ownership changed: ${path}`);
+        renameSync(leaf, recovery);
+        moved = true;
+        if (!targetContentMatches(recovery, original, before)) throw new Error(`removal changed during rename: ${path}`);
+        hooks.afterRemove?.();
+        verifyBoundAdoptionParentPath(binding, parent, path);
+        if (linkAwareStat(leaf) !== null || !targetContentMatches(recovery, original, before)) throw new Error(`removal changed after rename: ${path}`);
+        fsyncSync(parent.descriptor);
+        unlinkSync(recovery);
+        moved = false;
+        fsyncSync(parent.descriptor);
+        return { path, removed: true, identity: null };
+      } catch (error) {
+        if (moved) {
+          try {
+            // Exclusive linking restores without overwriting a concurrent new file.
+            linkSync(recovery, leaf);
+            unlinkSync(recovery);
+            moved = false;
+          } catch {}
+          if (moved) error.message += `; recovery retained: ${dirname(path)}/${recovery}`;
+        }
+        throw error;
+      } finally {
+        closeSync(fd);
+        const current = linkAwareStat(lock);
+        if (current && !current.isSymbolicLink() && sameFile(current, lockStat)) unlinkSync(lock);
+      }
+    });
+  } finally { closeSync(binding.descriptor); }
+}
+
+export function withProjectOperationLock(workspace, operation) {
+  const binding = openBoundWorkspace(workspace);
+  try {
+    return withBoundAdoptionParent(binding.root, ".forgerail-operation.lock", binding.metadata, (leaf, parent) => {
+      const fd = openSync(leaf, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+      const identity = fstatSync(fd);
+      try {
+        writeAll(fd, JSON.stringify({ pid: process.pid, workspaceSha256: binding.workspaceSha256 }));
+        fsyncSync(fd);
+        fsyncSync(parent.descriptor);
+        verifyBoundAdoptionParentPath(binding, parent, leaf);
+        const result = operation();
+        verifyBoundAdoptionParentPath(binding, parent, leaf);
+        return result;
+      } finally {
+        closeSync(fd);
+        const current = linkAwareStat(leaf);
+        if (current && !current.isSymbolicLink() && sameFile(current, identity)) unlinkSync(leaf);
+      }
+    });
+  } finally { closeSync(binding.descriptor); }
 }

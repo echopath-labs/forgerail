@@ -156,3 +156,7 @@ ForgeRail 0.1.4 通过 npm 分发包内 Skill，由 Agent 显式加载。从 Plu
 ## 许可证
 
 ForgeRail 使用 [Apache License 2.0](LICENSE)，署名信息见 [NOTICE](NOTICE)。
+
+## 未发布的项目接入能力
+
+开发源码新增可选 Codex 项目接入闭环；已发布 0.1.4 尚不包含这些命令。见 [项目接入与恢复](docs/project-adoption.zh-CN.md)。原有只读评估与显式 Skill 加载继续可用。

@@ -94,3 +94,7 @@ For normal use, begin with the [installation guide](installation.md) and stay at
 Projects that already version local Skills may copy the four unmodified `skills/` trees from an exact, hash-verified npm archive into their existing Skill directory. Preserve LICENSE/NOTICE outside those trees; record the version/archive identity in the existing lock or onboarding record. Point the root instruction file to the local Core Skill, retain project rules, and remove the competing AGW activation only within approved adoption scope. Use existing snapshot/contract checks and verify a fresh session rooted at the project; explicit file loading is sufficient for this route.
 
 This does not activate Pack state machinery or require copying all schemas/adapters. Rollback must include paired instruction files, lock/snapshot records, check scripts and tests, licensing, and adoption-specific navigation/generator edits. Review the fixed adoption diff and later adoption corrections; preserve unrelated later edits instead of resetting the repository.
+
+## Unreleased lifecycle distinction
+
+The v1 binding-only workflow above remains supported. Explicit project snapshot adoption uses a separate [lifecycle contract](project-adoption.md), which may create bounded project installation metadata. It does not activate persisted governance. Published 0.1.4 retains its original behavior.
