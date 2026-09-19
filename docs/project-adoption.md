@@ -152,3 +152,5 @@ obedience. The old `adoption-plan` command remains read-only and its public v1
 writer still accepts only create/append-managed-block/replace-managed-block.
 
 A drifted but valid installation remains lightweight adoption; drift is an unhealthy state, not loss of ownership. Pending operation locks/journals block legacy binding writes. Recovery evidence next to installed artifacts is checked even when the CLI version differs. If CLI source files are unavailable, doctor retains project observations and recovery digests alongside the source error.
+
+Pending recovery does not erase installation ownership: a valid config and installation manifest retain lightweight adoption, while health remains recovery-required. Interrupted initial adoption without a complete valid installation does not claim adopted status.

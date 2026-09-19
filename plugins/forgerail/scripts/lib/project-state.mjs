@@ -120,15 +120,23 @@ export function installationDrift(workspace, manifest) {
   return drift;
 }
 export function projectAdoptionObservation(workspace) {
+  let adopted = false;
   try {
-    if (readProjectFile(workspace, JOURNAL) !== null || readProjectFile(workspace, LOCK) !== null) return { status: "recovery-required", adopted: false };
-    const { manifest } = readInstallation(workspace);
-    if (!manifest) return { status: "not-adopted", adopted: false };
-    const drift = installationDrift(workspace, manifest);
+    const pending = readProjectFile(workspace, JOURNAL) !== null || readProjectFile(workspace, LOCK) !== null;
+    let manifest;
+    try { ({ manifest } = readInstallation(workspace)); }
+    catch (error) {
+      if (pending) return { status: "recovery-required", adopted: false, error: error.message };
+      throw error;
+    }
+    adopted = manifest !== null;
+    if (pending) return { status: "recovery-required", adopted };
+    if (!manifest) return { status: "not-adopted", adopted };
     const residual = residualWriteEvidence(workspace, manifest.artifacts.map((a) => a.path));
-    if (residual.length) return { status: "recovery-required", adopted: false, residual };
-    return { status: drift.length ? "drift" : "ready", adopted: true, drift };
-  } catch (error) { return { status: "unavailable", adopted: false, error: error.message }; }
+    if (residual.length) return { status: "recovery-required", adopted, residual };
+    const drift = installationDrift(workspace, manifest);
+    return { status: drift.length ? "drift" : "ready", adopted, drift };
+  } catch (error) { return { status: "unavailable", adopted, error: error.message }; }
 }
 
 export function statIdentity(stat) {

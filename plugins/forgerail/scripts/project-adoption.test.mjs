@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import { planProject, applyProject, doctorProject, planRecovery, recoverProject, releaseInterruptedLock } from "./lib/project-adoption.mjs";
 import { hash, json, CONFIG, MANIFEST, JOURNAL, LOCK, readProjectFile } from "./lib/project-state.mjs";
 import { planAdoption, observeAdoptionLevel, applyApprovedAdoptionWrite, adoptionWriteApprovalDigest, adoptionWorkspaceIdentity, applyProjectFile } from "./lib/adoption.mjs";
+import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
 const plugin = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 function fixture(t) { const path = mkdtempSync(resolve(tmpdir(), "forgerail-project-")); t.after(() => rmSync(path, { recursive: true, force: true })); return path; }
 function write(root, path, content) { mkdirSync(dirname(resolve(root, path)), { recursive: true }); writeFileSync(resolve(root, path), content); }
@@ -255,4 +256,33 @@ test("unavailable source retains project recovery digests", (t) => {
   assert.equal(doctor.valid, false); assert.equal(doctor.status, "recovery-required");
   assert.equal(doctor.cliVersion, null); assert.ok(doctor.errors.length);
   assert.equal(doctor.lockDigest, hash("lock")); assert.equal(doctor.recoveryDigest, hash("journal"));
+});
+
+
+test("recovery health preserves valid installation ownership across all observers", (t) => {
+  const root = fixture(t); adopt(root);
+  const manifest = JSON.parse(readProjectFile(root, MANIFEST));
+  const artifact = manifest.artifacts.find((a) => a.path.endsWith("/LICENSE"));
+  const residual = `${dirname(artifact.path)}/.forgerail-abcd.source`;
+  for (const path of [JOURNAL, LOCK, residual]) {
+    write(root, path, "recovery evidence");
+    const before = snapshot(root), doctor = doctorProject(plugin, root);
+    assert.equal(doctor.status, "recovery-required"); assert.equal(doctor.valid, false);
+    assert.equal(doctor.adopted, true); assert.equal(doctor.governanceLevel, "lightweight-adoption");
+    assert.equal(observeAdoptionLevel(root), "lightweight-adoption");
+    const diagnosis = diagnoseWorkspace(root, plugin);
+    assert.equal(diagnosis.adoption.currentLevel, "lightweight-adoption");
+    assert.equal(diagnosis.adoption.changeRecommended, false);
+    assert.deepEqual(snapshot(root), before); rmSync(resolve(root, path));
+  }
+});
+test("interrupted initial adoption does not invent installation ownership", (t) => {
+  const root = fixture(t); write(root, JOURNAL, "pending");
+  for (const config of [null, json({ schemaVersion: "1.0", host: "codex" })]) {
+    if (config !== null) write(root, CONFIG, config);
+    const doctor = doctorProject(plugin, root);
+    assert.equal(doctor.status, "recovery-required"); assert.equal(doctor.valid, false);
+    assert.equal(doctor.adopted, false); assert.equal(doctor.governanceLevel, "plugin-only");
+    assert.equal(doctor.recoveryDigest, hash("pending"));
+  }
 });
