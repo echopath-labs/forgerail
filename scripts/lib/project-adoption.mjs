@@ -65,7 +65,8 @@ export function doctorProject(pluginRoot, workspace) {
   let installedVersion = null;
   try { installedVersion = readInstallation(root).manifest?.source.version ?? null; } catch {}
   let journal = null, lock = null;
-  try { journal = readProjectFile(root, JOURNAL); lock = readProjectFile(root, LOCK); } catch {}
+  try { journal = readProjectFile(root, JOURNAL); } catch {}
+  try { lock = readProjectFile(root, LOCK); } catch {}
   return { ...observation, valid: !sourceError && (observation.status === "ready" || observation.status === "not-adopted"), ...(sourceError ? { status: observation.status === "recovery-required" ? "recovery-required" : "source-unavailable", projectStatus: observation.status, errors: [sourceError] } : {}), cliVersion, installedVersion, readOnly: true, network: false, governanceLevel: observation.adopted ? "lightweight-adoption" : "plugin-only", hostDiscovery: "not-verified", behavior: "not-verified", lockDigest: lock === null ? null : hash(lock), recoveryDigest: journal === null ? null : hash(journal) };
 }
 export function planProject(pluginRoot, workspace, action, { legacyLock = null, legacySource = null } = {}) {
@@ -155,6 +156,7 @@ function validateIdentity(identity) {
   if (!Object.values(identity).every((value) => typeof value === "string" && /^-?[0-9]{1,32}$/.test(value))) throw new Error("invalid written file identity");
 }
 function assertJournalCapacity(plan) {
+  if (plan.changes === 0) return;
   // Reserve enough room for every durable completion receipt before writing anything.
   const maximumIdentity = Object.fromEntries(identityKeys.map((key) => [key, "-" + "9".repeat(32)]));
   const progress = plan.operations.map(() => ({ state: "completed", identity: maximumIdentity }));

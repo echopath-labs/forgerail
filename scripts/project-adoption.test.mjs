@@ -286,3 +286,20 @@ test("interrupted initial adoption does not invent installation ownership", (t) 
     assert.equal(doctor.recoveryDigest, hash("pending"));
   }
 });
+
+
+test("unreadable journal does not hide an independently readable lock", (t) => {
+  const root = fixture(t); write(root, LOCK, "retained lock");
+  symlinkSync(resolve(root, "missing-journal"), resolve(root, JOURNAL));
+  const doctor = doctorProject(plugin, root);
+  assert.equal(doctor.valid, false); assert.equal(doctor.lockDigest, hash("retained lock"));
+  assert.equal(doctor.recoveryDigest, null);
+});
+test("repeat init with large user prose needs no recovery journal", (t) => {
+  const root = fixture(t); adopt(root);
+  write(root, "AGENTS.md", "x".repeat(2200000) + readProjectFile(root, "AGENTS.md"));
+  const before = snapshot(root); assert.equal(doctorProject(plugin, root).status, "ready");
+  const plan = planProject(plugin, root, "init"); assert.equal(plan.changes, 0);
+  assert.equal(applyProject(plugin, root, "init", plan.planSha256).status, "no-change");
+  assert.deepEqual(snapshot(root), before); assert.equal(readProjectFile(root, JOURNAL), null);
+});
