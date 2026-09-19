@@ -1,9 +1,21 @@
 import { createHash } from "node:crypto";
-import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, readdirSync, realpathSync } from "node:fs";
+import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, opendirSync, realpathSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { inspectBoundedPath } from "./bounded-read.mjs";
 
 export const projectFileLimit = 4 * 1024 * 1024;
+export const projectDirectoryEntryLimit = 10000;
+function boundedDirectoryEntries(path) {
+  const directory = opendirSync(path), entries = [];
+  try {
+    let entry;
+    while ((entry = directory.readSync()) !== null) {
+      if (entries.length >= projectDirectoryEntryLimit) throw new Error("project directory entry limit exceeded; observation unavailable");
+      entries.push(entry.name);
+    }
+    return entries;
+  } finally { directory.closeSync(); }
+}
 export const CONFIG = ".forgerail/config.json";
 export const MANIFEST = ".forgerail/installation.json";
 export const JOURNAL = ".forgerail-operation.json";
@@ -30,7 +42,7 @@ export function readProjectFile(workspace, path, maxBytes = projectFileLimit) {
   const parts = path.split("/");
   for (const [index, part] of parts.entries()) {
     let entries;
-    try { entries = readdirSync(cursor); } catch (error) { if (error.code === "ENOENT") return null; throw error; }
+    try { entries = boundedDirectoryEntries(cursor); } catch (error) { if (error.code === "ENOENT") return null; throw error; }
     if (entries.some((entry) => entry !== part && entry.normalize("NFC").toLowerCase() === part.toLowerCase())) throw new Error(`case alias conflict: ${path}`);
     cursor = resolve(cursor, part);
     let stat;
@@ -104,7 +116,7 @@ export function residualWriteEvidence(workspace, paths) {
     }
     const location = resolve(workspace, parent);
     let entries;
-    try { entries = readdirSync(location); } catch (error) { if (error.code === "ENOENT") continue; throw error; }
+    try { entries = boundedDirectoryEntries(location); } catch (error) { if (error.code === "ENOENT") continue; throw error; }
     for (const name of entries) if (/^\.forgerail-[a-f0-9]+\.(lock|tmp|bak|source|removed)$/.test(name)) found.push(parent === "." ? name : `${parent}/${name}`);
   }
   return found;
@@ -122,15 +134,21 @@ export function installationDrift(workspace, manifest) {
 export function projectAdoptionObservation(workspace) {
   let adopted = false;
   try {
-    const pending = readProjectFile(workspace, JOURNAL) !== null || readProjectFile(workspace, LOCK) !== null;
-    let manifest;
+    let manifest = null, metadataError = null;
     try { ({ manifest } = readInstallation(workspace)); }
-    catch (error) {
-      if (pending) return { status: "recovery-required", adopted: false, error: error.message };
-      throw error;
-    }
+    catch (error) { metadataError = error.message; }
     adopted = manifest !== null;
-    if (pending) return { status: "recovery-required", adopted };
+    let pending = false;
+    const recoveryErrors = [];
+    for (const path of [JOURNAL, LOCK]) {
+      try { if (readProjectFile(workspace, path) !== null) pending = true; }
+      catch (error) { pending = true; recoveryErrors.push(error.message); }
+    }
+    if (pending) {
+      const errors = [...(metadataError ? [metadataError] : []), ...recoveryErrors];
+      return { status: "recovery-required", adopted, ...(errors.length ? { error: errors.join("; ") } : {}) };
+    }
+    if (metadataError) return { status: "unavailable", adopted, error: metadataError };
     if (!manifest) return { status: "not-adopted", adopted };
     const residual = residualWriteEvidence(workspace, manifest.artifacts.map((a) => a.path));
     if (residual.length) return { status: "recovery-required", adopted, residual };

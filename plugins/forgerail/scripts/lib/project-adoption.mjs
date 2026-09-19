@@ -124,6 +124,7 @@ export function planProject(pluginRoot, workspace, action, { legacyLock = null, 
   operations.push(operation(MANIFEST, installed.manifestText, action === "remove" ? null : json(bundle.manifest)));
   const plan = { schemaVersion: "1.0", action, workspaceSha256: adoptionWorkspaceIdentity(root), source: producer.manifest.source, legacyLock, legacySourceSha256: legacySource ? hash(realpathSync(legacySource)) : null, operations, warnings: legacyLock ? ["Custom legacy AGENTS prose is preserved. Review the displayed full-file change for duplicate historical instructions."] : [], hostDiscovery: "not-verified" };
   const result = { ...plan, planSha256: hash(json(plan)), changes: operations.filter((op) => op.before !== op.after).length };
+  verifyPlan(result);
   assertJournalCapacity(result);
   return result;
 }

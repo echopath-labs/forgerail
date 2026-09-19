@@ -154,3 +154,7 @@ writer still accepts only create/append-managed-block/replace-managed-block.
 A drifted but valid installation remains lightweight adoption; drift is an unhealthy state, not loss of ownership. Pending operation locks/journals block legacy binding writes. Recovery evidence next to installed artifacts is checked even when the CLI version differs. If CLI source files are unavailable, doctor retains project observations and recovery digests alongside the source error.
 
 Pending recovery does not erase installation ownership: a valid config and installation manifest retain lightweight adoption, while health remains recovery-required. Interrupted initial adoption without a complete valid installation does not claim adopted status.
+
+Unreadable recovery locks or journals retain independently verified installation ownership and block writes. Project lifecycle directory checks are bounded to 10,000 entries per directory; exceeding the bound reports an observation error instead of scanning without a limit.
+
+Plans support at most 520 operations, including metadata writes. Preview and apply use the same validation; an update that combines too many old and new artifact paths is rejected during preview even if each installation fits the 512-artifact manifest limit.

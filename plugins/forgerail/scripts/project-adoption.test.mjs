@@ -6,7 +6,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { planProject, applyProject, doctorProject, planRecovery, recoverProject, releaseInterruptedLock } from "./lib/project-adoption.mjs";
-import { hash, json, CONFIG, MANIFEST, JOURNAL, LOCK, readProjectFile } from "./lib/project-state.mjs";
+import { projectDirectoryEntryLimit, residualWriteEvidence, hash, json, CONFIG, MANIFEST, JOURNAL, LOCK, readProjectFile } from "./lib/project-state.mjs";
 import { planAdoption, observeAdoptionLevel, applyApprovedAdoptionWrite, adoptionWriteApprovalDigest, adoptionWorkspaceIdentity, applyProjectFile } from "./lib/adoption.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
 const plugin = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -302,4 +302,65 @@ test("repeat init with large user prose needs no recovery journal", (t) => {
   const plan = planProject(plugin, root, "init"); assert.equal(plan.changes, 0);
   assert.equal(applyProject(plugin, root, "init", plan.planSha256).status, "no-change");
   assert.deepEqual(snapshot(root), before); assert.equal(readProjectFile(root, JOURNAL), null);
+});
+
+
+test("unreadable recovery evidence retains independently valid installation ownership", (t) => {
+  const root = fixture(t); adopt(root);
+  for (const path of [JOURNAL, LOCK]) {
+    for (const kind of ["symlink", "oversized"]) {
+      if (kind === "symlink") symlinkSync(resolve(root, "missing-recovery"), resolve(root, path));
+      else write(root, path, "x".repeat(4 * 1024 * 1024 + 1));
+      const doctor = doctorProject(plugin, root);
+      assert.equal(doctor.status, "recovery-required"); assert.equal(doctor.valid, false);
+      assert.equal(doctor.adopted, true); assert.equal(doctor.governanceLevel, "lightweight-adoption");
+      assert.ok(doctor.error); assert.equal(observeAdoptionLevel(root), "lightweight-adoption");
+      assert.equal(diagnoseWorkspace(root, plugin).adoption.currentLevel, "lightweight-adoption");
+      rmSync(resolve(root, path));
+    }
+  }
+});
+test("directory scans reject excessive entries and release their handles", (t) => {
+  const root = fixture(t);
+  for (let i = 0; i < projectDirectoryEntryLimit; i++) write(root, `entry-${i}`, "");
+  assert.deepEqual(residualWriteEvidence(root, ["AGENTS.md"]), []);
+  write(root, "one-more", "");
+  assert.throws(() => residualWriteEvidence(root, ["AGENTS.md"]), /directory entry limit/);
+  assert.throws(() => readProjectFile(root, "AGENTS.md"), /directory entry limit/);
+  rmSync(resolve(root, "one-more"));
+  assert.deepEqual(residualWriteEvidence(root, ["AGENTS.md"]), []);
+  assert.equal(readProjectFile(root, "AGENTS.md"), null);
+});
+
+
+function operationLimitFixture(t, extra) {
+  const root = fixture(t), source = fixture(t); adopt(root);
+  const manifest = JSON.parse(readProjectFile(root, MANIFEST));
+  for (let i = manifest.artifacts.length; i < 512; i++) {
+    const path = `.agents/skills/forgerail/old/group-${Math.floor(i / 32)}/entry-${i}.md`;
+    write(root, path, ""); manifest.artifacts.push({ path, ownership: "file", sha256: hash("") });
+  }
+  write(root, MANIFEST, json(manifest));
+  cpSync(plugin, source, { recursive: true });
+  for (let i = 0; i < extra; i++) write(source, `skills/forgerail/new/entry-${i}.md`, "");
+  return { root, source };
+}
+test("plan operation limit rejects 521 operations during preview without mutation", (t) => {
+  const { root, source } = operationLimitFixture(t, 7), before = snapshot(root);
+  assert.throws(() => planProject(source, root, "update"), /invalid project plan identity/);
+  assert.deepEqual(snapshot(root), before);
+});
+test("plan operation limit accepts 520 operations through the execution gate", (t) => {
+  const { root, source } = operationLimitFixture(t, 6), before = snapshot(root);
+  const plan = planProject(source, root, "update"); assert.equal(plan.operations.length, 520);
+  let reachedExecution = false;
+  // Stop after real apply validation and journal creation, before the quadratic
+  // write loop: ordinary lifecycle tests cover completed writes and rollback.
+  assert.throws(() => applyProject(source, root, "update", plan.planSha256, {}, {
+    beforeOperation(index) { assert.equal(index, 0); reachedExecution = true; throw new Error("boundary execution reached"); }
+  }), /boundary execution reached; recovery-required/);
+  assert.equal(reachedExecution, true);
+  assert.equal(JSON.parse(readProjectFile(root, JOURNAL)).plan.operations.length, 520);
+  recoverProject(root, planRecovery(root).planSha256);
+  assert.deepEqual(snapshot(root), before);
 });
