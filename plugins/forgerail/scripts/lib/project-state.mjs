@@ -127,7 +127,7 @@ export function projectAdoptionObservation(workspace) {
     const drift = installationDrift(workspace, manifest);
     const residual = residualWriteEvidence(workspace, manifest.artifacts.map((a) => a.path));
     if (residual.length) return { status: "recovery-required", adopted: false, residual };
-    return { status: drift.length ? "drift" : "ready", adopted: drift.length === 0, drift };
+    return { status: drift.length ? "drift" : "ready", adopted: true, drift };
   } catch (error) { return { status: "unavailable", adopted: false, error: error.message }; }
 }
 
@@ -146,6 +146,7 @@ export function hasLegacyBinding(text) {
 }
 export function assertNoProjectLifecycle(workspace) {
   const text = readProjectFile(workspace, "AGENTS.md");
-  if (readProjectFile(workspace, CONFIG) !== null || readProjectFile(workspace, MANIFEST) !== null ||
+  if (readProjectFile(workspace, JOURNAL) !== null || readProjectFile(workspace, LOCK) !== null ||
+      readProjectFile(workspace, CONFIG) !== null || readProjectFile(workspace, MANIFEST) !== null ||
       text?.includes(`<!-- ${marker}:`)) throw new Error("project lifecycle owns this binding; use project update/remove instead of v1 adoption");
 }

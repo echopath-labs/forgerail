@@ -60,13 +60,13 @@ function compareVersions(a, b) {
 }
 export function doctorProject(pluginRoot, workspace) {
   const root = realpathSync(workspace), observation = projectAdoptionObservation(root);
-  let cliVersion = null;
-  try { cliVersion = sourceBundle(pluginRoot).manifest.source.version; } catch (error) { return { valid: false, status: "source-unavailable", errors: [error.message], readOnly: true }; }
+  let cliVersion = null, sourceError = null;
+  try { cliVersion = sourceBundle(pluginRoot).manifest.source.version; } catch (error) { sourceError = error.message; }
   let installedVersion = null;
   try { installedVersion = readInstallation(root).manifest?.source.version ?? null; } catch {}
   let journal = null, lock = null;
   try { journal = readProjectFile(root, JOURNAL); lock = readProjectFile(root, LOCK); } catch {}
-  return { valid: observation.status === "ready" || observation.status === "not-adopted", ...observation, cliVersion, installedVersion, readOnly: true, network: false, governanceLevel: observation.adopted ? "lightweight-adoption" : "plugin-only", hostDiscovery: "not-verified", behavior: "not-verified", lockDigest: lock === null ? null : hash(lock), recoveryDigest: journal === null ? null : hash(journal) };
+  return { ...observation, valid: !sourceError && (observation.status === "ready" || observation.status === "not-adopted"), ...(sourceError ? { status: observation.status === "recovery-required" ? "recovery-required" : "source-unavailable", projectStatus: observation.status, errors: [sourceError] } : {}), cliVersion, installedVersion, readOnly: true, network: false, governanceLevel: observation.adopted ? "lightweight-adoption" : "plugin-only", hostDiscovery: "not-verified", behavior: "not-verified", lockDigest: lock === null ? null : hash(lock), recoveryDigest: journal === null ? null : hash(journal) };
 }
 export function planProject(pluginRoot, workspace, action, { legacyLock = null, legacySource = null } = {}) {
   if (!["init", "update", "remove"].includes(action)) throw new Error("unsupported project action");
@@ -94,7 +94,7 @@ export function planProject(pluginRoot, workspace, action, { legacyLock = null, 
     if (JSON.stringify(Object.keys(legacy.files).sort()) !== JSON.stringify(expected)) throw new Error("legacy inventory does not match target package");
     for (const path of expected) if (legacy.files[path] !== hash(bundle.files.get(path)) || digest(readProjectFile(root, path)) !== legacy.files[path]) throw new Error(`legacy source mismatch: ${path}`);
   }
-  const residual = residualWriteEvidence(root, [...bundle.files.keys(), CONFIG, MANIFEST, ...(legacyLock ? [legacyLock] : [])]);
+  const residual = residualWriteEvidence(root, [...bundle.files.keys(), ...(manifest?.artifacts.map((a) => a.path) ?? []), CONFIG, MANIFEST, ...(legacyLock ? [legacyLock] : [])]);
   if (residual.length) throw new Error(`inspect interrupted single-file recovery evidence: ${residual.join(", ")}`);
   const operations = [];
   const oldPaths = new Set(manifest?.artifacts.map((a) => a.path) ?? []);

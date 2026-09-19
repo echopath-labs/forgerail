@@ -150,3 +150,5 @@ fresh host session or equivalent supported discovery probe, verify each Skill's
 project path, source and enabled state. This demonstrates discovery, not model
 obedience. The old `adoption-plan` command remains read-only and its public v1
 writer still accepts only create/append-managed-block/replace-managed-block.
+
+A drifted but valid installation remains lightweight adoption; drift is an unhealthy state, not loss of ownership. Pending operation locks/journals block legacy binding writes. Recovery evidence next to installed artifacts is checked even when the CLI version differs. If CLI source files are unavailable, doctor retains project observations and recovery digests alongside the source error.

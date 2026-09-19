@@ -220,3 +220,39 @@ test("old candidate journals without ownership receipts refuse automatic recover
   const root = fixture(t), plan = planProject(plugin, root, "init"); write(root, JOURNAL, json({ schemaVersion: "1.0", plan }));
   assert.throws(() => planRecovery(root), /ownership receipts required/); assert.ok(readProjectFile(root, JOURNAL));
 });
+
+
+test("pending lifecycle evidence blocks both legacy planning and approved writes", (t) => {
+  for (const path of [JOURNAL, LOCK]) {
+    const root = fixture(t), legacy = planAdoption(plugin, root, ["codex"]);
+    write(root, path, "pending"); const before = snapshot(root);
+    assert.throws(() => planAdoption(plugin, root, ["codex"]), /project lifecycle owns/);
+    const proposed = legacy.proposedWrites[0];
+    assert.throws(() => applyApprovedAdoptionWrite(root, proposed, proposed.approvalSha256), /project lifecycle owns/);
+    assert.deepEqual(snapshot(root), before);
+  }
+});
+test("managed drift retains lightweight adoption and is not healthy", (t) => {
+  const root = fixture(t); adopt(root);
+  write(root, ".agents/skills/forgerail/SKILL.md", "user edit");
+  assert.equal(observeAdoptionLevel(root), "lightweight-adoption");
+  const doctor = doctorProject(plugin, root);
+  assert.equal(doctor.status, "drift"); assert.equal(doctor.valid, false);
+  assert.equal(doctor.governanceLevel, "lightweight-adoption");
+});
+test("old installed artifact recovery evidence blocks update and remove", (t) => {
+  const root = fixture(t), source = fixture(t); cpSync(plugin, source, { recursive: true });
+  const pkg = JSON.parse(readFileSync(resolve(source, "package.json"))); pkg.version = "0.0.1"; write(source, "package.json", json(pkg)); adopt(root, source);
+  write(root, ".agents/vendor/forgerail/0.0.1/.forgerail-abcd.source", "retained evidence"); const before = snapshot(root);
+  assert.equal(doctorProject(plugin, root).status, "recovery-required");
+  for (const action of ["update", "remove"]) assert.throws(() => planProject(plugin, root, action), /single-file recovery evidence/);
+  assert.deepEqual(snapshot(root), before);
+});
+test("unavailable source retains project recovery digests", (t) => {
+  const root = fixture(t), source = fixture(t); cpSync(plugin, source, { recursive: true });
+  rmSync(resolve(source, "LICENSE")); write(root, JOURNAL, "journal"); write(root, LOCK, "lock");
+  const doctor = doctorProject(source, root);
+  assert.equal(doctor.valid, false); assert.equal(doctor.status, "recovery-required");
+  assert.equal(doctor.cliVersion, null); assert.ok(doctor.errors.length);
+  assert.equal(doctor.lockDigest, hash("lock")); assert.equal(doctor.recoveryDigest, hash("journal"));
+});
