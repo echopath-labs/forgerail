@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "host": "codex",
+  "skillRoot": ".agents/skills",
+  "vendorRoot": ".agents/vendor/forgerail",
+  "bindingTarget": "AGENTS.md",
+  "managedMarker": "forgerail:project:codex:v1",
+  "skills": ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"],
+  "activationBoundary": "new-task-required"
+}

@@ -1,10 +1,10 @@
 # 渐进式采用
 
-> 本文面向 0.1.4，实际发布状态以 npm 和版本化 GitHub Release 为准。
+> 本文面向 0.1.5，实际发布状态以 npm 和版本化 GitHub Release 为准。
 
 ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执行授权**。安装 Plugin 只是让 Agent 能发现引导能力；不会编辑工作区 instructions、创建持久状态、启用 Capability Pack 或批准任何外部影响。
 
-本文对应 `0.1.4` / `v0.1.4`。按 [npm 安装说明](installation.zh-CN.md)安装并显式加载包内 Skill。npm 安装不会注册原生 Plugin；若绑定要求原生发现，必须另外核验该依赖。
+本文对应 `0.1.5` / `v0.1.5`。按 [npm 安装说明](installation.zh-CN.md)安装并显式加载包内 Skill。npm 安装不会注册原生 Plugin；若绑定要求原生发现，必须另外核验该依赖。
 
 默认从 Plugin Only 开始。只有重复证据表明“小范围持久绑定”比每次显式调用更有价值时，才升级采用层级。
 
@@ -31,13 +31,13 @@ ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执�
 
 ```bash
 # 默认：只解析当前工作区中检测到的已注册宿主。
-npx --yes @echopath-labs/forgerail@0.1.4 adoption-plan --workspace . --selection all-detected
+npx --yes @echopath-labs/forgerail@0.1.5 adoption-plan --workspace . --selection all-detected
 
 # 从已验证的 Host Adapter Registry 中明确选择一部分。
-npx --yes @echopath-labs/forgerail@0.1.4 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.5 adoption-plan --workspace . --host codex
 
 # 选择当前已验证 registry 中的全部 adapter。
-npx --yes @echopath-labs/forgerail@0.1.4 adoption-plan --workspace . --selection all-available
+npx --yes @echopath-labs/forgerail@0.1.5 adoption-plan --workspace . --selection all-available
 ```
 
 只读诊断不会跟随所选工作区内部的链接。它只读取有界的常规 `package.json` 和已注册 Host 绑定文件，每个文件最多 4 MiB；内容被消费前还会按 canonical workspace 复核已打开路径。不安全、发生变化、非常规或超限条目会作为“不可用证据”交给人类复核。只有安全受限的约定目录中至少存在一个有界常规 `.md` 文件时，才会报告 Markdown 记录实践；枚举上限为 4,096 项，空目录、超限目录、链接或非常规条目都不算 ADR 实践。
@@ -56,15 +56,15 @@ npx --yes @echopath-labs/forgerail@0.1.4 adoption-plan --workspace . --selection
 
 ## Level 2 — Persisted Governance
 
-0.1.4 不启用机器消费的 ForgeRail 持久状态。只有重要证据无法通过项目现有来源表达，例如反复出现跨宿主冲突或确有机器强制策略需求时，才应考虑这一层。
+0.1.5 不启用持久任务治理；项目接入仅维护有限安装元数据。只有重要证据无法通过项目现有来源表达，例如反复出现跨宿主冲突或确有机器强制策略需求时，才应考虑这一层。
 
-ForgeRail 目前不会创建 `.forgerail/`。未来设计必须先定义 ownership、precedence、migration、recovery 和 deletion 语义。
+旧版 0.1.4 与上述 v1 绑定流程不会创建 `.forgerail/`。0.1.5 的显式项目接入闭环可维护有限安装元数据，具体 ownership、migration、recovery 和 deletion 见下方说明；它不启用持久治理。
 
 ## 宿主支持
 
 | 宿主 | 原生目标 | Adapter 状态 | 验证边界 |
 | --- | --- | --- | --- |
-| Codex | `AGENTS.md` | `supported` | 保留 registry 支持状态；0.1.4 原生激活未验证。须在新任务核对实际加载方式及获批绑定 |
+| Codex | `AGENTS.md` | `supported` | 保留 registry 支持状态；0.1.5 原生激活未验证。须在新任务核对实际加载方式及获批绑定 |
 | Claude Code | `CLAUDE.md` | `profile-only` | 已建模目标与薄绑定，不声称端到端激活已验证 |
 | Cursor | `.cursor/rules/forgerail.mdc` | `profile-only` | 已建模目标，不声称 Skill discovery 和端到端激活已验证 |
 
@@ -94,3 +94,7 @@ Lightweight Adoption 只有满足以下条件才算完成：
 已有项目内 Skill 管理机制的项目，可从精确版本、摘要核验的 npm 归档原样复制四棵 `skills/` 树到既有目录。LICENSE/NOTICE 放在 Skill 树外，在现有锁定或开发指引中记录版本及产物身份。根指令指向项目内 Core Skill，保留项目规则，仅在获批采用范围内撤换竞争的 AGW 入口。沿用已有快照和契约检查，并在只打开项目根的新会话验证；此路线允许显式读取文件。
 
 这不启用 Pack 状态机制，也不要求复制全部 schema/adapter。回退需包含配套入口、锁定/快照、检查脚本及测试、许可、采用时修改的导航/生成器。审阅固定采用差异及后续采用修正，保留无关的后续修改，不能整仓 reset。
+
+## Unreleased lifecycle distinction
+
+The v1 binding-only workflow above remains supported. Explicit project snapshot adoption uses a separate [lifecycle contract](project-adoption.zh-CN.md), which may create bounded project installation metadata. It does not activate persisted governance. Published 0.1.4 retains its original behavior.

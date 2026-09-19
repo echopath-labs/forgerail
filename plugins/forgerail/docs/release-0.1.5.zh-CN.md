@@ -1,0 +1,36 @@
+# ForgeRail 0.1.5
+
+本版新增可选 Codex 项目接入闭环，实际发布状态以 npm 和版本化 GitHub Release 为准。
+
+- init/update/remove 默认只读预览，明确授权后使用计划摘要执行。
+- 项目选择与生成的安装身份分开记录；只维护已知受管文件和 AGENTS 块，保留用户字节。
+- doctor 离线检查，拒绝漂移与重复旧绑定；旧快照迁移需验证来源。
+- recover 依据完成回执及文件身份恢复；归属不明时保留现场，恢复日志超限时在写入前拒绝。
+
+CLI 需要 Node.js 22+，目标项目不必创建 package.json。安装 CLI 不会自动升级现有项目快照。临时项目中已验证 Codex 发现四个启用的 repo scope Skill，但这不证明模型行为遵从或原生 Plugin 激活。
+
+```sh
+npm install --global @echopath-labs/forgerail@0.1.5
+forgerail validate
+forgerail init --workspace .
+```
+
+最后一条命令仅预览。应用、旧版来源迁移和恢复见 [项目接入](project-adoption.zh-CN.md)。保留 0.1.4 来源锁，先按文档执行同版本迁移，再更新；不要覆盖未知文件。
+
+写入完成而回执尚未保存时中断，需要核对所有权。旧未发布候选日志不能冒充具备完成回执的新日志。恢复不是对任意编辑器的事务隔离；受管内容漂移时整体拒绝移除。
+
+本版不包含 AI 工具更新提醒或 RelayPact 可选委派引导，不调度 Agent。市场提交、独立二进制、其他宿主认证和持久任务治理仍暂缓。外部 Pack 保持 alpha.4 身份，npm latest 与 next 分开。
+
+维护者按 [英文发布流程](release-0.1.5.md#maintainer-release-procedure) 验证最终候选、PR bot review、完整 CI、合并树与精确归档，再在当前授权范围内发布；不能覆盖旧版本或移动不可变 tag。
+
+安装不创建 Host Binding Receipt。每个外部 Capability Pack 分别安装与发现，`.forgerail/` 安装元数据不启用持久任务治理。
+
+## 维护者发布流程
+
+本文件记录候选流程，实际发布结果以版本化 GitHub Release 和 registry 为准。最终源码及安装归档须在 Node.js 22 和 24 运行 `npm run test:maintainer`，覆盖文档、fixture、完整性、发布契约和实际安装消费者套件。发布后匿名回下载公共归档，比对批准产物摘要和安装文件，并在两个运行时验证 CLI 与包内自检。
+
+公共候选是已观测远端 `main` 的普通子 commit。基于该基线通过源码投影准备 `codex/project-adoption-lifecycle` 分支；必要修正使用普通的 source-first successor commit，不改写已批准历史。Draft PR base 与 publication comparison baseline 继续绑定已观测远端 `main`，如有并发变动则重新核验。
+
+合并前必须取得真实 Agent bot review，优先 Codex，其次团队配置的 bot。CI 和自查不能替代评审；采纳的问题修正后，确保评审覆盖最终 head。没有可用 bot 时由 owner 决定后续。合并后的公共 `main` tree 必须等于最终批准的 projection tree，之后创建 annotated tag `v0.1.5`、向 npm `latest` 发布精确包并创建正式 GitHub Release。
+
+执行前记录 owner 对具体 PR/合并的 `remote_integration_approval`，以及具体 tag、npm 包/通道和 GitHub Release 的 `release_approval`。同一明确请求可覆盖前两个门禁，无需逐阶段重复确认。`lifecycle_change_approval` 单独处理：本版不授权旧 AGW 退役或活跃项目迁移。不撤回既有发布或移动不可变 tag，必要时单独批准修正版。

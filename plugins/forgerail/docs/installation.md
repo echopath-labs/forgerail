@@ -1,8 +1,8 @@
 # Install ForgeRail with npm
 
-> This guide targets 0.1.4. Consult npm and the versioned GitHub Release for publication status.
+> This guide targets 0.1.5. Consult npm and the versioned GitHub Release for publication status.
 
-This guide targets `@echopath-labs/forgerail@0.1.4`, source tag `v0.1.4`, on npm `latest`. The prerelease `next` channel remains separate; use the exact version below. Codex Marketplace registration and native Plugin activation are deferred for this release route.
+This guide targets `@echopath-labs/forgerail@0.1.5`, source tag `v0.1.5`, on npm `latest`. The prerelease `next` channel remains separate; use the exact version below. Codex Marketplace registration and native Plugin activation are deferred for this release route.
 
 ## Requirements
 
@@ -10,12 +10,12 @@ Install Node.js 22 or newer on the machine running the CLI. Node.js 22 and 24 ar
 
 There is currently no standalone binary that bundles Node.js. The npm `forgerail` command is a Node.js executable entrypoint, not a runtime-free binary. A standalone binary is a future distribution option and does not block this npm release.
 
-## Install and verify 0.1.4
+## Install and verify 0.1.5
 
 Install the exact package from the npm registry:
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.4
+npm install --global @echopath-labs/forgerail@0.1.5
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -25,7 +25,7 @@ forgerail diagnose --workspace .
 For a one-off CLI invocation:
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.4 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.5 diagnose --workspace .
 ```
 
 ## Load the packaged guidance in an Agent
@@ -61,7 +61,7 @@ Project bindings and automatic recovery have their own adoption requirements. Do
 
 ## Release verification
 
-The 0.1.4 release gate tests the actual installed archive, CLI validation, read-only diagnosis and package self-tests on Node.js 22 and 24. Publication closeout downloads the public artifact and checks it against the approved archive; see the [versioned release notes](release-0.1.4.md) and GitHub release for the final publication result. Historical alpha.5 receipts remain in [its release notes](release-alpha5.md).
+The 0.1.5 release gate tests the actual installed archive, CLI validation, read-only diagnosis and package self-tests on Node.js 22 and 24. Publication closeout downloads the public artifact and checks it against the approved archive; see the [versioned release notes](release-0.1.5.md) and GitHub release for the final publication result. Historical alpha.5 receipts remain in [its release notes](release-alpha5.md).
 
 ## Upgrade, rollback and uninstall
 

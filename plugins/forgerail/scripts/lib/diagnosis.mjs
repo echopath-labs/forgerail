@@ -1,3 +1,4 @@
+import { projectAdoptionObservation } from "./project-state.mjs";
 import {
   lstatSync,
   opendirSync,
@@ -116,9 +117,10 @@ export function diagnoseWorkspace(workspace, pluginRoot = defaultPluginRoot) {
   }
 
   const managedBindingObserved = hostAdapters.some((adapter) => adapter.managedBindingObserved);
-  const persisted = inspectBoundedPath(root, ".forgerail").state === "available";
+  const projectAdoption = projectAdoptionObservation(root);
+  evidence.push(observed("project-adoption", ".forgerail/installation.json", projectAdoption));
   const portableContract = inspectBoundedPath(root, "FORGERAIL.md", { finalKind: "file" }).state === "available";
-  const adoptionLevel = persisted ? "persisted-governance" : portableContract || managedBindingObserved ? "lightweight-adoption" : "plugin-only";
+  const adoptionLevel = projectAdoption.adopted || portableContract || managedBindingObserved ? "lightweight-adoption" : "plugin-only";
   evidence.push(observed("host-adapters", "registry-owned bounded host instruction paths", hostAdapters));
   evidence.push(observed("forgerail-adoption-level", "bounded ForgeRail markers", adoptionLevel));
 
