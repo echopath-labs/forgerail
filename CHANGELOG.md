@@ -2,12 +2,16 @@
 
 ## Unreleased
 
-- Add an unreleased Codex project adoption lifecycle: read-only init/update/remove plans, offline doctor, bounded managed-file maintenance, legacy snapshot migration and guarded rollback.
+No shipping changes yet.
+
+## 0.1.5 - 2026-09-19
+
+- Add a Codex project adoption lifecycle: read-only init/update/remove plans, offline doctor, bounded managed-file maintenance, legacy snapshot migration and guarded rollback.
 - Separate project installation metadata from persisted governance; retain the original v1 adoption contract and writer permissions.
 - Add project-operation regression coverage and package-consumer checks.
 - Bind rollback to durable completion and file identity; reject oversized recovery plans, preserve instruction-file separators, and prevent duplicate v1/project bindings.
 
-These changes are not included in the published 0.1.4 package.
+See [release notes](docs/release-0.1.5.md). Publication status is recorded by npm and the versioned GitHub Release.
 
 ## 0.1.4 - 2026-09-18
 

@@ -64,11 +64,11 @@ function validateMarkdownLinks(relativePath) {
 }
 
 assert(candidate.submissionType === "skills_only", "candidate is Skills-only");
-assert(candidate.status === "local_014_candidate", "candidate status is local 0.1.4 integrity preparation");
+assert(candidate.status === "local_015_candidate", "candidate status is local 0.1.5 integrity preparation");
 assert(candidate.approval.status === "not_granted", "submission approval is not granted");
 assert(candidate.plugin.id === manifest.name, "candidate and manifest Plugin identity match");
 assert(candidate.plugin.version === manifest.version, "candidate and manifest version match");
-assert(candidate.plugin.version === "0.1.4", "candidate version is 0.1.4");
+assert(candidate.plugin.version === "0.1.5", "candidate version is 0.1.5");
 assert(packageJson.version === candidate.plugin.version, "optional scoped package version matches candidate");
 assert(candidate.plugin.mcpServers.length === 0, "candidate has no MCP server requirement");
 assert(candidate.plugin.authentication === "none", "candidate has no authentication requirement");
@@ -108,8 +108,8 @@ for (const field of ["websiteUrl", "supportUrl", "privacyPolicyUrl", "termsOfSer
 }
 assert(candidate.availability.intent.state === "confirmed_by_user" && candidate.availability.intent.value === "all_platform_supported_regions", "all-platform-supported-regions intent is user-confirmed");
 assert(candidate.availability.portalEnumeration.state === "pending_confirmation" && candidate.availability.portalEnumeration.values.length === 0, "portal region enumeration remains pending without an invented country list");
-assert(candidate.releaseNotes.state === "candidate" && candidate.releaseNotes.path === "./directory/release-notes-0.1.4.md", "0.1.4 release notes path is explicit");
-assert(existsSync(resolve(pluginRoot, candidate.releaseNotes.path)), "0.1.4 release notes file exists");
+assert(candidate.releaseNotes.state === "candidate" && candidate.releaseNotes.path === "./directory/release-notes-0.1.5.md", "0.1.5 release notes path is explicit");
+assert(existsSync(resolve(pluginRoot, candidate.releaseNotes.path)), "0.1.5 release notes file exists");
 
 const privacy = readFileSync(resolve(pluginRoot, "PRIVACY.md"), "utf8");
 const terms = readFileSync(resolve(pluginRoot, "TERMS.md"), "utf8");

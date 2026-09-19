@@ -49,7 +49,7 @@ test("source version update and downgrade boundaries", (t) => {
   const root = fixture(t), source = fixture(t); cpSync(plugin, source, { recursive: true }); adopt(root);
   const packagePath = resolve(source, "package.json"), pkg = JSON.parse(readFileSync(packagePath)); pkg.version = "0.1.5"; writeFileSync(packagePath, json(pkg));
   const p = planProject(source, root, "update"); applyProject(source, root, "update", p.planSha256); assert.equal(doctorProject(source, root).installedVersion, "0.1.5");
-  assert.throws(() => planProject(plugin, root, "update"), /downgrade/); assert.equal(readProjectFile(root, ".agents/vendor/forgerail/0.1.4/LICENSE"), null);
+  assert.throws(() => planProject(plugin, root, "update"), /downgrade/); assert.equal(readProjectFile(root, ".agents/vendor/forgerail/0.1.5/LICENSE"), null);
 });
 test("partial init rolls back with explicit digest; external changes are retained", (t) => {
   const root = fixture(t); write(root, "AGENTS.md", "Original\n"); const initial = snapshot(root), p = planProject(plugin, root, "init");
@@ -153,7 +153,7 @@ test("new CLI migrates a verified older package without implicitly upgrading its
   rmSync(resolve(old, "scripts/lib/project-adoption.mjs")); rmSync(resolve(old, "scripts/lib/project-state.mjs")); rmSync(resolve(old, "adapters/project"), { recursive: true });
   const options = { legacyLock, legacySource: old }; const plan = planProject(plugin, root, "init", options); applyProject(plugin, root, "init", plan.planSha256, options);
   assert.equal(doctorProject(plugin, root).installedVersion, "0.1.3"); assert.ok(readProjectFile(root, ".agents/skills/forgerail/SKILL.md").includes("Old released skill"));
-  const update = planProject(plugin, root, "update"); applyProject(plugin, root, "update", update.planSha256); assert.equal(doctorProject(plugin, root).installedVersion, "0.1.4");
+  const update = planProject(plugin, root, "update"); applyProject(plugin, root, "update", update.planSha256); assert.equal(doctorProject(plugin, root).installedVersion, "0.1.5");
 });
 test("UTF8 BOM in user instructions is preserved exactly", (t) => {
   const root = fixture(t); write(root, "AGENTS.md", "\ufeffUser rules\n"); adopt(root); assert.ok(readProjectFile(root, "AGENTS.md").startsWith("\ufeffUser rules\n"));

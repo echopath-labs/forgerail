@@ -124,3 +124,5 @@ Be respectful and follow the [Code of Conduct](CODE_OF_CONDUCT.md). Usage questi
 Unless stated otherwise, contributions are accepted under the [Apache License 2.0](LICENSE).
 
 Receipt observation, Envelope, Profile and approved-write compatibility details through 0.1.3 are described in [reliability notes](docs/reliability.md). The 0.1.4 Core policy update is described in [release notes](docs/release-0.1.4.md). Existing immutable releases remain unchanged; follow the current versioned runbook and verify authorization for each delivery operation.
+
+The 0.1.5 project lifecycle and maintainer release procedure are described in [release notes](docs/release-0.1.5.md).
