@@ -158,3 +158,5 @@ Pending recovery does not erase installation ownership: a valid config and insta
 Unreadable recovery locks or journals retain independently verified installation ownership and block writes. Project lifecycle directory checks are bounded to 10,000 entries per directory; exceeding the bound reports an observation error instead of scanning without a limit.
 
 Plans support at most 520 operations, including metadata writes. Preview and apply use the same validation; an update that combines too many old and new artifact paths is rejected during preview even if each installation fits the 512-artifact manifest limit.
+
+Completed writes are rechecked against their recorded file identities before later operations, including the manifest commit and journal removal; identical bytes do not permit an external replacement. Without installation metadata, doctor still checks root and metadata-directory recovery evidence and reports recovery-required without claiming adoption.

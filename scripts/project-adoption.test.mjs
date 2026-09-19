@@ -364,3 +364,29 @@ test("plan operation limit accepts 520 operations through the execution gate", (
   recoverProject(root, planRecovery(root).planSha256);
   assert.deepEqual(snapshot(root), before);
 });
+
+test("completed file identity replacement blocks installation commit and journal cleanup", (t) => {
+  for (const timing of ["before-manifest", "after-manifest"]) {
+    const root = fixture(t), plan = planProject(plugin, root, "init");
+    const first = plan.operations[0];
+    const replace = () => { write(root, "replacement", first.after); renameSync(resolve(root, "replacement"), resolve(root, first.path)); };
+    const hooks = timing === "before-manifest"
+      ? { beforeOperation(i) { if (i === plan.operations.length - 1) replace(); } }
+      : { afterOperation(i) { if (i === plan.operations.length - 1) replace(); } };
+    assert.throws(() => applyProject(plugin, root, "init", plan.planSha256, {}, hooks), /completed target ownership changed/);
+    assert.notEqual(readProjectFile(root, JOURNAL), null);
+    if (timing === "before-manifest") assert.equal(readProjectFile(root, MANIFEST), null);
+    assert.equal(readProjectFile(root, first.path), first.after);
+    assert.throws(() => planRecovery(root), /identity|ownership|external edit/);
+  }
+});
+test("orphaned initial recovery evidence is unhealthy without installation metadata", (t) => {
+  for (const path of [".forgerail-abcd.tmp", ".forgerail-abcd.lock", ".forgerail/.forgerail-abcd.source"]) {
+    const root = fixture(t); write(root, path, "retained evidence"); const before = snapshot(root);
+    const doctor = doctorProject(plugin, root);
+    assert.equal(doctor.status, "recovery-required"); assert.equal(doctor.valid, false); assert.equal(doctor.adopted, false);
+    assert.ok(doctor.residual.includes(path));
+    assert.throws(() => planProject(plugin, root, "init"), /recovery evidence/);
+    assert.deepEqual(snapshot(root), before);
+  }
+});

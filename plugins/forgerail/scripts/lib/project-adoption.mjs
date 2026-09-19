@@ -182,11 +182,18 @@ export function applyProject(pluginRoot, workspace, action, approvedDigest, opti
       write(JOURNAL, journal, next);
       journal = next;
     }
+    function verifyCompleted(end) {
+      for (let i = 0; i < end; i++) {
+        const previous = plan.operations[i], progress = state.progress[i];
+        if (readProjectFile(root, previous.path) !== previous.after) throw new Error(`completed target drift: ${previous.path}`);
+        if (progress?.state === "completed" && JSON.stringify(projectFileIdentity(root, previous.path)) !== JSON.stringify(progress.identity)) throw new Error(`completed target ownership changed: ${previous.path}`);
+      }
+    }
     try {
       for (const [index, op] of plan.operations.entries()) {
         hooks.beforeOperation?.(index, op);
         if (adoptionWorkspaceIdentity(root) !== plan.workspaceSha256) throw new Error("project workspace identity changed");
-        for (const previous of plan.operations.slice(0, index)) if (readProjectFile(root, previous.path) !== previous.after) throw new Error(`completed target drift: ${previous.path}`);
+        verifyCompleted(index);
         if (readProjectFile(root, op.path) !== op.before) throw new Error(`operation baseline changed: ${op.path}`);
         if (op.before !== op.after) {
           record(index, { state: "in-flight", identity: null });
@@ -198,7 +205,7 @@ export function applyProject(pluginRoot, workspace, action, approvedDigest, opti
           record(index, { state: "completed", identity });
         }
         if (readProjectFile(root, op.path) !== op.after) throw new Error(`operation verification failed: ${op.path}`);
-        for (const previous of plan.operations.slice(0, index + 1)) if (readProjectFile(root, previous.path) !== previous.after) throw new Error(`completed target drift: ${previous.path}`);
+        verifyCompleted(index + 1);
       }
       write(JOURNAL, journal, null);
       return { valid: true, status: action === "remove" ? "removed" : "ready", planSha256: plan.planSha256, changedFiles: plan.changes, hostDiscovery: "not-verified", behavior: "not-verified" };
