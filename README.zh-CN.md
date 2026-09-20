@@ -1,6 +1,6 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
-0.1.4 Core 补充连续推进策略：已授权的工作、审查修复及复验应持续完成，不反复询问是否继续。明确的交付请求可覆盖多个阶段；检查通过本身不授权合并或发布。此前已发布快照保持不变。
+0.1.5 新增 Codex 项目接入闭环：预览并执行接入、更新与移除，离线诊断和中断恢复，同时保留用户内容。既有快照不会自动升级。
 
 </p>
 
@@ -16,9 +16,9 @@
   <a href="CHANGELOG.md">变更记录</a>
 </p>
 
-> **版本：** `0.1.4` 连续推进策略补丁，面向 npm 安装与包内 Skill 显式加载；实际发布状态以版本化 GitHub Release 和 npm registry 为准。使用下方精确版本安装；原生 Plugin 激活和实验性集成不属于正式支持范围。
+> **版本：** `0.1.5` 项目接入闭环版本，面向 npm 安装与包内 Skill 显式加载；实际发布状态以版本化 GitHub Release 和 npm registry 为准。使用下方精确版本安装；原生 Plugin 激活和实验性集成不属于正式支持范围。
 
-> **0.1.4 范围：** 通用 AGW/WHR 指引已自包含，主要行为已通过显式源码加载验证。本版采用 npm 安装和 Agent 显式加载，暂不进行原生 Plugin 激活认证或 Codex 市场注册。见[发布说明](docs/release-0.1.4.zh-CN.md)和[项目替代要求](docs/agw-replacement.zh-CN.md)。
+> **0.1.5 范围：** 通用 AGW/WHR 指引已自包含，主要行为已通过显式源码加载验证。本版采用 npm 安装和 Agent 显式加载，暂不进行原生 Plugin 激活认证或 Codex 市场注册。见[发布说明](docs/release-0.1.5.zh-CN.md)和[项目替代要求](docs/agw-replacement.zh-CN.md)。
 
 ## 为什么需要 ForgeRail？
 
@@ -35,12 +35,12 @@ ForgeRail 不是自动执行器，不替代 OpenSpec 或 `AGENTS.md`，不提供
 
 ## 五分钟快速开始
 
-### 1. 通过 npm 安装 0.1.4
+### 1. 通过 npm 安装 0.1.5
 
 运行环境需要 Node.js 22 或以上，安装时固定精确版本：
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.4
+npm install --global @echopath-labs/forgerail@0.1.5
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -95,7 +95,7 @@ ForgeRail 将“能力可用”和“项目采用”分开：
 | --- | --- | --- |
 | Plugin Only | 什么都不修改 | 默认方式；偶尔使用引导或诊断 |
 | Lightweight Adoption | 一个经过评审的 managed instruction block，或 `FORGERAIL.md` 绑定 | 反复使用且长期指导确有价值 |
-| Persisted Governance | 0.1.4 不包含 | 只有机器配置具有明确 owner、迁移和删除规则后才考虑 |
+| Persisted Governance | 0.1.5 不包含 | 只有机器配置具有明确 owner、迁移和删除规则后才考虑 |
 
 ForgeRail 不会自行应用 Lightweight Adoption。Agent 必须展示精确路径与内容、取得确认、保护无关内容、在新任务中验证结果并返回 Receipt。详情见[渐进式采用](docs/adoption.zh-CN.md)。
 
@@ -115,8 +115,8 @@ ForgeRail 组合四层能力，但不会要求每个项目都持久化这些层�
 npm 包为维护者和 CI 提供确定性校验与诊断，**不是** Agent Plugin 或目标项目的必需条件。
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.4 validate
-npx --yes @echopath-labs/forgerail@0.1.4 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.5 validate
+npx --yes @echopath-labs/forgerail@0.1.5 diagnose --workspace .
 ```
 
 正式包是带组织 scope 的 `@echopath-labs/forgerail`。不带 scope 的 `forgerail` 只是名称占位，不是安装来源。
@@ -129,13 +129,13 @@ npx --yes @echopath-labs/forgerail@0.1.4 diagnose --workspace .
 - [Pack 开发](docs/pack-authoring.md)
 - [从 Agent Workflow Governance 迁移](docs/migration-from-agw.md)
 - [架构验收](docs/architecture-acceptance.md)
-- [0.1.4 发布说明](docs/release-0.1.4.zh-CN.md)
+- [0.1.5 发布说明](docs/release-0.1.5.zh-CN.md)
 
 详见[产品边界与当前能力状态](docs/product-boundary.zh-CN.md)。[Cursor 执行器实验](docs/cursor-local-executor-canary.zh-CN.md)已从下一份源码候选退出；Cursor 指令绑定保持 `profile-only`。
 
 ## 项目状态
 
-ForgeRail 0.1.4 通过 npm 分发包内 Skill，由 Agent 显式加载。从 Plugin Only 开始，持久项目绑定另行评审：
+ForgeRail 0.1.5 通过 npm 分发包内 Skill，由 Agent 显式加载。从 Plugin Only 开始，持久项目绑定另行评审：
 
 - Codex 可显式加载包内指导；原生 Plugin 激活尚未验证。Claude Code 和 Cursor adapter 仍为 `profile-only`；
 - 持久化 `.forgerail/` 治理仍延期；
@@ -143,7 +143,7 @@ ForgeRail 0.1.4 通过 npm 分发包内 Skill，由 Agent 显式加载。从 Plu
 - 当前采用 npm 安装，Codex 市场注册与 Universal Plugins Directory 上架暂缓；
 - 缺陷通过新版本 forward fix，不改写已发布 tag 或 package。
 
-参见 [0.1.4 正式版](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.4)和[变更记录](CHANGELOG.md)。
+参见 [0.1.5 正式版](https://github.com/echopath-labs/forgerail/releases/tag/v0.1.5)和[变更记录](CHANGELOG.md)。
 
 ## 贡献与支持
 
@@ -156,3 +156,7 @@ ForgeRail 0.1.4 通过 npm 分发包内 Skill，由 Agent 显式加载。从 Plu
 ## 许可证
 
 ForgeRail 使用 [Apache License 2.0](LICENSE)，署名信息见 [NOTICE](NOTICE)。
+
+## 可选项目接入能力
+
+0.1.5 新增可选 Codex 项目接入闭环；旧版 0.1.4 尚不包含这些命令。见 [项目接入与恢复](docs/project-adoption.zh-CN.md)。原有只读评估与显式 Skill 加载继续可用。

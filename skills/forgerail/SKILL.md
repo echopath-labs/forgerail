@@ -104,7 +104,7 @@ workspace-wide debt or an explicit review request.
 - Default to Plugin Only and the minimum governance level supported by evidence.
 - When durable adoption is requested, generate a read-only Adoption Plan and show its exact paths, base digests, and content before any write.
 - Single-host adoption may use one versioned managed block. Multi-host adoption may use `FORGERAIL.md` as the shared Adoption Contract plus thin Host Bindings.
-- Do not create `.forgerail/` state in the current alpha. Do not treat `profile-only` adapters as verified support.
+- Do not create `.forgerail/` during ordinary task governance or v1 binding-only adoption. Explicit project lifecycle adoption may maintain config and installation identity; it does not enable persisted governance. Do not treat `profile-only` adapters as verified support.
 - After an approved write, verify discovery in a new task or equivalent supported check and return a Host Binding Receipt.
 
 ## Source Precedence

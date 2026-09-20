@@ -1,6 +1,6 @@
 {
   "name": "@echopath-labs/forgerail",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
   "license": "Apache-2.0",
   "type": "module",
@@ -52,13 +52,16 @@
     "README.zh-CN.md",
     "SECURITY.md",
     "SUPPORT.md",
-    "TERMS.md"
+    "TERMS.md",
+    "scripts/lib/project-state.mjs",
+    "scripts/lib/project-adoption.mjs",
+    "scripts/project-adoption.test.mjs"
   ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures --scope core && node scripts/forgerail.mjs validate-adoption && npm run test:replacement && npm run test:boundary && npm run test:scope && npm run test:adoption && npm run test:reliability",
+    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures --scope core && node scripts/forgerail.mjs validate-adoption && npm run test:replacement && npm run test:boundary && npm run test:scope && npm run test:adoption && npm run test:reliability && npm run test:project-adoption",
     "test:integrity": "node scripts/integrity-regressions.mjs",
     "test:docs": "node scripts/validate-open-source-docs.mjs",
     "test:consumer": "node scripts/disposable-consumer.mjs",
@@ -73,7 +76,8 @@
     "test:maintainer": "npm test && npm run test:docs && node scripts/forgerail.mjs validate-fixtures --scope full && npm run test:integrity && npm run test:shadow && npm run test:release && npm run test:consumer && npm run test:directory",
     "test:adoption": "node --test scripts/adoption-closeout-regressions.mjs",
     "test:reliability": "node --test scripts/reliability-regressions.mjs scripts/adoption-reliability-regressions.mjs scripts/local-observation-regressions.mjs",
-    "test:boundary": "node --test scripts/product-boundary.test.mjs"
+    "test:boundary": "node --test scripts/product-boundary.test.mjs",
+    "test:project-adoption": "node --test scripts/project-adoption.test.mjs"
   },
   "repository": {
     "type": "git",
