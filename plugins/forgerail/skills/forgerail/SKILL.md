@@ -25,7 +25,7 @@ keep one owner for each equivalent workflow.
 
 1. **Observe** the smallest owner workspace, its instructions, Git state, relevant records, and user intent.
 2. **Diagnose only when needed**: first important use, explicit request, material drift, or rule conflict. Use `$forgerail-workspace-diagnosis` rather than broad scanning.
-3. **Compose** the effective Profile from authoritative sources and load only applicable Capability Packs.
+3. **Compose** the effective Profile from authoritative sources and load only applicable Capability Packs. Before the first consequential action and when relevant rules change, check visible rule conflicts using [Profile resolution](references/profile-resolution.md); reuse valid decisions rather than adding a routine approval gate.
 4. **Launch** work with a Task Envelope: goal, owner, allowed scope, prohibited operations, approval gates, validation, and Return Contract.
 5. **Guard** independent approval gates. Local integration, push, release, production, destructive, and lifecycle authorization do not inherit from one another; check whether the current user request already explicitly covers each applicable action. Separate gates do not require separate prompts.
 6. **Verify** observable files, Git state, tests, logs, and external receipts against the Agent's Return Receipt.
@@ -118,7 +118,7 @@ Apply, in order:
 5. repeated observable conventions;
 6. ForgeRail portable defaults.
 
-Surface equal-authority conflicts. Do not silently select one.
+Surface equal-authority conflicts. Do not silently select one. Also explain when a higher-priority constraint prevents the user’s intended outcome. Distinguish defaults that explicitly permit user override from mandatory restrictions; user approval cannot bypass the latter.
 
 ## Pack Rules
 
