@@ -238,7 +238,12 @@ export function planRecovery(workspace) {
       if (current !== op.before) preserved.push(op.path);
       return { ...operation(op.path, current, current), identity: null };
     }
-    if (current === op.before) return { ...operation(op.path, current, current), identity: null };
+    if (current === op.before) {
+      // An absent baseline claims no file. Existing prior bytes do not prove
+      // who restored them; v1.1 has no durable rollback ownership receipt.
+      if (current !== null) throw new Error(`recovery requires ownership reconciliation for restored prior content: ${op.path}`);
+      return { ...operation(op.path, current, current), identity: null };
+    }
     if (op.progress.state !== "completed") throw new Error(`recovery requires ownership reconciliation for interrupted write: ${op.path}`);
     if (current !== op.after) throw new Error(`recovery blocked by external edit: ${op.path}`);
     const identity = projectFileIdentity(root, op.path);

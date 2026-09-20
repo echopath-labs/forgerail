@@ -391,6 +391,36 @@ test("adopted metadata recovery evidence blocks healthy diagnosis", (t) => {
   assert.equal(doctor.status, "recovery-required"); assert.equal(doctor.adopted, true); assert.ok(doctor.residual.includes(path));
   for (const action of ["update", "remove"]) assert.throws(() => planProject(plugin, root, action), /recovery evidence/);
 });
+test("recovery refuses externally restored prior bytes and interrupted rollback retries", (t) => {
+  for (const origin of ["external", "interrupted-rollback"]) {
+    const root = fixture(t); adopt(root); const plan = planProject(plugin, root, "remove");
+    assert.throws(() => applyProject(plugin, root, "remove", plan.planSha256, {}, { beforeOperation(i) { if (i === 4) throw new Error("stop"); } }), /recovery/);
+    if (origin === "external") write(root, plan.operations[0].path, plan.operations[0].before);
+    else {
+      const recovery = planRecovery(root);
+      assert.throws(() => recoverProject(root, recovery.planSha256, { afterOperation() { throw new Error("rollback interrupted"); } }), /rollback interrupted/);
+    }
+    const before = snapshot(root);
+    assert.throws(() => planRecovery(root), /ownership reconciliation/);
+    assert.throws(() => recoverProject(root, "0".repeat(64)), /ownership reconciliation/);
+    assert.deepEqual(snapshot(root), before); assert.notEqual(readProjectFile(root, JOURNAL), null);
+    assert.equal(doctorProject(plugin, root).status, "recovery-required");
+  }
+});
+test("orphaned lifecycle binding requires reconciliation without claiming adoption", (t) => {
+  for (const kind of ["complete", "start-only", "end-only"]) {
+    const root = fixture(t); adopt(root);
+    rmSync(resolve(root, CONFIG)); rmSync(resolve(root, MANIFEST));
+    if (kind !== "complete") write(root, "AGENTS.md", `<!-- forgerail:project:codex:v1:${kind === "start-only" ? "start" : "end"} -->`);
+    const before = snapshot(root), doctor = doctorProject(plugin, root);
+    assert.equal(doctor.valid, false); assert.equal(doctor.status, "recovery-required"); assert.equal(doctor.adopted, false);
+    assert.match(doctor.error, /orphaned.*binding.*reconciliation/);
+    assert.equal(doctor.recoveryDigest, null); assert.equal(observeAdoptionLevel(root), "plugin-only");
+    assert.deepEqual(snapshot(root), before);
+  }
+  const root = fixture(t); write(root, "AGENTS.md", "Documentation mentions forgerail:project:codex:v1 without a binding.");
+  assert.equal(doctorProject(plugin, root).status, "not-adopted");
+});
 test("rollback rechecks restored identities before metadata and cleanup", (t) => {
   for (const timing of ["before-metadata", "after-metadata"]) {
     const root = fixture(t); adopt(root); const plan = planProject(plugin, root, "remove");

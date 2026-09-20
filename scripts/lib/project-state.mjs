@@ -151,7 +151,10 @@ export function projectAdoptionObservation(workspace) {
     if (metadataError) return { status: "unavailable", adopted, error: metadataError };
     const residual = residualWriteEvidence(workspace, [JOURNAL, CONFIG, MANIFEST, ...(manifest?.artifacts.map((a) => a.path) ?? [])]);
     if (residual.length) return { status: "recovery-required", adopted, residual };
-    if (!manifest) return { status: "not-adopted", adopted };
+    if (!manifest) {
+      if (readProjectFile(workspace, "AGENTS.md")?.includes(`<!-- ${marker}:`)) return { status: "recovery-required", adopted, error: "orphaned project lifecycle binding in AGENTS.md; ownership reconciliation required" };
+      return { status: "not-adopted", adopted };
+    }
     const drift = installationDrift(workspace, manifest);
     return { status: drift.length ? "drift" : "ready", adopted, drift };
   } catch (error) { return { status: "unavailable", adopted, error: error.message }; }
