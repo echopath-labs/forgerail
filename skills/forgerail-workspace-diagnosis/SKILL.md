@@ -19,7 +19,7 @@ Default to Analyze First and read-only operation.
 1. Identify workspace and nested owner boundaries.
 2. Observe the nearest Agent instructions, Git/default branch evidence, existing record systems, validation/build entries, installed Skills/Plugins, and declared delivery rules.
 3. Classify every finding as `observed_fact`, `inference`, `gap`, `recommendation`, or `requires_confirmation`.
-4. Follow existing habits when they are coherent and sufficient.
+4. Follow existing habits when they are coherent and sufficient. For material rule conflicts, reuse [Core Profile resolution](../forgerail/references/profile-resolution.md) to distinguish overridable defaults, mandatory restrictions and already-resolved decisions; report only visible evidence.
 5. Recommend a record-system change only for a concrete gap. OpenSpec may be a preferred example, but Spec Kit, Markdown/ADR, issue-based, or custom documented systems remain valid.
 6. Recommend packs as candidates; installation never implies activation.
 7. Report the observed ForgeRail adoption level and Host Adapter status. Default to Plugin Only; recommend Lightweight Adoption only for an explicit durable-adoption need or a concrete recurring gap.

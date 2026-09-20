@@ -2,6 +2,7 @@
 
 This release adds explicit Codex project adoption. Consult npm and the versioned GitHub Release for publication status.
 
+- Add shared rule conflict preflight guidance: reuse valid decisions, distinguish user-overridable defaults from mandatory host restrictions, and pause only affected actions. This is Agent guidance, not a configuration editor or host enforcement mechanism.
 - Preview init/update/remove plans and apply a digest-bound plan only within the user's authorization.
 - Keep project choices and generated installation identity separate; maintain only known managed files and the AGENTS block.
 - Diagnose offline readiness, reject drift and conflicting legacy bindings, and migrate known legacy snapshots through explicit source verification.

@@ -6,6 +6,7 @@ No shipping changes yet.
 
 ## 0.1.5 - 2026-09-19
 
+- Add shared, action-scoped rule conflict preflight guidance: reuse valid user decisions, distinguish overridable host defaults from mandatory restrictions, and explain unresolved conflicts without adding a configuration editor or routine confirmation gate.
 - Add a Codex project adoption lifecycle: read-only init/update/remove plans, offline doctor, bounded managed-file maintenance, legacy snapshot migration and guarded rollback.
 - Separate project installation metadata from persisted governance; retain the original v1 adoption contract and writer permissions.
 - Add project-operation regression coverage and package-consumer checks.

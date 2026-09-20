@@ -20,6 +20,8 @@
 
 > **0.1.5 范围：** 通用 AGW/WHR 指引已自包含，主要行为已通过显式源码加载验证。本版采用 npm 安装和 Agent 显式加载，暂不进行原生 Plugin 激活认证或 Codex 市场注册。见[发布说明](docs/release-0.1.5.zh-CN.md)和[项目替代要求](docs/agw-replacement.zh-CN.md)。
 
+规则冲突预检是各能力共用的 Host Agent 指引：按需检查可见规则、复用有效决定，只对影响当前动作的未决取舍提醒用户。用户批准不能绕过宿主强制限制；ForgeRail 不提供配置修改机制。见[规则解析](skills/forgerail/references/profile-resolution.md)。
+
 ## 为什么需要 ForgeRail？
 
 Coding Agent 很擅长执行任务，真正困难的是让执行始终忠于真实项目：

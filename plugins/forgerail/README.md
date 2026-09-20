@@ -20,6 +20,8 @@ ForgeRail 0.1.5 adds explicit Codex project adoption: plan and apply init/update
 
 > **0.1.5 scope:** Generic AGW/WHR guidance is self-contained, and principal behaviors have been verified with explicit source loading. Use npm installation and explicit Agent loading; native Plugin activation and Codex Marketplace registration are deferred. See the [release notes](docs/release-0.1.5.md) and [project replacement requirements](docs/agw-replacement.md).
 
+Rule conflict preflight is Host Agent guidance shared across capabilities: inspect relevant visible rules, reuse valid decisions, and ask only about unresolved choices that affect the action. Mandatory host restrictions cannot be bypassed by approval. See [Profile resolution](skills/forgerail/references/profile-resolution.md).
+
 ## Why ForgeRail?
 
 Coding agents are good at doing work. The hard part is keeping that work aligned with the real project:
