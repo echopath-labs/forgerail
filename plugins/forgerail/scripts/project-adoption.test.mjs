@@ -350,19 +350,12 @@ test("plan operation limit rejects 521 operations during preview without mutatio
   assert.throws(() => planProject(source, root, "update"), /invalid project plan identity/);
   assert.deepEqual(snapshot(root), before);
 });
-test("plan operation limit accepts 520 operations through the execution gate", (t) => {
-  const { root, source } = operationLimitFixture(t, 6), before = snapshot(root);
+test("plan operation limit completes all 520 operations", (t) => {
+  const { root, source } = operationLimitFixture(t, 6);
   const plan = planProject(source, root, "update"); assert.equal(plan.operations.length, 520);
-  let reachedExecution = false;
-  // Stop after real apply validation and journal creation, before the quadratic
-  // write loop: ordinary lifecycle tests cover completed writes and rollback.
-  assert.throws(() => applyProject(source, root, "update", plan.planSha256, {}, {
-    beforeOperation(index) { assert.equal(index, 0); reachedExecution = true; throw new Error("boundary execution reached"); }
-  }), /boundary execution reached; recovery-required/);
-  assert.equal(reachedExecution, true);
-  assert.equal(JSON.parse(readProjectFile(root, JOURNAL)).plan.operations.length, 520);
-  recoverProject(root, planRecovery(root).planSha256);
-  assert.deepEqual(snapshot(root), before);
+  assert.equal(applyProject(source, root, "update", plan.planSha256).status, "ready");
+  assert.equal(doctorProject(source, root).status, "ready");
+  assert.equal(readProjectFile(root, JOURNAL), null);
 });
 
 test("completed file identity replacement blocks installation commit and journal cleanup", (t) => {
@@ -388,5 +381,26 @@ test("orphaned initial recovery evidence is unhealthy without installation metad
     assert.ok(doctor.residual.includes(path));
     assert.throws(() => planProject(plugin, root, "init"), /recovery evidence/);
     assert.deepEqual(snapshot(root), before);
+  }
+});
+
+test("adopted metadata recovery evidence blocks healthy diagnosis", (t) => {
+  const root = fixture(t); adopt(root);
+  const path = ".forgerail/.forgerail-abcd.source"; write(root, path, "evidence");
+  const doctor = doctorProject(plugin, root);
+  assert.equal(doctor.status, "recovery-required"); assert.equal(doctor.adopted, true); assert.ok(doctor.residual.includes(path));
+  for (const action of ["update", "remove"]) assert.throws(() => planProject(plugin, root, action), /recovery evidence/);
+});
+test("rollback rechecks restored identities before metadata and cleanup", (t) => {
+  for (const timing of ["before-metadata", "after-metadata"]) {
+    const root = fixture(t); adopt(root); const plan = planProject(plugin, root, "remove");
+    assert.throws(() => applyProject(plugin, root, "remove", plan.planSha256, {}, { beforeOperation(i) { if (i === plan.operations.length - 1) throw new Error("stop"); } }), /recovery/);
+    const recovery = planRecovery(root); let restored;
+    const replace = () => { write(root, "replacement", restored.after); renameSync(resolve(root, "replacement"), resolve(root, restored.path)); };
+    assert.throws(() => recoverProject(root, recovery.planSha256, {
+      beforeOperation(i, op) { if (timing === "before-metadata" && op.path === CONFIG) replace(); },
+      afterOperation(i, op) { if (!restored && ![CONFIG, MANIFEST].includes(op.path) && op.after !== null) restored = op; if (timing === "after-metadata" && op.path === CONFIG) replace(); }
+    }), /recovered target identity or content changed/);
+    assert.notEqual(readProjectFile(root, JOURNAL), null); assert.equal(readProjectFile(root, restored.path), restored.after);
   }
 });

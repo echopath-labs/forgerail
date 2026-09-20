@@ -149,7 +149,7 @@ export function projectAdoptionObservation(workspace) {
       return { status: "recovery-required", adopted, ...(errors.length ? { error: errors.join("; ") } : {}) };
     }
     if (metadataError) return { status: "unavailable", adopted, error: metadataError };
-    const residual = residualWriteEvidence(workspace, manifest ? manifest.artifacts.map((a) => a.path) : [JOURNAL, CONFIG, MANIFEST]);
+    const residual = residualWriteEvidence(workspace, [JOURNAL, CONFIG, MANIFEST, ...(manifest?.artifacts.map((a) => a.path) ?? [])]);
     if (residual.length) return { status: "recovery-required", adopted, residual };
     if (!manifest) return { status: "not-adopted", adopted };
     const drift = installationDrift(workspace, manifest);

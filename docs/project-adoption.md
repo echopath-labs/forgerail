@@ -159,4 +159,6 @@ Unreadable recovery locks or journals retain independently verified installation
 
 Plans support at most 520 operations, including metadata writes. Preview and apply use the same validation; an update that combines too many old and new artifact paths is rejected during preview even if each installation fits the 512-artifact manifest limit.
 
-Completed writes are rechecked against their recorded file identities before later operations, including the manifest commit and journal removal; identical bytes do not permit an external replacement. Without installation metadata, doctor still checks root and metadata-directory recovery evidence and reports recovery-required without claiming adoption.
+Each write is checked immediately; completed writes are rechecked against their recorded file identities at metadata commit and journal-cleanup boundaries, rather than rescanning every prior target after every write; identical bytes do not permit an external replacement. Without installation metadata, doctor still checks root and metadata-directory recovery evidence and reports recovery-required without claiming adoption.
+
+Rollback also retains the identities returned by writes in the current recovery attempt and checks them before restoring metadata and removing the journal. Recovery evidence in metadata directories is checked for both adopted and unadopted projects. A 520-operation update is exercised to completion by the lifecycle regression suite; duration depends on the filesystem and file sizes.

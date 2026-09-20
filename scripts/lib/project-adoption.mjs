@@ -193,7 +193,7 @@ export function applyProject(pluginRoot, workspace, action, approvedDigest, opti
       for (const [index, op] of plan.operations.entries()) {
         hooks.beforeOperation?.(index, op);
         if (adoptionWorkspaceIdentity(root) !== plan.workspaceSha256) throw new Error("project workspace identity changed");
-        verifyCompleted(index);
+        if ([CONFIG, MANIFEST].includes(op.path)) verifyCompleted(index);
         if (readProjectFile(root, op.path) !== op.before) throw new Error(`operation baseline changed: ${op.path}`);
         if (op.before !== op.after) {
           record(index, { state: "in-flight", identity: null });
@@ -205,8 +205,9 @@ export function applyProject(pluginRoot, workspace, action, approvedDigest, opti
           record(index, { state: "completed", identity });
         }
         if (readProjectFile(root, op.path) !== op.after) throw new Error(`operation verification failed: ${op.path}`);
-        verifyCompleted(index + 1);
+
       }
+      verifyCompleted(plan.operations.length);
       write(JOURNAL, journal, null);
       return { valid: true, status: action === "remove" ? "removed" : "ready", planSha256: plan.planSha256, changedFiles: plan.changes, hostDiscovery: "not-verified", behavior: "not-verified" };
     } catch (error) { throw new Error(`${error.message}; recovery-required; run recover to inspect rollback plan`); }
@@ -247,17 +248,31 @@ export function planRecovery(workspace) {
   const plan = { schemaVersion: "1.1", action: "rollback", journalSha256: hash(text), workspaceSha256: journal.plan.workspaceSha256, operations, preserved };
   return { ...plan, planSha256: hash(json(plan)) };
 }
-export function recoverProject(workspace, approvedDigest) {
+export function recoverProject(workspace, approvedDigest, hooks = {}) {
   const root = realpathSync(workspace);
   return withProjectOperationLock(root, () => {
     const plan = planRecovery(root);
     if (plan.planSha256 !== approvedDigest) throw new Error("stale recovery plan digest");
-    for (const op of plan.operations) {
+    const restored = new Map();
+    function verifyRestored() {
+      for (const [path, expected] of restored) {
+        if (readProjectFile(root, path) !== expected.content || JSON.stringify(projectFileIdentity(root, path)) !== JSON.stringify(expected.identity)) throw new Error(`recovered target identity or content changed: ${path}`);
+      }
+    }
+    for (const [index, op] of plan.operations.entries()) {
+      hooks.beforeOperation?.(index, op);
+      if ([CONFIG, MANIFEST].includes(op.path)) verifyRestored();
       if (adoptionWorkspaceIdentity(root) !== plan.workspaceSha256) throw new Error("recovery workspace identity changed");
       if (readProjectFile(root, op.path) !== op.before) throw new Error(`recovery drift: ${op.path}`);
-      if (op.before !== op.after) applyProjectFile(root, op.path, op.before, op.after, {}, plan.workspaceSha256, op.identity);
+      if (op.before !== op.after) {
+        const result = applyProjectFile(root, op.path, op.before, op.after, {}, plan.workspaceSha256, op.identity);
+        restored.set(op.path, { content: op.after, identity: result.identity });
+        hooks.afterOperation?.(index, op);
+        if (readProjectFile(root, op.path) !== op.after || JSON.stringify(projectFileIdentity(root, op.path)) !== JSON.stringify(result.identity)) throw new Error(`recovered target identity or content changed: ${op.path}`);
+      }
     }
     for (const op of plan.operations) if (readProjectFile(root, op.path) !== op.after) throw new Error(`recovered target changed: ${op.path}`);
+    verifyRestored();
     const text = readProjectFile(root, JOURNAL);
     if (hash(text) !== plan.journalSha256) throw new Error("recovery journal changed");
     applyProjectFile(root, JOURNAL, text, null, {}, plan.workspaceSha256);
