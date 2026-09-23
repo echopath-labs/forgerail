@@ -71,13 +71,19 @@ Core 在功能、缺陷、重构、依赖/配置、API、Git 交付、重要调�
 
 ## 在 Agent 中加载包内指导
 
-npm包包含四个Skill及其引用。npm安装不会自动向Codex或其他Agent注册Skill。先查询全局包目录：
+npm包包含四个Skill及其引用。npm安装不会自动向Codex或其他Agent注册Skill。**只有确认全局包确为 0.1.5 时**，才查询全局包目录：
 
 ```bash
 npm root --global
 ```
 
-在输出目录后追加 `@echopath-labs/forgerail`，得到实际安装目录。四个独立入口为：
+在输出目录后追加 `@echopath-labs/forgerail`，得到实际安装目录。若全局版本不同，在目标项目外选择独立工具目录并安装精确版本：
+
+```bash
+npm install --prefix "<工具目录>" --no-save @echopath-labs/forgerail@0.1.5
+```
+
+此时使用 `<工具目录>/node_modules/@echopath-labs/forgerail` 作为包目录。`npm exec` 可运行精确版本 CLI，但不会把该版本变成全局 Skill 路径。无论采用哪条路线，读取前核对包内 `package.json` 的版本为 `0.1.5`。四个独立入口为：
 
 | Skill名称 | 安装包内路径 |
 | --- | --- |

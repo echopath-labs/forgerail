@@ -71,13 +71,19 @@ Core governance applies to non-trivial features, fixes, refactors, dependency/co
 
 ## Load the packaged guidance in an Agent
 
-The npm package includes all four Skills and their references. Installing npm does not register Skills in Codex or any other Agent. Find the global package directory with:
+The npm package includes all four Skills and their references. Installing npm does not register Skills in Codex or any other Agent. **Only after confirming the global package is 0.1.5**, find its directory with:
 
 ```bash
 npm root --global
 ```
 
-Append `@echopath-labs/forgerail` to that directory. Its independent entrypoints are:
+Append `@echopath-labs/forgerail` to that directory. If the global version differs, choose an isolated tools directory outside the target project and install the exact version there:
+
+```bash
+npm install --prefix "<tools-dir>" --no-save @echopath-labs/forgerail@0.1.5
+```
+
+The package path is then `<tools-dir>/node_modules/@echopath-labs/forgerail`. `npm exec` runs an exact-version CLI but does not make that version the global Skill path. With either route, verify that the package's `package.json` reports version `0.1.5` before loading. Its independent entrypoints are:
 
 | Skill label | Path inside the installed package |
 | --- | --- |

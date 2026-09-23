@@ -40,7 +40,7 @@ ForgeRail 不是自动执行器，不替代 OpenSpec 或 `AGENTS.md`，不提供
 **把接入任务交给你正在使用的 Coding Agent。**在目标项目工作区复制下面整段提示词。你只需给出目标；Agent 负责阅读文档、选择当前宿主实际支持的路径、执行并回传证据。下面的 Codex 项目接入命令是其中一种已发布路径，其他宿主的支持状态须分别核对。
 
 ```text
-请在当前项目工作区接入 https://github.com/echopath-labs/forgerail/tree/v0.1.5 对应的已发布 0.1.5 版，让后续工程任务能按项目规则使用它。先阅读该 tag 或精确 npm 包内同版本的安装与采用说明，不用 main 分支的未来版本命令。检查当前 Agent 宿主、Node.js、已有接入、项目规则和 Git 状态，再选择该版本对当前宿主实际支持的方式。安装来源固定为 @echopath-labs/forgerail@0.1.5；若全局已有不同版本，不要替换它，改用独立工具目录或精确版本 npm exec。若使用 Codex 项目接入，先展示只读计划并核对受管内容，在本次授权内执行，再做离线检查；其他宿主不要把显式加载说成自动发现。保留用户文件；遇到同名未知来源、漂移或规则冲突时，说明具体阻碍，不要强行覆盖。
+请在当前项目工作区接入 https://github.com/echopath-labs/forgerail/tree/v0.1.5 对应的已发布 0.1.5 版，让后续工程任务能按项目规则使用它。先阅读该 tag 或精确 npm 包内同版本的安装与采用说明，不用 main 分支的未来版本命令。检查当前 Agent 宿主、Node.js、已有接入、项目规则和 Git 状态，再选择该版本对当前宿主实际支持的方式。安装来源固定为 @echopath-labs/forgerail@0.1.5；若全局已有不同版本，不要替换它：Codex 项目接入的 CLI 可用精确版本 npm exec，其他宿主的显式 Skill 加载应从独立工具目录找到确切包路径。若使用 Codex 项目接入，先展示只读计划并核对受管内容，在本次授权内执行，再做离线检查；其他宿主不要把显式加载说成自动发现。保留用户文件；遇到同名未知来源、漂移或规则冲突时，说明具体阻碍，不要强行覆盖。
 
 接入后分别验证包和项目文件、宿主发现、具体工程任务中的实际行为。尽可能在新任务中用安全、可回退的小任务测试；不要为测试修改无关内容或执行 push、合并、发布。若无法新开任务，给我可复制的测试提示词，并把未完成的验证标为未验证。最后报告实际版本与来源、修改的文件、检查结果、适用与不适用的触发场景，以及当前宿主仍未验证的能力。
 ```
@@ -63,7 +63,7 @@ forgerail diagnose --workspace .
 
 ### 2. 按需加载工程指导
 
-安装包带有四个Skill。用 `npm root --global` 查询位置，向已有Agent提供 `@echopath-labs/forgerail/skills/forgerail/SKILL.md` 的实际绝对路径，要求按项目已有规则做只读评估。注明从npm安装包 `explicit_source` 加载；npm不会自动注册原生Plugin。详见[安装与Agent加载说明](docs/installation.zh-CN.md)。
+安装包带有四个Skill。仅在全局安装确为 0.1.5 时用 `npm root --global` 找包；若保留其他全局版本，先把 0.1.5 装在独立工具目录。向已有Agent提供该精确包内 `skills/forgerail/SKILL.md` 的绝对路径，要求按项目已有规则做只读评估。注明从npm安装包 `explicit_source` 加载；npm不会自动注册原生Plugin。详见[安装与Agent加载说明](docs/installation.zh-CN.md)。
 
 ### 3. 判断结果
 
