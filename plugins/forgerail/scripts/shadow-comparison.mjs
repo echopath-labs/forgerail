@@ -102,7 +102,7 @@ export function evaluateShadowComparison(overrides = {}, baseline) {
     evidenceKind: "textual-structure-only",
     interpretation: "behaviorCoverageReady is the legacy phrase-check result, not real Agent behavior or replacement qualification; see docs/agw-replacement.md",
     agwBaseline: "plugins/agent-workflow-governance@0.2.0-canonical",
-    forgeRailCandidate: "plugins/forgerail@0.1.5-canonical",
+    forgeRailCandidate: "plugins/forgerail@0.1.6-canonical",
     scenarios,
     covered: scenarios.filter((item) => item.passed).length,
     unresolved: scenarios.filter((item) => !item.passed).map((item) => item.id),
