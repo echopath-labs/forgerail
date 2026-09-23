@@ -37,9 +37,21 @@ ForgeRail 不是自动执行器，不替代 OpenSpec 或 `AGENTS.md`，不提供
 
 ## 五分钟快速开始
 
+**把接入任务交给你正在使用的 Coding Agent。**在目标项目工作区复制下面整段提示词。你只需给出目标；Agent 负责阅读文档、选择当前宿主实际支持的路径、执行并回传证据。下面的 Codex 项目接入命令是其中一种已发布路径，其他宿主的支持状态须分别核对。
+
+```text
+请在当前项目工作区接入 https://github.com/echopath-labs/forgerail/tree/v0.1.5 对应的已发布 0.1.5 版，让后续工程任务能按项目规则使用它。先阅读该 tag 或精确 npm 包内同版本的安装与采用说明，不用 main 分支的未来版本命令。检查当前 Agent 宿主、Node.js、已有接入、项目规则和 Git 状态，再选择该版本对当前宿主实际支持的方式。安装来源固定为 @echopath-labs/forgerail@0.1.5；若全局已有不同版本，不要替换它：Codex 项目接入的 CLI 可用精确版本 npm exec，其他宿主的显式 Skill 加载应从独立工具目录找到确切包路径。若使用 Codex 项目接入，先展示只读计划并核对受管内容，在本次授权内执行，再做离线检查；其他宿主不要把显式加载说成自动发现。保留用户文件；遇到同名未知来源、漂移或规则冲突时，说明具体阻碍，不要强行覆盖。
+
+接入后分别验证包和项目文件、宿主发现、具体工程任务中的实际行为。尽可能在新任务中用安全、可回退的小任务测试；不要为测试修改无关内容或执行 push、合并、发布。若无法新开任务，给我可复制的测试提示词，并把未完成的验证标为未验证。最后报告实际版本与来源、修改的文件、检查结果、适用与不适用的触发场景，以及当前宿主仍未验证的能力。
+```
+
+Agent 如何选择接入路径、如何回报验收，以及 Codex 的具体命令见[面向 Agent 的安装与验证教程](docs/installation.zh-CN.md#把接入任务交给-agent)。
+
+下面的手动步骤用于只读体验；上方提示词会按宿主的已验证支持状态选择接入方式。
+
 ### 1. 通过 npm 安装 0.1.5
 
-运行环境需要 Node.js 22 或以上，安装时固定精确版本：
+运行环境需要 Node.js 22 或以上。先核对现有全局版本；若其他项目依赖不同版本，使用下方 `npx` 路径或独立工具目录。适合全局安装时固定精确版本：
 
 ```bash
 npm install --global @echopath-labs/forgerail@0.1.5
@@ -51,7 +63,7 @@ forgerail diagnose --workspace .
 
 ### 2. 按需加载工程指导
 
-安装包带有四个Skill。用 `npm root --global` 查询位置，向已有Agent提供 `@echopath-labs/forgerail/skills/forgerail/SKILL.md` 的实际绝对路径，要求按项目已有规则做只读评估。注明从npm安装包 `explicit_source` 加载；npm不会自动注册原生Plugin。详见[安装与Agent加载说明](docs/installation.zh-CN.md)。
+安装包带有四个Skill。仅在全局安装确为 0.1.5 时用 `npm root --global` 找包；若保留其他全局版本，先把 0.1.5 装在独立工具目录。向已有Agent提供该精确包内 `skills/forgerail/SKILL.md` 的绝对路径，要求按项目已有规则做只读评估。注明从npm安装包 `explicit_source` 加载；npm不会自动注册原生Plugin。详见[安装与Agent加载说明](docs/installation.zh-CN.md)。
 
 ### 3. 判断结果
 
@@ -63,7 +75,20 @@ ForgeRail 应该返回：
 - 验证依据以及明确没有执行的动作；
 - 最多一个当前需要人类确认的下一项决定。
 
-如果它直接写入文件、创建 `.forgerail/`、执行远端动作，或把“已经安装”误当成“已经批准”，请提交 bug。
+在上述只读体验中，如果它直接写入文件、创建 `.forgerail/`、执行远端动作，或把“已经安装”误当成“已经批准”，请提交 bug。上方提示词已明确授权的项目接入另按计划执行。
+
+### 接入后，直接描述你的任务
+
+你不必先记住 Skill 名称。给 Agent 说清目标和边界，让它按项目规则选择需要的指导：
+
+| 你可以这样说 | 对应的指导 |
+| --- | --- |
+| “请修复这个缺陷，保留现有改动，验证后告诉我结果。” | 非简单工程任务使用 Core 治理 |
+| “先只读检查这个工作区的规则与冲突，再建议下一步。” | 工作区诊断 |
+| “评估这次重构是否造成职责重复或依赖边界漂移。” | 架构收敛审计 |
+| “复盘工作区的恢复风险和长期治理问题。” | 健康复核 |
+
+Agent 应按实际触发条件选择能力；安装成功并不能保证宿主在每次任务中自动发现 Skill。
 
 ## 包含哪些能力？
 
@@ -99,7 +124,7 @@ ForgeRail 将“能力可用”和“项目采用”分开：
 | Lightweight Adoption | 一个经过评审的 managed instruction block，或 `FORGERAIL.md` 绑定 | 反复使用且长期指导确有价值 |
 | Persisted Governance | 0.1.5 不包含 | 只有机器配置具有明确 owner、迁移和删除规则后才考虑 |
 
-ForgeRail 不会自行应用 Lightweight Adoption。Agent 必须展示精确路径与内容、取得确认、保护无关内容、在新任务中验证结果并返回 Receipt。详情见[渐进式采用](docs/adoption.zh-CN.md)。
+ForgeRail 不会自行应用 Lightweight Adoption。Agent 必须展示精确路径与内容、核对当前授权、保护无关内容、在新任务中验证结果并返回 Receipt；当前请求已明确授权的接入无需重复确认。详情见[渐进式采用](docs/adoption.zh-CN.md)。
 
 ## 工作方式
 
