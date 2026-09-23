@@ -4,6 +4,14 @@
 
 No shipping changes yet.
 
+## 0.1.6 - 2026-09-23
+
+- Make installation and adoption guidance agent-first: give a coding agent a version-pinned setup task, let it select the verified host route, and report package checks, host discovery, and task behavior separately.
+- Explain exact-version CLI use and isolated Skill loading without overwriting a different global installation. Keep the public repository root and nested Plugin documentation aligned.
+- Retain 0.1.5 runtime behavior and support boundaries; this patch does not add a new Host Adapter or automatic Skill activation.
+
+See [release notes](docs/release-0.1.6.md). Publication status is recorded by npm and the versioned GitHub Release.
+
 ## 0.1.5 - 2026-09-19
 
 - Add shared, action-scoped rule conflict preflight guidance: reuse valid user decisions, distinguish overridable host defaults from mandatory restrictions, and explain unresolved conflicts without adding a configuration editor or routine confirmation gate.

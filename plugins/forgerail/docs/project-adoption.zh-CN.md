@@ -1,6 +1,6 @@
-# 项目接入闭环（0.1.5）
+# 项目接入闭环（0.1.6）
 
-本文面向 0.1.5，实际发布状态以 npm 和版本化 GitHub Release 为准。已发布 0.1.4 没有这些命令；安装 CLI 不会自动迁移旧快照，更新需明确授权。完整接口与恢复契约见 [英文说明](project-adoption.md)。
+本文面向 0.1.6，实际发布状态以 npm 和版本化 GitHub Release 为准。已发布 0.1.4 没有这些命令；安装 CLI 不会自动迁移旧快照，更新需明确授权。完整接口与恢复契约见 [英文说明](project-adoption.md)。
 
 本轮只维护 ForgeRail 自身 Codex Skill 和 AGENTS 受管块；不管理第三方升级，不增加执行器或后台服务。目标项目不需要 package.json，CLI 本身仍需 Node.js 22+。
 
