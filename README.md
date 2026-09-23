@@ -40,7 +40,7 @@ ForgeRail is not an autonomous executor, a replacement for OpenSpec or `AGENTS.m
 **Delegate setup to your coding agent.** Open the agent in the target project and paste this prompt. You state the outcome; the agent reads the docs, chooses a route supported by its host, performs the work, and returns evidence. Codex project adoption is one released route; other hosts have separate support boundaries.
 
 ```text
-Set up the released ForgeRail 0.1.5 from https://github.com/echopath-labs/forgerail in this project so future engineering tasks can use it under project rules. Read the official installation and adoption guides. Check this agent host, Node.js, existing adoption, project instructions, and Git state, then choose a route actually supported for this host. Use the exact package @echopath-labs/forgerail@0.1.5. For Codex project adoption, show and review the read-only plan, apply only its owned changes within this authorization, then run offline checks. For other hosts, do not call explicit loading automatic discovery. Preserve user content; explain unknown same-name Skills, drift, or rule conflicts instead of overwriting them.
+Set up the released ForgeRail 0.1.5 from https://github.com/echopath-labs/forgerail/tree/v0.1.5 in this project so future engineering tasks can use it under project rules. Read installation and adoption guides from that tag or the exact npm package, not future commands from main. Check this agent host, Node.js, existing adoption, project instructions, and Git state, then choose a route actually supported for this host. Use the exact package @echopath-labs/forgerail@0.1.5. If another global version serves other projects, keep it and use an isolated tools directory or exact-version npm exec. For Codex project adoption, show and review the read-only plan, apply only its owned changes within this authorization, then run offline checks. For other hosts, do not call explicit loading automatic discovery. Preserve user content; explain unknown same-name Skills, drift, or rule conflicts instead of overwriting them.
 
 Report package/project-file checks, host discovery, and behavior on a concrete engineering task separately. Where possible, test with a small reversible task in a fresh session; do not change unrelated content or push, merge, or publish for this test. If you cannot start a fresh task, give me a copyable follow-up prompt and mark the missing checks unverified. Report the actual version and source, changed files, checks, applicable and non-applicable triggers, and any host capability still unverified.
 ```
@@ -51,7 +51,7 @@ The manual steps below offer a read-only first look. The prompt above chooses an
 
 ### 1. Install 0.1.5 with npm
 
-Use Node.js 22 or newer and pin the version explicitly:
+Use Node.js 22 or newer. Check the existing global version first; use `npx` below or an isolated tools directory if another project depends on a different global version. When global installation is appropriate, pin the version explicitly:
 
 ```bash
 npm install --global @echopath-labs/forgerail@0.1.5

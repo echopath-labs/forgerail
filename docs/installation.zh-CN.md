@@ -12,7 +12,7 @@
 
 ## 安装并验证 0.1.5
 
-从 npm registry 安装精确版本：
+先核对现有全局安装，例如 `npm list --global @echopath-labs/forgerail --depth=0`。若其他项目依赖不同版本，保留它，使用下方精确版本 `npm exec` 或独立工具目录。适合全局安装时，从 npm registry 安装精确版本：
 
 ```bash
 npm install --global @echopath-labs/forgerail@0.1.5
@@ -42,12 +42,11 @@ Codex 在项目接入时应依次执行（`<项目目录>`替换为目标项目�
 
 ```bash
 node --version
-npm install --global @echopath-labs/forgerail@0.1.5
-forgerail init --workspace <项目目录>
+npm exec --yes --package=@echopath-labs/forgerail@0.1.5 -- forgerail init --workspace "<项目目录>"
 # 阅读计划中的 operations、warnings、changes 数量和 planSha256；确认仅涉及预期的受管内容
-forgerail init --workspace <项目目录> --apply <planSha256>
-forgerail validate
-forgerail doctor --workspace <项目目录>
+npm exec --yes --package=@echopath-labs/forgerail@0.1.5 -- forgerail init --workspace "<项目目录>" --apply <planSha256>
+npm exec --yes --package=@echopath-labs/forgerail@0.1.5 -- forgerail validate
+npm exec --yes --package=@echopath-labs/forgerail@0.1.5 -- forgerail doctor --workspace "<项目目录>"
 ```
 
 若已接入旧版本，按[项目接入与恢复](project-adoption.zh-CN.md)先核对既有安装身份，选择适用的 `update` 或旧快照迁移路径，不把 `init` 失败当成允许覆盖的理由。`init` 默认只产生计划；`--apply` 使用刚取得的计划摘要，摘要约束内容但不代替授权。成功接入后，项目内会有固定版本的 `.agents/skills/` 受管 Skill、`AGENTS.md` 受管块和 `.forgerail/` 安装记录；这不等于启用了持久化治理。CLI 可安装在工具环境，目标项目不必成为 Node 项目。
@@ -63,7 +62,7 @@ forgerail doctor --workspace <项目目录>
 若使用了 Codex 项目接入，新开**同一项目**的任务，直接发送下方不点名 ForgeRail 的提示词。事后核对宿主提供的 Skill 发现来源，以及任务中实际读取的项目指导路径；如果宿主没有提供可核查的发现信息，就把宿主发现标为“未验证”。其他宿主也可用真实工程任务核对行为，但显式加载只能证明该次任务使用了指导。选用项目已有的小型、可回退任务，例如修正文档中的一处确定错误；不要为了测试制造业务改动。
 
 ```text
-请修正当前项目文档中一处你能核实的小错误。先核对项目规则和 Git 状态，再说明要改的准确位置、适用检查与授权边界；只做这个小改动并验证，不提交、push、合并或发布。最后列出你实际读取的项目指导文件和执行过的检查。如果找不到适合安全修正的错误，就只报告观察结果，不要凑改动。
+请修正当前项目文档中一处你能核实的小错误。只修改这一处；不要提交、push、合并或发布。完成后告诉我改了什么、如何验证。若没有适合安全修正的错误，就说明原因并停止，不要凑改动。
 ```
 
 这段测试提示词不点名 ForgeRail，以便观察项目绑定是否自然进入工程任务。请以实际读取的文件、操作和结果为证据；Agent 自称“已触发”不构成独立证明。若当前环境无法新开任务，交付提示词并把后两层写成“未验证”，不要把本会话显式阅读包内 Skill 的结果算作自动发现。

@@ -12,7 +12,7 @@ There is currently no standalone binary that bundles Node.js. The npm `forgerail
 
 ## Install and verify 0.1.5
 
-Install the exact package from the npm registry:
+First inspect any global installation, for example with `npm list --global @echopath-labs/forgerail --depth=0`. If another project depends on a different version, keep it and use exact-version `npm exec` below or an isolated tools directory. When global installation is appropriate, install the exact package from npm:
 
 ```bash
 npm install --global @echopath-labs/forgerail@0.1.5
@@ -42,12 +42,11 @@ For a new project adoption, Codex should follow this sequence (`<project>` is th
 
 ```bash
 node --version
-npm install --global @echopath-labs/forgerail@0.1.5
-forgerail init --workspace <project>
+npm exec --yes --package=@echopath-labs/forgerail@0.1.5 -- forgerail init --workspace "<project>"
 # Review operations, warnings, change count, and planSha256; confirm managed ownership
-forgerail init --workspace <project> --apply <planSha256>
-forgerail validate
-forgerail doctor --workspace <project>
+npm exec --yes --package=@echopath-labs/forgerail@0.1.5 -- forgerail init --workspace "<project>" --apply <planSha256>
+npm exec --yes --package=@echopath-labs/forgerail@0.1.5 -- forgerail validate
+npm exec --yes --package=@echopath-labs/forgerail@0.1.5 -- forgerail doctor --workspace "<project>"
 ```
 
 If an older version is already adopted, follow [project adoption and recovery](project-adoption.md) to inspect its identity and choose the appropriate `update` or legacy migration path. A failed `init` is not permission to overwrite it. `init` returns a read-only plan by default; `--apply` binds the current plan but does not grant permission. A successful adoption places pinned project Skills, a managed `AGENTS.md` block, and installation records under `.forgerail/`. The latter do not enable persisted governance. The CLI can live in a tools environment; the target does not become a Node project.
@@ -63,7 +62,7 @@ If an older version is already adopted, follow [project adoption and recovery](p
 For Codex project adoption, open a **fresh task in the same project** and send the following prompt, which does not name ForgeRail. Afterwards, check the host's Skill discovery source and the project guidance paths actually read during the task. If the host offers no observable discovery evidence, mark host discovery unverified. Other hosts can test behavior on a real engineering task, but explicit loading proves guidance only for that task. Use an existing small, reversible task, such as correcting a verifiable documentation error. Do not invent a product change merely for the test.
 
 ```text
-Correct one small, verifiable error in this project's documentation. First inspect project instructions and Git state, then identify the exact location, applicable checks, and authorization boundary. Make only that correction and verify it. Do not commit, push, merge, or publish. Report the project guidance files you actually read and the checks you ran. If there is no safe correction, report the observation without inventing an edit.
+Correct one small, verifiable error in this project's documentation. Change only that item; do not commit, push, merge, or publish. Tell me what changed and how you verified it. If there is no safe correction, explain why and stop rather than inventing an edit.
 ```
 
 The follow-up does not name ForgeRail, so it tests whether project guidance enters ordinary engineering work. Use observed file reads, actions and results as evidence; an Agent's claim that it “triggered” is not independent proof. If the current host cannot start a fresh task, provide the follow-up prompt and mark discovery and behavior unverified. Explicit loading in the original task is not automatic discovery.
