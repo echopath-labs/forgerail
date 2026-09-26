@@ -50,8 +50,9 @@
     "cursorCoverage": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["agentsContent", "agentsSha256", "coreSha256", "sourceCoreSha256"],
+      "required": ["workspaceSha256", "agentsContent", "agentsSha256", "coreSha256", "sourceCoreSha256"],
       "properties": {
+        "workspaceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "agentsContent": { "type": "string", "minLength": 1 },
         "agentsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "coreSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },

@@ -334,7 +334,7 @@ test("received covered plans reject a final AGENTS.md without the Core pointer",
   const digest = createHash("sha256").update(prior).digest("hex");
   const corePlan = planAdoption(root, workspace, ["cursor"]);
   const coreDigest = corePlan.evidence.find((item) => item.includes("Core tree matches the package source"))?.match(/[a-f0-9]{64}/)?.[0];
-  received.cursorCoverage = { agentsContent: prior, agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest };
+  received.cursorCoverage = { workspaceSha256: corePlan.cursorCoverage.workspaceSha256, agentsContent: prior, agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest };
   for (const write of received.proposedWrites) {
     write.coverage = { agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest };
     write.approvalSha256 = adoptionWriteApprovalDigest(write);
@@ -351,6 +351,11 @@ test("supported Cursor no-change plans require checked workspace evidence", (t) 
   const plan = planAdoption(root, workspace, ["cursor"]);
   assert.equal(validateContract("adoption-plan", plan).valid, true);
   assert.doesNotThrow(() => verifyCursorNoChangePlan(workspace, plan));
+  const replayWorkspace = temporary(t, "forgerail-cursor-no-change-replay-");
+  writeFileSync(resolve(replayWorkspace, "AGENTS.md"), instructions);
+  mkdirSync(resolve(replayWorkspace, ".agents/skills"), { recursive: true });
+  cpSync(resolve(root, "skills/forgerail"), resolve(replayWorkspace, ".agents/skills/forgerail"), { recursive: true });
+  assert.throws(() => verifyCursorNoChangePlan(replayWorkspace, plan), /different workspace/);
   writeFileSync(resolve(workspace, "AGENTS.md"), `${instructions}Use this Core for bounded tasks.\n`);
   const renewed = planAdoption(root, workspace, ["cursor"]);
   assert.notEqual(renewed.planId, plan.planId);
@@ -415,6 +420,11 @@ test("negated Core and contract mentions cannot suppress the Cursor Rule", (t) =
   const exclusion = planAdoption(root, workspace, ["cursor"]);
   assert.equal(exclusion.hostSelection.hosts.cursor.status, "profile-only");
   assert.deepEqual(exclusion.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", ".cursor/rules/forgerail.mdc"]);
+
+  writeFileSync(resolve(workspace, "AGENTS.md"), "Use .agents/skills/forgerail/SKILL.md for old tasks. Do not use .agents/skills/forgerail/SKILL.md in this workspace.\n");
+  const revoked = planAdoption(root, workspace, ["cursor"]);
+  assert.equal(revoked.hostSelection.hosts.cursor.status, "profile-only");
+  assert.deepEqual(revoked.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", ".cursor/rules/forgerail.mdc"]);
 
   writeFileSync(resolve(workspace, "AGENTS.md"), "Use .agents/skills/forgerail/SKILL.md; do not edit it.\n");
   const separateRestriction = planAdoption(root, workspace, ["cursor"]);

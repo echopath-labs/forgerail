@@ -113,7 +113,13 @@ export function verifyCursorNoChangePlan(workspace, plan) {
   const validation = validateContract("adoption-plan", plan);
   if (!validation.valid) throw new Error(`invalid adoption plan: ${validation.errors.join("; ")}`);
   if (plan.strategy !== "no-change" || plan.hostSelection.hosts.cursor?.status !== "supported") return;
-  verifyCursorCoverage(realpathSync(resolve(workspace)), plan.cursorCoverage, plan.evidence.includes(cursorSharedContractCoverageEvidence));
+  const binding = openBoundWorkspace(workspace);
+  try {
+    if (plan.cursorCoverage.workspaceSha256 !== binding.workspaceSha256) throw new Error("Cursor no-change plan belongs to a different workspace");
+    verifyCursorCoverage(binding.root, plan.cursorCoverage, plan.evidence.includes(cursorSharedContractCoverageEvidence));
+  } finally {
+    closeSync(binding.descriptor);
+  }
 }
 
 function read(path) {
@@ -950,7 +956,7 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
           cursorEvidence.push("The selected Codex binding would replace the only shared Core or contract pointer in AGENTS.md; retain a Cursor Rule for the resulting workspace.");
         }
       }
-      if (cursorRuleCovered && !cursorExistingRule) cursorCoverage = { agentsSha256: sha256(instructions.content), coreSha256: coreDigest, sourceCoreSha256: coreDigest };
+      if (cursorRuleCovered && !cursorExistingRule) cursorCoverage = { workspaceSha256: binding.workspaceSha256, agentsSha256: sha256(instructions.content), coreSha256: coreDigest, sourceCoreSha256: coreDigest };
       if (cursorRuleCovered && !cursorExistingRule) cursorEvidence.push(selected.length === 1 ? cursorSharedCoreCoverageEvidence : cursorSharedContractCoverageEvidence);
       else if (cursorExistingRule) cursorEvidence.push("An existing Cursor Rule remains a separate, unverified instruction owner; do not claim the shared-Core-only IDE acceptance for this workspace.");
       else if (!applicableContractPointer(instructions.content)) cursorEvidence.push("The existing AGENTS.md Core pointer does not reference FORGERAIL.md; a Cursor Rule is needed to expose the new shared contract to Cursor.");
@@ -991,6 +997,11 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
       ? "single-host-managed-block"
       : "shared-contract-with-thin-bindings";
   const writes = [];
+  const writeCursorCoverage = cursorCoverage === undefined ? undefined : {
+    agentsSha256: cursorCoverage.agentsSha256,
+    coreSha256: cursorCoverage.coreSha256,
+    sourceCoreSha256: cursorCoverage.sourceCoreSha256,
+  };
   if (strategy === "single-host-managed-block") {
     const adapter = selected[0];
     if (!adapter.bindingModes.includes("managed-block")) throw new Error(`${adapter.id} does not support a managed-block binding`);
@@ -999,12 +1010,12 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
   } else if (strategy === "shared-contract-with-thin-bindings") {
     const contract = readTemplate(pluginRoot, "FORGERAIL.md").replace("{{HOSTS}}", selected.map((adapter) => adapter.displayName).join(", "));
     validateBindingTemplateMarkers({ managedMarker: "forgerail:adoption-contract:v1" }, "shared-contract", contract);
-    writes.push(proposedWrite(realRoot, binding.workspaceSha256, "FORGERAIL.md", contract, "forgerail:adoption-contract:v1", undefined, cursorCoverage));
+    writes.push(proposedWrite(realRoot, binding.workspaceSha256, "FORGERAIL.md", contract, "forgerail:adoption-contract:v1", undefined, writeCursorCoverage));
     const bindingAdapters = cursorCoverage === undefined ? selected : [...selected].sort((left, right) => Number(left.bindingTarget === "AGENTS.md") - Number(right.bindingTarget === "AGENTS.md"));
     for (const adapter of bindingAdapters) {
       if (cursorRuleCovered && adapter.id === "cursor") continue;
       const content = readBindingTemplate(pluginRoot, adapter, "thin-reference");
-      writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker, adapter.unmanagedBindingPolicy, cursorCoverage));
+      writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker, adapter.unmanagedBindingPolicy, writeCursorCoverage));
     }
   }
   const selectedHosts = Object.fromEntries(selected.map((adapter) => [adapter.id, {
@@ -1012,7 +1023,7 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
     bindingTarget: adapter.bindingTarget,
     verificationMode: adapter.id === "cursor" && (!cursorRuleCovered || cursorExistingRule || adapter.status !== "supported") ? "profile-only" : adapter.verification.mode,
   }]));
-  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hostSelection: { mode: selection.mode, hosts: selectedHosts }, cursorCoverage: cursorCoverage === undefined ? null : [cursorCoverage.agentsSha256, cursorCoverage.coreSha256, cursorCoverage.sourceCoreSha256], writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
+  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hostSelection: { mode: selection.mode, hosts: selectedHosts }, cursorCoverage: cursorCoverage === undefined ? null : [cursorCoverage.workspaceSha256, cursorCoverage.agentsSha256, cursorCoverage.coreSha256, cursorCoverage.sourceCoreSha256], writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
   const plan = {
     schemaVersion: "1.0",
     planId: `adoption:${identity}`,

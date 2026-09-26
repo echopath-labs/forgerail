@@ -163,6 +163,9 @@ export function validateRelease() {
   ]) {
     record(`installation-${phrase.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, installation.includes(phrase), phrase);
   }
+  const support = read("SUPPORT.md");
+  record("support-current-version", support.includes(expectedVersion) && support.includes(expectedTag) && !support.includes("0.1.6"), { expectedVersion, expectedTag });
+  record("support-cursor-boundary", support.includes("Cursor IDE Agent") && support.includes("Cursor CLI") && support.includes("Cloud Agent") && support.includes("profile-only"), "evidence-bounded Cursor support is explicit");
 
   for (const path of [
     "contracts/adoption-plan.schema.json",

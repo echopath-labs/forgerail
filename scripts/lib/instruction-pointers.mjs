@@ -11,6 +11,8 @@ function mentionsInstructionTarget(line, target) {
 function applicableInstructionPointer(content, target) {
   let fence = null;
   let commented = false;
+  let applicable = false;
+  let contradicted = false;
   for (const line of content.split(/\r?\n/)) {
     if (fence !== null) {
       const closing = line.match(/^ {0,3}(`+|~+)\s*$/);
@@ -37,11 +39,15 @@ function applicableInstructionPointer(content, target) {
     const opening = visible.match(/^ {0,3}(`{3,}|~{3,})/);
     if (opening) { fence = opening[1]; continue; }
     for (const clause of visible.split(/;|[.!?]\s+(?=[A-Z])/)) {
-      if (/\b(?:not|never|avoid|exclude|except|without|but|cannot|forbid|ignore|omit|skip|reject|don['’]t|doesn['’]t|didn['’]t|can['’]t|won['’]t|shouldn['’]t|mustn['’]t|wouldn['’]t|isn['’]t|aren['’]t|couldn['’]t)\b|\b(?:instead of|rather than)\b/i.test(clause)) continue;
-      if (/^\s*(?:(?:[-*+]|[0-9]{1,9}[.)])\s+)?(?:use|read|follow)\b/i.test(clause) && mentionsInstructionTarget(clause, target)) return true;
+      if (!mentionsInstructionTarget(clause, target)) continue;
+      if (/\b(?:not|never|avoid|exclude|except|without|but|cannot|forbid|ignore|omit|skip|reject|don['’]t|doesn['’]t|didn['’]t|can['’]t|won['’]t|shouldn['’]t|mustn['’]t|wouldn['’]t|isn['’]t|aren['’]t|couldn['’]t)\b|\b(?:instead of|rather than)\b/i.test(clause)) {
+        contradicted = true;
+        continue;
+      }
+      if (/^\s*(?:(?:[-*+]|[0-9]{1,9}[.)])\s+)?(?:use|read|follow)\b/i.test(clause)) applicable = true;
     }
   }
-  return false;
+  return applicable && !contradicted;
 }
 
 export function applicableCorePointer(content) {

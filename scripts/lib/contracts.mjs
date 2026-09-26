@@ -464,11 +464,11 @@ function validateAdoptionPlan(value, errors) {
   if (cursorNoChange && ![cursorSharedCoreCoverageEvidence, cursorSharedContractCoverageEvidence].some((item) => Array.isArray(value.evidence) && value.evidence.includes(item))) errors.push("supported Cursor no-change plan requires shared Core evidence");
   if (cursorNoChange || cursorSharedPlan) {
     const coverage = value.cursorCoverage;
-    if (!exactKeys(coverage, ["agentsContent", "agentsSha256", "coreSha256", "sourceCoreSha256"], [], "adoptionPlan.cursorCoverage", errors)) {
+    if (!exactKeys(coverage, ["workspaceSha256", "agentsContent", "agentsSha256", "coreSha256", "sourceCoreSha256"], [], "adoptionPlan.cursorCoverage", errors)) {
       errors.push("supported Cursor shared Core requires verifiable coverage evidence");
     } else {
       string(coverage.agentsContent, "adoptionPlan.cursorCoverage.agentsContent", errors);
-      for (const key of ["agentsSha256", "coreSha256", "sourceCoreSha256"]) string(coverage[key], `adoptionPlan.cursorCoverage.${key}`, errors, digestPattern);
+      for (const key of ["workspaceSha256", "agentsSha256", "coreSha256", "sourceCoreSha256"]) string(coverage[key], `adoptionPlan.cursorCoverage.${key}`, errors, digestPattern);
       if (typeof coverage.agentsContent === "string" && sha256(coverage.agentsContent) !== coverage.agentsSha256) errors.push("Cursor AGENTS.md coverage digest does not match its content");
       if (coverage.coreSha256 !== coverage.sourceCoreSha256) errors.push("Cursor project Core must match the package Core");
       if (typeof coverage.agentsContent === "string" && !applicableCorePointer(coverage.agentsContent)) errors.push("Cursor coverage lacks an applicable Core pointer");
