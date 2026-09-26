@@ -70,7 +70,7 @@ npx --yes @echopath-labs/forgerail@0.1.7 adoption-plan --workspace . --selection
 | --- | --- | --- | --- |
 | Codex | `AGENTS.md` | `supported` | 保留 registry 支持状态；原生 Plugin 激活未验证。须在新任务核对实际加载方式及获批绑定 |
 | Claude Code | `CLAUDE.md` | `profile-only` | 已建模目标与薄绑定，不声称端到端激活已验证 |
-| Cursor IDE Agent | 共用 `AGENTS.md` 与 `.agents/skills/forgerail/SKILL.md`；`.cursor/rules/forgerail.mdc` 回退路径 | 精确测试过的共用 Core 目录为 `supported`；Rule 回退路径仍为 `profile-only` | 2026-09-26 的全新隔离 Cursor Desktop Agents 3.22.7 任务在没有 Cursor Rule 时发现最终候选 Core，读取迭代纪律引用，并在有边界的 verifier 修复中采用共享 owner 方法。目录摘要为 `adf79d2361ad7b134231ac59c4da7dd47550b3462cb19f9fcbb5e7103ebfc4ac`。Cursor CLI 2026.09.18 的只读检查覆盖 Rule 加 Skill 样本，但 Rule-only IDE 行为尚未验证。每个接入项目仍须在新会话验收；Cloud Agent 与 CLI 完整工程行为未验证 |
+| Cursor IDE Agent | 共用 `AGENTS.md` 与 `.agents/skills/forgerail/SKILL.md`；`.cursor/rules/forgerail.mdc` 回退路径 | 精确测试过的共用 Core 目录为 `supported`；Rule 回退路径仍为 `profile-only` | 2026-09-26 的全新隔离 Cursor Desktop Agents 3.22.7 任务在没有 Cursor Rule 时发现最终候选 Core，读取迭代纪律引用，并在有边界的 verifier 修复中采用共享 owner 方法。目录摘要为 `00f8af0e805cd66a4fc034a35fc76ce9b0c4d1d235d511a12e49cb3b167574fc`。Cursor CLI 2026.09.18 的只读检查覆盖 Rule 加 Skill 样本，但 Rule-only IDE 行为尚未验证。每个接入项目仍须在新会话验收；Cloud Agent 与 CLI 完整工程行为未验证 |
 
 默认 `all-detected` 规划会在共用 `AGENTS.md`/Core 路径匹配时纳入 Cursor，即使没有 `.cursor` 目录。收到的计划只有在多宿主契约省略 Cursor Rule 时才能携带共用 Cursor 覆盖摘要；契约写入须在首位，受覆盖的 `AGENTS.md` 更新须在末位。
 

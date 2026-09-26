@@ -33,7 +33,7 @@ const adoptionOperations = new Set(["create", "append-managed-block", "replace-m
 const hostSelectionModes = new Set(["explicit", "all-detected", "all-available"]);
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 // Fresh Cursor IDE Agent acceptance is limited to this exact Core tree.
-const acceptedCursorIdeCoreSha256 = "adf79d2361ad7b134231ac59c4da7dd47550b3462cb19f9fcbb5e7103ebfc4ac";
+const acceptedCursorIdeCoreSha256 = "00f8af0e805cd66a4fc034a35fc76ce9b0c4d1d235d511a12e49cb3b167574fc";
 const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*(?:^|\/)[^/]*\.(?:\/|$))(?!.*(?:^|\/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\.|\/|$))(?!.*\/$)[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
 
 function sha256(value) {
@@ -87,14 +87,17 @@ export function hasMatchingCursorSharedCore(pluginRoot, workspace) {
     && matchingProjectCore(pluginRoot, workspace) !== null;
 }
 
-function verifyCursorCoverage(workspace, coverage, requiresContract = true) {
+function verifyCursorCoverage(workspace, coverage, requiresContract = true, allowContractRecovery = false) {
   if (coverage === undefined) return;
   const instructions = inspectBoundedPath(workspace, "AGENTS.md", { finalKind: "file", read: true });
+  const referencedContract = instructions.state === "available" && applicableContractPointer(instructions.content);
+  const contract = referencedContract ? inspectBoundedPath(workspace, "FORGERAIL.md", { finalKind: "file", read: true }) : null;
   if (
     instructions.state !== "available"
     || sha256(instructions.content) !== coverage.agentsSha256
     || !applicableCorePointer(instructions.content)
     || (requiresContract && !applicableContractPointer(instructions.content))
+    || (referencedContract && contract.state !== "available" && !allowContractRecovery)
     || coreTreeDigest(workspace, ".agents/skills/forgerail") !== coverage.coreSha256
     || coverage.sourceCoreSha256 !== acceptedCursorIdeCoreSha256
     || coreTreeDigest(packageRoot, "skills/forgerail") !== coverage.sourceCoreSha256
@@ -682,7 +685,7 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
     const { root } = binding;
     const approvedWrite = verifyApprovedWrite(write, approvedWriteDigest, binding.workspaceSha256, operations);
     verifyBoundWorkspacePath(binding);
-    verifyCursorCoverage(root, approvedWrite.coverage);
+    verifyCursorCoverage(root, approvedWrite.coverage, true, approvedWrite.path === "FORGERAIL.md");
     const creating = approvedWrite.operation === "create";
     return withBoundAdoptionParent(root, approvedWrite.path, binding.metadata, (leaf, parentBinding) => {
     const boundParent = parentBinding.path;
@@ -757,7 +760,7 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
         verifyFinalCursorInstructions(approvedWrite.path, content, approvedWrite.coverage);
         if (content === current) {
           verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
-          verifyCursorCoverage(root, approvedWrite.coverage);
+          verifyCursorCoverage(root, approvedWrite.coverage, true, approvedWrite.path === "FORGERAIL.md");
           if (!targetContentMatches(leaf, sourceStat, current)) throw new Error(`adoption source drifted before no-op: ${approvedWrite.path}`);
           return { path: approvedWrite.path, contentSha256: sha256(content), unchanged: true };
         }
@@ -782,7 +785,7 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
       directoryDescriptor = openSync(".", constants.O_RDONLY);
       if (typeof testHooks.beforeInstall === "function") testHooks.beforeInstall();
       verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
-      verifyCursorCoverage(root, approvedWrite.coverage);
+      verifyCursorCoverage(root, approvedWrite.coverage, true, approvedWrite.path === "FORGERAIL.md");
       if (creating) {
         linkSync(temporary, leaf);
         createdTarget = true;
@@ -938,14 +941,16 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
     const core = inspectBoundedPath(realRoot, ".agents/skills/forgerail/SKILL.md", { finalKind: "file" });
     const cursorLocalCore = inspectBoundedPath(realRoot, ".cursor/skills/forgerail/SKILL.md", { finalKind: "file" });
     const existingRule = inspectBoundedPath(realRoot, ".cursor/rules/forgerail.mdc", { finalKind: "file", read: true });
+    const contract = inspectBoundedPath(realRoot, "FORGERAIL.md", { finalKind: "file", read: true });
     cursorExistingRule = existingRule.present;
     const sharedPointer = instructions.state === "available" && applicableCorePointer(instructions.content);
+    const contractPointer = instructions.state === "available" && applicableContractPointer(instructions.content);
     const coreDigest = sharedPointer && core.state === "available" && !cursorLocalCore.present ? matchingProjectCore(pluginRoot, realRoot) : null;
     if (cursorLocalCore.present) cursorEvidence.push(`A competing Cursor-local ForgeRail Core Skill at .cursor/skills/forgerail/SKILL.md is ${cursorLocalCore.state}; resolve its owner before treating shared Core coverage as verified. A Cursor Rule cannot resolve two same-name Skills.`);
     if (coreDigest !== null) {
       selectedLevel = "lightweight-adoption";
       currentLevel = "lightweight-adoption";
-      cursorRuleCovered = (selected.length === 1 || applicableContractPointer(instructions.content)) && (!cursorExistingRule || selected.length === 1);
+      cursorRuleCovered = (selected.length === 1 ? !contractPointer || contract.state === "available" : contractPointer) && (!cursorExistingRule || selected.length === 1);
       const codex = selected.find(({ id }) => id === "codex");
       if (cursorRuleCovered && codex) {
         const codexWrite = proposedWrite(realRoot, binding.workspaceSha256, codex.bindingTarget,
@@ -959,6 +964,7 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
       if (cursorRuleCovered && !cursorExistingRule) cursorCoverage = { workspaceSha256: binding.workspaceSha256, agentsSha256: sha256(instructions.content), coreSha256: coreDigest, sourceCoreSha256: coreDigest };
       if (cursorRuleCovered && !cursorExistingRule) cursorEvidence.push(selected.length === 1 ? cursorSharedCoreCoverageEvidence : cursorSharedContractCoverageEvidence);
       else if (cursorExistingRule) cursorEvidence.push("An existing Cursor Rule remains a separate, unverified instruction owner; do not claim the shared-Core-only IDE acceptance for this workspace.");
+      else if (selected.length === 1 && contractPointer && contract.state !== "available") cursorEvidence.push(`AGENTS.md requires FORGERAIL.md, but that contract is ${contract.state}; recover the referenced contract before certifying a no-change Cursor route.`);
       else if (!applicableContractPointer(instructions.content)) cursorEvidence.push("The existing AGENTS.md Core pointer does not reference FORGERAIL.md; a Cursor Rule is needed to expose the new shared contract to Cursor.");
       cursorEvidence.push(`Project-local ForgeRail Core tree matches the package source; SHA-256: ${coreDigest}.`);
     } else if (sharedPointer) {

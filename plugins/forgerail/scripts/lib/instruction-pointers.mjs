@@ -1,11 +1,27 @@
-function mentionsInstructionTarget(line, target) {
+function instructionTargetMentions(line, target) {
+  const mentions = [];
   for (let index = line.indexOf(target); index >= 0; index = line.indexOf(target, index + target.length)) {
-    const before = index === 0 ? " " : line[index - 1];
-    const after = line[index + target.length] ?? " ";
     const relativePrefix = index >= 2 && line.slice(index - 2, index) === "./";
-    if ((/[\s`(\[]/.test(before) || relativePrefix) && /[\s`)\].,;:]/.test(after)) return true;
+    const start = relativePrefix ? index - 2 : index;
+    const before = start === 0 ? " " : line[start - 1];
+    const after = line[index + target.length] ?? " ";
+    if (/[\s`(\[]/.test(before) && /[\s`)\].,;:]/.test(after)) mentions.push({ index, start });
   }
-  return false;
+  return mentions;
+}
+
+function targetInstructionKind(clause, target) {
+  let applicable = false;
+  let contradicted = false;
+  const directive = /\b(?:do\s+not|don['’]t|never|must\s+not|should\s+not|cannot|can['’]t|won['’]t)\s+(?:use|read|follow)\b|\b(?:use|read|follow|avoid|exclude|except|without|forbid|ignore|omit|skip|reject|instead\s+of|rather\s+than|not|but)\b/gi;
+  for (const { index } of instructionTargetMentions(clause, target)) {
+    let governing = null;
+    for (const match of clause.slice(0, index).matchAll(directive)) governing = match[0].toLowerCase();
+    if (governing === null) continue;
+    if (/^(?:use|read|follow)$/.test(governing)) applicable = true;
+    else contradicted = true;
+  }
+  return { applicable, contradicted };
 }
 
 function applicableInstructionPointer(content, target) {
@@ -39,12 +55,9 @@ function applicableInstructionPointer(content, target) {
     const opening = visible.match(/^ {0,3}(`{3,}|~{3,})/);
     if (opening) { fence = opening[1]; continue; }
     for (const clause of visible.split(/;|[.!?]\s+(?=[A-Z])/)) {
-      if (!mentionsInstructionTarget(clause, target)) continue;
-      if (/\b(?:not|never|avoid|exclude|except|without|but|cannot|forbid|ignore|omit|skip|reject|don['’]t|doesn['’]t|didn['’]t|can['’]t|won['’]t|shouldn['’]t|mustn['’]t|wouldn['’]t|isn['’]t|aren['’]t|couldn['’]t)\b|\b(?:instead of|rather than)\b/i.test(clause)) {
-        contradicted = true;
-        continue;
-      }
-      if (/^\s*(?:(?:[-*+]|[0-9]{1,9}[.)])\s+)?(?:use|read|follow)\b/i.test(clause)) applicable = true;
+      const result = targetInstructionKind(clause, target);
+      applicable ||= result.applicable;
+      contradicted ||= result.contradicted;
     }
   }
   return applicable && !contradicted;

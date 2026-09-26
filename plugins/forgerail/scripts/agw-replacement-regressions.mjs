@@ -49,6 +49,11 @@ test("linked external baseline cannot masquerade as a packaged reference", () =>
   symlinkSync(resolve(source, "skills/forgerail/references/git-lifecycle.md"), path);
   assert.match(validateReplacement(root).errors.join("\n"), /linked dependency/);
 }));
+test("branch cleanup remains gated by explicit deletion authority", () => fixture((root) => {
+  const content = readFileSync(resolve(root, "skills/forgerail/references/git-lifecycle.md"), "utf8");
+  assert.match(content, /delete the integrated branch only when branch\s+deletion is explicitly authorized/);
+  assert.match(content, /otherwise report the retained branch/);
+}));
 test("a structural manifest cannot claim real-host qualification", () => fixture((root) => {
   const file = resolve(root, "docs/agw-replacement-coverage.json");
   const data = JSON.parse(readFileSync(file));

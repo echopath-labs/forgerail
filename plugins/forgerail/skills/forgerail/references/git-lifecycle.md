@@ -149,8 +149,9 @@ release, or deployment.
 Keep parallel lines of work for the same objective bounded and attributable.
 Each active branch or worktree SHALL be able to answer which acceptance item it
 advances and when it converges; a line that cannot answer both is debt, not
-parallelism. After integration, delete the integrated branch and re-sync local
-state before opening the next line. Before stacking new work on an existing
+parallelism. After integration, delete the integrated branch only when branch
+deletion is explicitly authorized; otherwise report the retained branch. Re-sync
+local state before opening the next line. Before stacking new work on an existing
 branch, verify it has not been orphaned by an upstream rewrite; reconcile or
 rebase deliberately instead of building on an unreconciled divergence.
 

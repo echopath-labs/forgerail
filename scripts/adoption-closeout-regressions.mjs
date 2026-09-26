@@ -332,9 +332,9 @@ test("received covered plans reject a final AGENTS.md without the Core pointer",
   received.evidence.push(cursorSharedContractCoverageEvidence);
   received.proposedWrites = received.proposedWrites.filter((write) => write.path !== ".cursor/rules/forgerail.mdc");
   const digest = createHash("sha256").update(prior).digest("hex");
-  const corePlan = planAdoption(root, workspace, ["cursor"]);
-  const coreDigest = corePlan.evidence.find((item) => item.includes("Core tree matches the package source"))?.match(/[a-f0-9]{64}/)?.[0];
-  received.cursorCoverage = { workspaceSha256: corePlan.cursorCoverage.workspaceSha256, agentsContent: prior, agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest };
+  const coreDigest = plan.evidence.find((item) => item.includes("Core tree matches the package source"))?.match(/[a-f0-9]{64}/)?.[0];
+  const workspaceSha256 = received.proposedWrites[0].workspaceSha256;
+  received.cursorCoverage = { workspaceSha256, agentsContent: prior, agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest };
   for (const write of received.proposedWrites) {
     write.coverage = { agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest };
     write.approvalSha256 = adoptionWriteApprovalDigest(write);
@@ -407,8 +407,8 @@ test("negated Core and contract mentions cannot suppress the Cursor Rule", (t) =
 
   writeFileSync(resolve(workspace, "AGENTS.md"), "1. Use .agents/skills/forgerail/SKILL.md.\n2) Follow FORGERAIL.md.\n");
   const orderedCore = planAdoption(root, workspace, ["cursor"]);
-  assert.equal(orderedCore.strategy, "no-change");
-  assert.deepEqual(orderedCore.proposedWrites, []);
+  assert.equal(orderedCore.hostSelection.hosts.cursor.status, "profile-only");
+  assert.deepEqual(orderedCore.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", ".cursor/rules/forgerail.mdc"]);
   const orderedContract = planAdoption(root, workspace, ["claude-code", "cursor"]);
   assert.deepEqual(orderedContract.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", "CLAUDE.md"]);
 
@@ -430,6 +430,39 @@ test("negated Core and contract mentions cannot suppress the Cursor Rule", (t) =
   const separateRestriction = planAdoption(root, workspace, ["cursor"]);
   assert.equal(separateRestriction.hostSelection.hosts.cursor.status, "supported");
   assert.equal(separateRestriction.strategy, "no-change");
+
+  writeFileSync(resolve(workspace, "AGENTS.md"), "Use .agents/skills/forgerail/SKILL.md, but do not edit it.\n");
+  const inlineRestriction = planAdoption(root, workspace, ["cursor"]);
+  assert.equal(inlineRestriction.hostSelection.hosts.cursor.status, "supported");
+  assert.equal(inlineRestriction.strategy, "no-change");
+
+  writeFileSync(resolve(workspace, "AGENTS.md"), "Use ../.agents/skills/forgerail/SKILL.md.\n");
+  const traversingPointer = planAdoption(root, workspace, ["cursor"]);
+  assert.equal(traversingPointer.hostSelection.hosts.cursor.status, "profile-only");
+  assert.deepEqual(traversingPointer.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", ".cursor/rules/forgerail.mdc"]);
+
+  writeFileSync(resolve(workspace, "AGENTS.md"), "Use ./.agents/skills/forgerail/SKILL.md.\n");
+  const localRelativePointer = planAdoption(root, workspace, ["cursor"]);
+  assert.equal(localRelativePointer.hostSelection.hosts.cursor.status, "supported");
+  assert.equal(localRelativePointer.strategy, "no-change");
+});
+
+test("Cursor no-change requires an available referenced contract", (t) => {
+  const workspace = temporary(t, "forgerail-cursor-contract-availability-");
+  mkdirSync(resolve(workspace, ".agents/skills"), { recursive: true });
+  cpSync(resolve(root, "skills/forgerail"), resolve(workspace, ".agents/skills/forgerail"), { recursive: true });
+  writeFileSync(resolve(workspace, "AGENTS.md"), "Use .agents/skills/forgerail/SKILL.md.\nFollow FORGERAIL.md.\n");
+  const missing = planAdoption(root, workspace, ["cursor"]);
+  assert.equal(missing.hostSelection.hosts.cursor.status, "profile-only");
+  assert.deepEqual(missing.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", ".cursor/rules/forgerail.mdc"]);
+  assert.ok(missing.evidence.some((value) => value.includes("requires FORGERAIL.md")));
+
+  writeFileSync(resolve(workspace, "FORGERAIL.md"), "# Existing shared contract\n");
+  const available = planAdoption(root, workspace, ["cursor"]);
+  assert.equal(available.hostSelection.hosts.cursor.status, "supported");
+  assert.equal(available.strategy, "no-change");
+  rmSync(resolve(workspace, "FORGERAIL.md"));
+  assert.throws(() => verifyCursorNoChangePlan(workspace, available), /Cursor shared coverage changed/);
 });
 
 test("diagnosis reports the effective Cursor route instead of registry capability", (t) => {
