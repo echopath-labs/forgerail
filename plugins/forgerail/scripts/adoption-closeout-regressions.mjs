@@ -176,6 +176,9 @@ test("Cursor plan surfaces a shared Core pointer and missing Skill before any wr
     "Do not ever use .agents/skills/forgerail/SKILL.md here.\n",
     "Never ever use .agents/skills/forgerail/SKILL.md here.\n",
     "Do not under any circumstances use .agents/skills/forgerail/SKILL.md here.\n",
+    "Under no circumstances use .agents/skills/forgerail/SKILL.md here.\n",
+    "By no means use .agents/skills/forgerail/SKILL.md here.\n",
+    "On no account use .agents/skills/forgerail/SKILL.md here.\n",
   ]) {
     writeFileSync(resolve(workspace, "AGENTS.md"), prohibition);
     const prohibited = planAdoption(root, workspace, ["cursor"]);
@@ -311,8 +314,28 @@ test("multi-host Cursor coverage is bound to every approved write", (t) => {
   rmSync(resolve(workspace, ".cursor"), { recursive: true });
   const applied = applyApprovedAdoptionWrite(workspace, plan.proposedWrites[0], plan.proposedWrites[0].approvalSha256);
   assert.equal(applied.path, "FORGERAIL.md");
+  const approvedContract = readFileSync(resolve(workspace, "FORGERAIL.md"), "utf8");
   writeFileSync(resolve(workspace, "FORGERAIL.md"), "# Drifted shared contract\n");
   assert.throws(() => applyApprovedAdoptionWrite(workspace, plan.proposedWrites[1], plan.proposedWrites[1].approvalSha256), /Cursor shared coverage changed/);
+  writeFileSync(resolve(workspace, "FORGERAIL.md"), approvedContract);
+  assert.throws(() => applyApprovedAdoptionWrite(workspace, plan.proposedWrites[1], plan.proposedWrites[1].approvalSha256, {
+    afterInstall() { writeFileSync(resolve(workspace, "FORGERAIL.md"), "# Concurrent contract drift\n"); },
+  }), /Cursor shared coverage changed/);
+  assert.equal(existsSync(resolve(workspace, "CLAUDE.md")), false);
+});
+
+test("covered shared-contract replacement keeps the baseline until installation", (t) => {
+  const workspace = temporary(t, "forgerail-cursor-existing-contract-");
+  writeFileSync(resolve(workspace, "AGENTS.md"), "Use .agents/skills/forgerail/SKILL.md.\nFollow FORGERAIL.md.\n");
+  writeFileSync(resolve(workspace, "FORGERAIL.md"), "# Existing owner contract\n");
+  mkdirSync(resolve(workspace, ".agents/skills"), { recursive: true });
+  cpSync(resolve(root, "skills/forgerail"), resolve(workspace, ".agents/skills/forgerail"), { recursive: true });
+  const plan = planAdoption(root, workspace, ["claude-code", "cursor"]);
+  const contractWrite = plan.proposedWrites[0];
+  assert.equal(contractWrite.path, "FORGERAIL.md");
+  assert.notEqual(contractWrite.baseSha256, null);
+  assert.doesNotThrow(() => applyApprovedAdoptionWrite(workspace, contractWrite, contractWrite.approvalSha256));
+  assert.equal(createHash("sha256").update(readFileSync(resolve(workspace, "FORGERAIL.md"))).digest("hex"), plan.cursorCoverage.contractAppliedSha256);
 });
 
 test("covered writes reject a package Core that changed after planning", async (t) => {

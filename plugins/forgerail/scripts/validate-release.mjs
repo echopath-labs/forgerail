@@ -64,6 +64,7 @@ export function validateRelease() {
   const packageJson = json("package.json");
   const packageLock = json("package-lock.json");
   const launchContractSchema = json("contracts/launch-contract.schema.json");
+  const adoptionPlanSchema = json("contracts/adoption-plan.schema.json");
   const effectiveProfileSchema = json("contracts/effective-profile.schema.json");
   const publicCli = read("scripts/forgerail.mjs");
   const packCache = mkdtempSync(resolve(tmpdir(), "forgerail-pack-cache-"));
@@ -203,6 +204,13 @@ export function validateRelease() {
   const currentCoreSha256 = coreTreeDigest(root, "skills/forgerail");
   record("cursor-runtime-acceptance-matches-current-core", currentCoreSha256 === acceptedCursorIdeCoreSha256, { currentCoreSha256, acceptedCursorIdeCoreSha256 });
   record("cursor-adapter-names-accepted-core", cursorAdapter.limitations?.some((value) => value.includes(acceptedCursorIdeCoreSha256)) === true, acceptedCursorIdeCoreSha256);
+  const cursorCoverageSchema = adoptionPlanSchema.properties?.cursorCoverage;
+  const writeCoverageSchema = adoptionPlanSchema.properties?.proposedWrites?.items?.properties?.coverage;
+  const contractDigestFields = ["contractBaseSha256", "contractAppliedSha256"];
+  record("adoption-schema-declares-contract-coverage", contractDigestFields.every((key) => cursorCoverageSchema?.required?.includes(key)
+    && Object.hasOwn(cursorCoverageSchema?.properties ?? {}, key)
+    && writeCoverageSchema?.required?.includes(key)
+    && Object.hasOwn(writeCoverageSchema?.properties ?? {}, key)), contractDigestFields);
   for (const adapter of [codexAdapter, claudeAdapter, cursorAdapter]) {
     const modes = Object.keys(adapter.bindingTemplates ?? {}).sort();
     record(`adapter-${adapter.id}-template-modes`, JSON.stringify(modes) === JSON.stringify([...adapter.bindingModes].sort()), { modes, bindingModes: adapter.bindingModes });

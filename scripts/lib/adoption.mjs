@@ -89,7 +89,7 @@ export function hasMatchingCursorSharedCore(pluginRoot, workspace) {
     && matchingProjectCore(pluginRoot, workspace) !== null;
 }
 
-function verifyCursorCoverage(workspace, coverage, requiresContract = true, allowContractRecovery = false) {
+function verifyCursorCoverage(workspace, coverage, requiresContract = true, allowContractRecovery = false, expectedAgentsSha256 = coverage?.agentsSha256) {
   if (coverage === undefined) return;
   const instructions = inspectBoundedPath(workspace, "AGENTS.md", { finalKind: "file", read: true });
   const referencedContract = instructions.state === "available" && applicableContractPointer(instructions.content);
@@ -98,7 +98,7 @@ function verifyCursorCoverage(workspace, coverage, requiresContract = true, allo
   const observedContractSha256 = contract?.state === "available" ? sha256(contract.content) : null;
   if (
     instructions.state !== "available"
-    || sha256(instructions.content) !== coverage.agentsSha256
+    || sha256(instructions.content) !== expectedAgentsSha256
     || !applicableCorePointer(instructions.content)
     || (requiresContract && !applicableContractPointer(instructions.content))
     || (referencedContract && contract.state !== "available" && !allowContractRecovery)
@@ -818,7 +818,7 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
           throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
         }
         if (typeof testHooks.beforeReplace === "function") testHooks.beforeReplace();
-        verifyCursorCoverage(root, approvedWrite.coverage);
+        verifyCursorCoverage(root, approvedWrite.coverage, true, approvedWrite.path === "FORGERAIL.md");
         const installPathStat = lstatSync(leaf);
         if (installPathStat.isSymbolicLink() || !sameFile(sourceStat, installPathStat)) {
           throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
@@ -843,6 +843,8 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
         throw new Error(`adoption target identity mismatch after write: ${approvedWrite.path}`);
       }
       if (!targetContentMatches(leaf, temporaryStat, content)) throw new Error(`adoption target content changed after write: ${approvedWrite.path}`);
+      verifyCursorCoverage(root, approvedWrite.coverage, true, false,
+        approvedWrite.path === "AGENTS.md" ? sha256(content) : approvedWrite.coverage?.agentsSha256);
       fsyncSync(directoryDescriptor);
       if (creating) {
         unlinkSync(temporary);
