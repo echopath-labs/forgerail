@@ -7,7 +7,7 @@ ForgeRail helps a host Agent scope engineering work, respect project rules and a
 | Core and CLI | Profile/Envelope composition, contract and receipt checks, bounded local Git observation | `launch` produces a contract; it does not launch an Agent |
 | Diagnosis and Health | Read-only observations and recommendations | No automatic repair, monitoring daemon or project memory |
 | Architecture Convergence | Optional ownership, engineering paradigm and drift assessment | Project-accepted rules; no mandatory layout or dependency-boundary engine |
-| Adoption and host profiles | Plan bindings, explicitly approved managed-file writes and verification | Cursor rules are `profile-only`; instruction discovery is distinct from an executor |
+| Adoption and host profiles | Plan bindings, explicitly approved managed-file writes and verification | Cursor IDE Agent discovery and bounded behavior passed on the current project Core tree; only this shared-Core path is supported, while its Rule fallback remains profile-only. This does not restore a Cursor executor or certify Cloud Agent |
 | Cross-workspace Pack | Dependency waves, writer conflicts, handoff and receipt review | Host or RelayPact owns task dispatch, process lifecycle, wait, cancel and resume |
 | Rulesets, Release Safety and Thread Closure Packs | Guidance, approval/evidence requirements and local fixture validation | Host uses project tools for authorized side effects; no embedded remote executor |
 | Versioned control contracts | Published schemas and field/fixture validation | Schema validation is not a live authority, topology, revision or provider evaluator |
@@ -18,7 +18,7 @@ Project specifications and rules retain their existing owners. OpenSpec owns cha
 
 ## Cursor experiment retirement
 
-The experimental Cursor local executor shipped through 0.1.2 is removed from the next source candidate: its direct CLI/module paths, dedicated schemas and fake-executor tests are no longer provided. Published releases and history remain unchanged. Direct users of those experimental paths must use a separately supported host/delegation facility; there is no automatic migration or added RelayPact dependency. Cursor instruction binding remains available with its existing `profile-only` status.
+The experimental Cursor local executor shipped through 0.1.2 is removed from the next source candidate: its direct CLI/module paths, dedicated schemas and fake-executor tests are no longer provided. Published releases and history remain unchanged. Direct users of those experimental paths must use a separately supported host/delegation facility; there is no automatic migration or added RelayPact dependency. Cursor IDE Agent instruction discovery and bounded behavior passed with the current exact project Core tree through the shared `AGENTS.md` route. That route is supported in this candidate; the Cursor Rule fallback remains profile-only and the executor is not restored.
 
 ## Keeping the boundary visible
 

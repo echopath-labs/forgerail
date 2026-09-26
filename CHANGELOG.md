@@ -4,6 +4,15 @@
 
 No shipping changes yet.
 
+## 0.1.7 - 2026-09-26
+
+- Support the exact Cursor IDE Agent shared-Core route when an applicable `AGENTS.md` points to the matching project-local ForgeRail Core. Keep the Cursor Rule fallback `profile-only`; broad Cursor CLI behavior, Cloud Agent behavior, and automatic activation remain unverified.
+- Add iteration and escalation discipline to the Core guidance: preserve a concise hypothesis ledger, escalate repeated same-class failures to the shared layer, keep optional uncertainty off the critical path, and stop at explicit human gates with a resumable handoff.
+- Add adoption closeout regressions and three isolated Codex CLI behavior sessions for the iteration-discipline candidate. These bounded sessions are acceptance evidence, not cross-host or statistical reliability proof.
+- Preserve explicit upgrade and recovery boundaries. Existing project snapshots do not update automatically, published 0.1.6 remains immutable, and release or consumer adoption still requires separate authorization.
+
+See [release notes](docs/release-0.1.7.md). Publication status is recorded by npm and the versioned GitHub Release.
+
 ## 0.1.6 - 2026-09-23
 
 - Make installation and adoption guidance agent-first: give a coding agent a version-pinned setup task, let it select the verified host route, and report package checks, host discovery, and task behavior separately.

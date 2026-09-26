@@ -22,17 +22,98 @@ import {
   writeSync,
 } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
-import { validateContract } from "./contracts.mjs";
+import { fileURLToPath } from "node:url";
+import { cursorSharedContractCoverageEvidence, cursorSharedCoreCoverageEvidence, validateContract } from "./contracts.mjs";
+import { applicableCorePointer, applicableContractPointer } from "./instruction-pointers.mjs";
 import { projectAdoptionObservation, assertNoProjectLifecycle, statIdentity } from "./project-state.mjs";
 import { inspectBoundedPath } from "./bounded-read.mjs";
 
 const levels = ["plugin-only", "lightweight-adoption", "persisted-governance"];
 const adoptionOperations = new Set(["create", "append-managed-block", "replace-managed-block"]);
 const hostSelectionModes = new Set(["explicit", "all-detected", "all-available"]);
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+// Fresh Cursor IDE Agent acceptance is limited to this exact Core tree.
+const acceptedCursorIdeCoreSha256 = "adf79d2361ad7b134231ac59c4da7dd47550b3462cb19f9fcbb5e7103ebfc4ac";
 const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*(?:^|\/)[^/]*\.(?:\/|$))(?!.*(?:^|\/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\.|\/|$))(?!.*\/$)[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function coreFiles(root, base) {
+  const pending = [base];
+  const files = [];
+  let entries = 0;
+  try {
+    while (pending.length) {
+      const path = pending.pop();
+      if (++entries > 128 || inspectBoundedPath(root, path).state !== "available") return null;
+      const metadata = lstatSync(resolve(root, path));
+      if (metadata.isDirectory()) {
+        for (const name of readdirSync(resolve(root, path))) pending.push(`${path}/${name}`);
+      } else if (metadata.isFile()) files.push(path.slice(base.length + 1));
+      else return null;
+    }
+    return files.sort();
+  } catch { return null; }
+}
+
+function coreTreeDigest(root, base) {
+  const files = coreFiles(root, base);
+  if (!files?.includes("SKILL.md")) return null;
+  try {
+    const identities = [];
+    for (const path of files) {
+      const observed = inspectBoundedPath(root, `${base}/${path}`, { finalKind: "file", read: true });
+      if (observed.state !== "available") return null;
+      identities.push([path, sha256(observed.content)]);
+    }
+    return sha256(JSON.stringify(identities));
+  } catch { return null; }
+}
+
+function matchingProjectCore(pluginRoot, workspace) {
+  const source = coreTreeDigest(pluginRoot, "skills/forgerail");
+  const project = coreTreeDigest(workspace, ".agents/skills/forgerail");
+  return source !== null && source === project && source === acceptedCursorIdeCoreSha256 ? project : null;
+}
+
+export function hasMatchingCursorSharedCore(pluginRoot, workspace) {
+  const instructions = inspectBoundedPath(workspace, "AGENTS.md", { finalKind: "file", read: true });
+  return instructions.state === "available"
+    && applicableCorePointer(instructions.content)
+    && !inspectBoundedPath(workspace, ".cursor/skills/forgerail/SKILL.md", { finalKind: "file" }).present
+    && !inspectBoundedPath(workspace, ".cursor/rules/forgerail.mdc", { finalKind: "file" }).present
+    && matchingProjectCore(pluginRoot, workspace) !== null;
+}
+
+function verifyCursorCoverage(workspace, coverage, requiresContract = true) {
+  if (coverage === undefined) return;
+  const instructions = inspectBoundedPath(workspace, "AGENTS.md", { finalKind: "file", read: true });
+  if (
+    instructions.state !== "available"
+    || sha256(instructions.content) !== coverage.agentsSha256
+    || !applicableCorePointer(instructions.content)
+    || (requiresContract && !applicableContractPointer(instructions.content))
+    || coreTreeDigest(workspace, ".agents/skills/forgerail") !== coverage.coreSha256
+    || coverage.sourceCoreSha256 !== acceptedCursorIdeCoreSha256
+    || coreTreeDigest(packageRoot, "skills/forgerail") !== coverage.sourceCoreSha256
+    || inspectBoundedPath(workspace, ".cursor/skills/forgerail/SKILL.md", { finalKind: "file" }).present
+    || inspectBoundedPath(workspace, ".cursor/rules/forgerail.mdc", { finalKind: "file" }).present
+  ) throw new Error("Cursor shared coverage changed before approved adoption write");
+}
+
+function verifyFinalCursorInstructions(path, content, coverage) {
+  if (path === "AGENTS.md" && coverage !== undefined && (!applicableCorePointer(content) || !applicableContractPointer(content))) {
+    throw new Error("final AGENTS.md would remove Cursor shared Core or contract coverage");
+  }
+}
+
+export function verifyCursorNoChangePlan(workspace, plan) {
+  const validation = validateContract("adoption-plan", plan);
+  if (!validation.valid) throw new Error(`invalid adoption plan: ${validation.errors.join("; ")}`);
+  if (plan.strategy !== "no-change" || plan.hostSelection.hosts.cursor?.status !== "supported") return;
+  verifyCursorCoverage(realpathSync(resolve(workspace)), plan.cursorCoverage, plan.evidence.includes(cursorSharedContractCoverageEvidence));
 }
 
 function read(path) {
@@ -173,6 +254,7 @@ function snapshotAdoptionWrite(write) {
     contentSha256: write.contentSha256,
     content: write.content,
     managedMarker: write.managedMarker,
+    ...(write.coverage === undefined ? {} : { coverage: Object.freeze({ ...write.coverage }) }),
     approvalSha256: write.approvalSha256,
   });
 }
@@ -186,6 +268,7 @@ function approvalBoundWrite(write) {
     contentSha256: write.contentSha256,
     content: write.content,
     managedMarker: write.managedMarker,
+    ...(write.coverage === undefined ? {} : { coverage: write.coverage }),
   };
 }
 
@@ -442,7 +525,7 @@ function detectionTargetPresent(root, path) {
   return true;
 }
 
-function resolveHostSelection(root, adapters, hostIds, selectionMode) {
+function resolveHostSelection(root, pluginRoot, adapters, hostIds, selectionMode) {
   if (!Array.isArray(hostIds)) throw new Error("host selection must be an array");
   if (new Set(hostIds).size !== hostIds.length) throw new Error("host selection contains duplicates");
   const mode = selectionMode ?? (hostIds.length > 0 ? "explicit" : "all-detected");
@@ -461,7 +544,8 @@ function resolveHostSelection(root, adapters, hostIds, selectionMode) {
   } else if (mode === "all-available") {
     selected = [...adapters];
   } else {
-    selected = adapters.filter((adapter) => adapter.detectionTargets.some((path) => detectionTargetPresent(root, path)));
+    selected = adapters.filter((adapter) => adapter.detectionTargets.some((path) => detectionTargetPresent(root, path))
+      || (adapter.id === "cursor" && hasMatchingCursorSharedCore(pluginRoot, root)));
     if (selected.length === 0) {
       throw new Error("no registered host was detected; select an explicit --host or use --selection all-available");
     }
@@ -493,7 +577,7 @@ function countLiteralOccurrences(content, marker) {
   return count;
 }
 
-function proposedWrite(workspace, workspaceSha256, path, content, managedMarker, unmanagedBindingPolicy = "append-managed-block") {
+function proposedWrite(workspace, workspaceSha256, path, content, managedMarker, unmanagedBindingPolicy = "append-managed-block", coverage) {
   const target = adoptionTarget(workspace, path);
   const exists = existsSync(target);
   if (exists && !statSync(target).isFile()) throw new Error(`adoption target is not a file: ${path}`);
@@ -522,6 +606,7 @@ function proposedWrite(workspace, workspaceSha256, path, content, managedMarker,
     contentSha256: sha256(approvedContent),
     content: approvedContent,
     managedMarker,
+    ...(coverage === undefined ? {} : { coverage }),
   };
   return { ...write, approvalSha256: adoptionWriteApprovalDigest(write) };
 }
@@ -591,6 +676,7 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
     const { root } = binding;
     const approvedWrite = verifyApprovedWrite(write, approvedWriteDigest, binding.workspaceSha256, operations);
     verifyBoundWorkspacePath(binding);
+    verifyCursorCoverage(root, approvedWrite.coverage);
     const creating = approvedWrite.operation === "create";
     return withBoundAdoptionParent(root, approvedWrite.path, binding.metadata, (leaf, parentBinding) => {
     const boundParent = parentBinding.path;
@@ -662,12 +748,16 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
         const current = originalBytes.toString("utf8");
         if (!Buffer.from(current, "utf8").equals(originalBytes)) throw new Error(`adoption target is not valid UTF-8: ${approvedWrite.path}`);
         content = renderApprovedWriteContent(approvedWrite, current);
+        verifyFinalCursorInstructions(approvedWrite.path, content, approvedWrite.coverage);
         if (content === current) {
           verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
+          verifyCursorCoverage(root, approvedWrite.coverage);
           if (!targetContentMatches(leaf, sourceStat, current)) throw new Error(`adoption source drifted before no-op: ${approvedWrite.path}`);
           return { path: approvedWrite.path, contentSha256: sha256(content), unchanged: true };
         }
       }
+
+      verifyFinalCursorInstructions(approvedWrite.path, content, approvedWrite.coverage);
 
       const mode = creating ? 0o644 : sourceStat.mode & 0o777;
       temporaryDescriptor = openSync(
@@ -686,6 +776,7 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
       directoryDescriptor = openSync(".", constants.O_RDONLY);
       if (typeof testHooks.beforeInstall === "function") testHooks.beforeInstall();
       verifyBoundAdoptionParentPath(binding, parentBinding, approvedWrite.path);
+      verifyCursorCoverage(root, approvedWrite.coverage);
       if (creating) {
         linkSync(temporary, leaf);
         createdTarget = true;
@@ -713,6 +804,7 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
           throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
         }
         if (typeof testHooks.beforeReplace === "function") testHooks.beforeReplace();
+        verifyCursorCoverage(root, approvedWrite.coverage);
         const installPathStat = lstatSync(leaf);
         if (installPathStat.isSymbolicLink() || !sameFile(sourceStat, installPathStat)) {
           throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
@@ -826,11 +918,57 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
   if (proposedLevel === "persisted-governance") throw new Error("persisted-governance is evidence-gated and deferred in ForgeRail alpha.1");
   const registry = loadHostAdapters(pluginRoot);
   if (!registry.valid) throw new Error(`host adapter registry is invalid: ${registry.errors.join("; ")}`);
-  const selection = resolveHostSelection(realRoot, registry.adapters, hostIds, selectionMode);
+  const selection = resolveHostSelection(realRoot, pluginRoot, registry.adapters, hostIds, selectionMode);
   const selected = selection.selected;
-  const selectedLevel = observeAdoptionLevel(realRoot, selected);
+  let selectedLevel = observeAdoptionLevel(realRoot, selected);
   let currentLevel = selectedLevel;
   const unselectedEvidence = [];
+  const cursorEvidence = [];
+  let cursorRuleCovered = false;
+  let cursorExistingRule = false;
+  let cursorCoverage;
+  if (selected.some(({ id }) => id === "cursor")) {
+    const instructions = inspectBoundedPath(realRoot, "AGENTS.md", { finalKind: "file", read: true });
+    const core = inspectBoundedPath(realRoot, ".agents/skills/forgerail/SKILL.md", { finalKind: "file" });
+    const cursorLocalCore = inspectBoundedPath(realRoot, ".cursor/skills/forgerail/SKILL.md", { finalKind: "file" });
+    const existingRule = inspectBoundedPath(realRoot, ".cursor/rules/forgerail.mdc", { finalKind: "file", read: true });
+    cursorExistingRule = existingRule.present;
+    const sharedPointer = instructions.state === "available" && applicableCorePointer(instructions.content);
+    const coreDigest = sharedPointer && core.state === "available" && !cursorLocalCore.present ? matchingProjectCore(pluginRoot, realRoot) : null;
+    if (cursorLocalCore.present) cursorEvidence.push(`A competing Cursor-local ForgeRail Core Skill at .cursor/skills/forgerail/SKILL.md is ${cursorLocalCore.state}; resolve its owner before treating shared Core coverage as verified. A Cursor Rule cannot resolve two same-name Skills.`);
+    if (coreDigest !== null) {
+      selectedLevel = "lightweight-adoption";
+      currentLevel = "lightweight-adoption";
+      cursorRuleCovered = (selected.length === 1 || applicableContractPointer(instructions.content)) && (!cursorExistingRule || selected.length === 1);
+      const codex = selected.find(({ id }) => id === "codex");
+      if (cursorRuleCovered && codex) {
+        const codexWrite = proposedWrite(realRoot, binding.workspaceSha256, codex.bindingTarget,
+          readBindingTemplate(pluginRoot, codex, "thin-reference"), codex.managedMarker, codex.unmanagedBindingPolicy);
+        const finalInstructions = renderProposedWrite(realRoot, codexWrite);
+        if (!applicableCorePointer(finalInstructions) || !applicableContractPointer(finalInstructions)) {
+          cursorRuleCovered = false;
+          cursorEvidence.push("The selected Codex binding would replace the only shared Core or contract pointer in AGENTS.md; retain a Cursor Rule for the resulting workspace.");
+        }
+      }
+      if (cursorRuleCovered && !cursorExistingRule) cursorCoverage = { agentsSha256: sha256(instructions.content), coreSha256: coreDigest, sourceCoreSha256: coreDigest };
+      if (cursorRuleCovered && !cursorExistingRule) cursorEvidence.push(selected.length === 1 ? cursorSharedCoreCoverageEvidence : cursorSharedContractCoverageEvidence);
+      else if (cursorExistingRule) cursorEvidence.push("An existing Cursor Rule remains a separate, unverified instruction owner; do not claim the shared-Core-only IDE acceptance for this workspace.");
+      else if (!applicableContractPointer(instructions.content)) cursorEvidence.push("The existing AGENTS.md Core pointer does not reference FORGERAIL.md; a Cursor Rule is needed to expose the new shared contract to Cursor.");
+      cursorEvidence.push(`Project-local ForgeRail Core tree matches the package source; SHA-256: ${coreDigest}.`);
+    } else if (sharedPointer) {
+      cursorEvidence.push(`Existing AGENTS.md references the project-local ForgeRail Core Skill; Skill path is ${core.state}, but the complete Core does not match the package source or accepted Cursor IDE evidence. Review the Core owner before approving a Cursor Rule.`);
+    } else if (instructions.state === "available" && /forgerail/i.test(instructions.content)) {
+      cursorEvidence.push("Existing AGENTS.md mentions ForgeRail without the expected project-local Core pointer; review its workflow owner and references before approving a Cursor Rule.");
+    } else if (instructions.present && instructions.state !== "available") {
+      cursorEvidence.push(`Existing AGENTS.md is ${instructions.state}; inspect it before approving a Cursor Rule to avoid competing instruction owners.`);
+    }
+    if (core.state !== "available") {
+      cursorEvidence.push(`Project-local ForgeRail Core Skill is ${core.state}; a Cursor Rule cannot activate the Core until the Skill is installed and verified.`);
+    }
+    if (existingRule.present) {
+      cursorEvidence.push(`Existing Cursor Rule at .cursor/rules/forgerail.mdc is ${existingRule.state}; review its instruction ownership and coexistence with AGENTS.md. This plan does not remove or replace it implicitly.`);
+    }
+  }
   const selectedIds = new Set(selected.map(({ id }) => id));
   for (const adapter of registry.adapters.filter(({ id }) => !selectedIds.has(id))) {
     const inspected = inspectBoundedPath(realRoot, adapter.bindingTarget, { finalKind: "file", read: true });
@@ -843,7 +981,11 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
   }
   if (selectedLevel !== "plugin-only" && proposedLevel === "plugin-only") throw new Error("adoption removal or downgrade requires a separate reviewed plan and is not generated by alpha.1");
   if (currentLevel === "persisted-governance") throw new Error("persisted-governance was observed; alpha.1 will diagnose it but will not generate replacement or downgrade writes");
-  const strategy = proposedLevel === "plugin-only"
+  const cursorOnlyCovered = selected.length === 1 && selected[0].id === "cursor" && cursorRuleCovered;
+  if (cursorOnlyCovered && proposedLevel !== "plugin-only") {
+    cursorEvidence.push("Cursor is the only selected host and existing project instructions cover its Core; no new FORGERAIL.md or Cursor Rule is needed. Verify activation in a new Cursor task, then use unchanged AGENTS.md as the effective Host Binding Receipt target.");
+  }
+  const strategy = proposedLevel === "plugin-only" || cursorOnlyCovered
     ? "no-change"
     : selected.length === 1 && selected[0].bindingModes.includes("managed-block")
       ? "single-host-managed-block"
@@ -857,18 +999,20 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
   } else if (strategy === "shared-contract-with-thin-bindings") {
     const contract = readTemplate(pluginRoot, "FORGERAIL.md").replace("{{HOSTS}}", selected.map((adapter) => adapter.displayName).join(", "));
     validateBindingTemplateMarkers({ managedMarker: "forgerail:adoption-contract:v1" }, "shared-contract", contract);
-    writes.push(proposedWrite(realRoot, binding.workspaceSha256, "FORGERAIL.md", contract, "forgerail:adoption-contract:v1"));
-    for (const adapter of selected) {
+    writes.push(proposedWrite(realRoot, binding.workspaceSha256, "FORGERAIL.md", contract, "forgerail:adoption-contract:v1", undefined, cursorCoverage));
+    const bindingAdapters = cursorCoverage === undefined ? selected : [...selected].sort((left, right) => Number(left.bindingTarget === "AGENTS.md") - Number(right.bindingTarget === "AGENTS.md"));
+    for (const adapter of bindingAdapters) {
+      if (cursorRuleCovered && adapter.id === "cursor") continue;
       const content = readBindingTemplate(pluginRoot, adapter, "thin-reference");
-      writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker, adapter.unmanagedBindingPolicy));
+      writes.push(proposedWrite(realRoot, binding.workspaceSha256, adapter.bindingTarget, content, adapter.managedMarker, adapter.unmanagedBindingPolicy, cursorCoverage));
     }
   }
   const selectedHosts = Object.fromEntries(selected.map((adapter) => [adapter.id, {
-    status: adapter.status,
+    status: adapter.id === "cursor" && (!cursorRuleCovered || cursorExistingRule) ? "profile-only" : adapter.status,
     bindingTarget: adapter.bindingTarget,
-    verificationMode: adapter.verification.mode,
+    verificationMode: adapter.id === "cursor" && (!cursorRuleCovered || cursorExistingRule || adapter.status !== "supported") ? "profile-only" : adapter.verification.mode,
   }]));
-  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hostSelection: { mode: selection.mode, hosts: selectedHosts }, writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
+  const identity = sha256(JSON.stringify({ workspace: basename(root), currentLevel, proposedLevel, strategy, hostSelection: { mode: selection.mode, hosts: selectedHosts }, cursorCoverage: cursorCoverage === undefined ? null : [cursorCoverage.agentsSha256, cursorCoverage.coreSha256, cursorCoverage.sourceCoreSha256], writes: writes.map(({ approvalSha256 }) => approvalSha256) })).slice(0, 20);
   const plan = {
     schemaVersion: "1.0",
     planId: `adoption:${identity}`,
@@ -884,11 +1028,15 @@ export function planAdoption(pluginRoot, workspace, hostIds = [], proposedLevel 
       `Observed current adoption level: ${currentLevel}.`,
       `Host selection mode ${selection.mode} resolved adapters: ${selected.map((adapter) => adapter.id).join(", ")}.`,
       ...unselectedEvidence,
+      ...cursorEvidence,
       "ForgeRail alpha.1 does not generate persisted .forgerail state.",
     ],
+    ...(cursorCoverage !== undefined && (strategy === "no-change" || strategy === "shared-contract-with-thin-bindings")
+      ? { cursorCoverage: { ...cursorCoverage, agentsContent: inspectBoundedPath(realRoot, "AGENTS.md", { finalKind: "file", read: true }).content } }
+      : {}),
     proposedWrites: writes,
     requiredConfirmation: true,
-    verification: selected.map((adapter) => adapter.status === "supported"
+    verification: selected.map((adapter) => selectedHosts[adapter.id].status === "supported"
       ? `${adapter.displayName}: start a new task in the adopted workspace and verify the binding plus expected Skills are discovered.`
       : `${adapter.displayName}: profile-only; perform host-specific discovery verification before treating this binding as active.`),
     confirmedNonMutations: [

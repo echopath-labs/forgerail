@@ -10,9 +10,9 @@ import { validateProductSurface } from "./lib/product-surface.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export function validateRelease() {
   const expectedPackageName = "@echopath-labs/forgerail";
-  const expectedVersion = "0.1.6";
+  const expectedVersion = "0.1.7";
   const expectedTag = `v${expectedVersion}`;
-  const expectedDate = "2026-09-23";
+  const expectedDate = "2026-09-26";
   const expectedPlugins = [
     "forgerail",
     "forgerail-cross-workspace-orchestration",
@@ -186,7 +186,16 @@ export function validateRelease() {
   record("codex-adapter-supported", codexAdapter.status === "supported" && codexAdapter.bindingTarget === "AGENTS.md" && codexAdapter.detectionTargets?.includes("AGENTS.md"), codexAdapter.status);
   record("claude-adapter-profile-only", claudeAdapter.status === "profile-only" && claudeAdapter.detectionTargets?.includes("CLAUDE.md"), claudeAdapter.status);
   record("claude-adapter-thin-only", JSON.stringify(claudeAdapter.bindingModes) === JSON.stringify(["thin-reference"]), claudeAdapter.bindingModes);
-  record("cursor-adapter-profile-only", cursorAdapter.status === "profile-only" && cursorAdapter.detectionTargets?.includes(".cursor"), cursorAdapter.status);
+  const cursorSupported = cursorAdapter.status === "supported"
+    && cursorAdapter.activationBoundary === "new-task-required"
+    && cursorAdapter.verification?.mode === "new-task-discovery"
+    && cursorAdapter.verification?.expectedSkills?.includes("forgerail");
+  const cursorProfileOnly = cursorAdapter.status === "profile-only"
+    && cursorAdapter.activationBoundary === "host-specific-verification-required"
+    && cursorAdapter.verification?.mode === "profile-only"
+    && cursorAdapter.verification?.expectedSkills?.length === 0;
+  record("cursor-adapter-evidence-gated", (cursorSupported || cursorProfileOnly)
+    && cursorAdapter.skillDiscovery === "agent-skills" && cursorAdapter.detectionTargets?.includes(".cursor"), cursorAdapter.status);
   for (const adapter of [codexAdapter, claudeAdapter, cursorAdapter]) {
     const modes = Object.keys(adapter.bindingTemplates ?? {}).sort();
     record(`adapter-${adapter.id}-template-modes`, JSON.stringify(modes) === JSON.stringify([...adapter.bindingModes].sort()), { modes, bindingModes: adapter.bindingModes });
@@ -200,9 +209,15 @@ export function validateRelease() {
   record("project-lifecycle-publication", ["scripts/lib/project-adoption.mjs", "scripts/lib/project-state.mjs", "scripts/project-adoption.test.mjs"].every((path) => packageJson.files.includes(path)) && packageJson.scripts.test.includes("npm run test:project-adoption"), "explicit lifecycle modules and installed regression suite");
   record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-  const releaseEnglish = read("docs/release-0.1.6.md");
-  const releaseChinese = read("docs/release-0.1.6.zh-CN.md");
+  const releaseEnglish = read("docs/release-0.1.7.md");
+  const releaseChinese = read("docs/release-0.1.7.zh-CN.md");
   const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
+  const currentRunbookEnglish = read("docs/release.md");
+  const currentRunbookChinese = read("docs/release.zh-CN.md");
+  const currentRunbooks = `${currentRunbookEnglish}\n${currentRunbookChinese}`;
+  record("current-runbook-version", currentRunbooks.includes(expectedVersion) && currentRunbooks.includes(expectedTag), { expectedVersion, expectedTag });
+  record("current-runbook-no-alpha1-release-identity", !currentRunbooks.includes("0.1.0-alpha.1"), "generic runbooks must not retain the first-prerelease identity");
+  record("current-runbook-stable-channel", currentRunbookEnglish.includes("npm `latest`") && currentRunbookChinese.includes("npm `latest`"), "stable runbooks publish to latest");
   for (const phrase of [
     "remote_integration_approval",
     "release_approval",
@@ -210,7 +225,7 @@ export function validateRelease() {
     expectedVersion,
     expectedTag,
     "Node.js 22 and 24",
-    "release/0.1.6",
+    "release/0.1.7",
     "Do not unpublish",
     "AGW",
     "Host Binding Receipt",

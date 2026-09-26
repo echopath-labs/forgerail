@@ -1,6 +1,6 @@
 {
   "name": "@echopath-labs/forgerail",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
   "license": "Apache-2.0",
   "type": "module",
@@ -26,6 +26,7 @@
     "scripts/lib/bounded-read.mjs",
     "scripts/lib/composition.mjs",
     "scripts/lib/contracts.mjs",
+    "scripts/lib/instruction-pointers.mjs",
     "scripts/lib/diagnosis.mjs",
     "scripts/lib/product-surface.mjs",
     "scripts/local-observation-regressions.mjs",

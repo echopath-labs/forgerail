@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "candidateType": "openai-universal-plugin-directory",
   "submissionType": "skills_only",
-  "status": "local_016_candidate",
+  "status": "local_017_candidate",
   "approval": { "type": "submission_approval", "status": "not_granted" },
   "officialBaseline": {
     "observedAt": "2026-08-30",
@@ -13,7 +13,7 @@
   },
   "plugin": {
     "id": "forgerail",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "manifest": ".codex-plugin/plugin.json",
     "skills": [
       "forgerail",
@@ -57,8 +57,8 @@
   },
   "releaseNotes": {
     "state": "candidate",
-    "path": "./directory/release-notes-0.1.6.md",
-    "value": "ForgeRail 0.1.6: Agent-first setup guidance with unchanged 0.1.5 runtime behavior. Local catalog only; Directory submission remains deferred and unapproved."
+    "path": "./directory/release-notes-0.1.7.md",
+    "value": "ForgeRail 0.1.7: bounded shared-Core Cursor IDE Agent support and iteration discipline. Local catalog only; Directory submission remains deferred and unapproved."
   },
   "evaluationFile": "./directory/evaluations.json",
   "unresolvedGates": [

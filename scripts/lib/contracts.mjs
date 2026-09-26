@@ -1,5 +1,10 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { applicableCorePointer, applicableContractPointer } from "./instruction-pointers.mjs";
+
+export const cursorSharedCoreCoverageEvidence = "Existing AGENTS.md references the matching project-local ForgeRail Core Skill; this Cursor-only plan needs no additional Cursor Rule.";
+export const cursorSharedContractCoverageEvidence = "Existing AGENTS.md references both the matching project-local ForgeRail Core Skill and FORGERAIL.md; this shared-contract plan needs no additional Cursor Rule.";
+const cursorSharedCoreRulePath = ".cursor/rules/forgerail.mdc";
 
 export const contractSchemaNames = {
   "adoption-plan": "adoption-plan",
@@ -372,7 +377,7 @@ function rejectConflictingPaths(paths, label, errors) {
 
 function validateAdoptionPlan(value, errors) {
   const keys = ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"];
-  if (!exactKeys(value, keys, [], "adoptionPlan", errors)) return;
+  if (!exactKeys(value, keys, ["cursorCoverage"], "adoptionPlan", errors)) return;
   schemaVersion(value.schemaVersion, "adoptionPlan", errors);
   string(value.planId, "adoptionPlan.planId", errors, taskIdPattern);
   string(value.workspace, "adoptionPlan.workspace", errors);
@@ -401,7 +406,7 @@ function validateAdoptionPlan(value, errors) {
   if (!Array.isArray(value.proposedWrites)) errors.push("adoptionPlan.proposedWrites must be an array");
   else value.proposedWrites.forEach((write, index) => {
     const label = `adoptionPlan.proposedWrites[${index}]`;
-    if (!exactKeys(write, ["workspaceSha256", "path", "operation", "baseSha256", "contentSha256", "content", "managedMarker", "approvalSha256"], [], label, errors)) return;
+    if (!exactKeys(write, ["workspaceSha256", "path", "operation", "baseSha256", "contentSha256", "content", "managedMarker", "approvalSha256"], ["coverage"], label, errors)) return;
     string(write.workspaceSha256, `${label}.workspaceSha256`, errors, digestPattern);
     string(write.path, `${label}.path`, errors, portableHostPathPattern);
     if (!["create", "append-managed-block", "replace-managed-block"].includes(write.operation)) errors.push(`${label}.operation is invalid`);
@@ -410,6 +415,11 @@ function validateAdoptionPlan(value, errors) {
     string(write.content, `${label}.content`, errors);
     string(write.managedMarker, `${label}.managedMarker`, errors, /^forgerail:(?:binding:[a-z][a-z0-9-]+|adoption-contract):v1$/);
     string(write.approvalSha256, `${label}.approvalSha256`, errors, digestPattern);
+    if (write.coverage !== undefined && exactKeys(write.coverage, ["agentsSha256", "coreSha256", "sourceCoreSha256"], [], `${label}.coverage`, errors)) {
+      string(write.coverage.agentsSha256, `${label}.coverage.agentsSha256`, errors, digestPattern);
+      string(write.coverage.coreSha256, `${label}.coverage.coreSha256`, errors, digestPattern);
+      string(write.coverage.sourceCoreSha256, `${label}.coverage.sourceCoreSha256`, errors, digestPattern);
+    }
     if (typeof write.content === "string" && write.contentSha256 !== sha256(write.content)) errors.push(`${label}.contentSha256 does not match content`);
     if (typeof write.content === "string") {
       const approvalBound = {
@@ -420,6 +430,7 @@ function validateAdoptionPlan(value, errors) {
         contentSha256: write.contentSha256,
         content: write.content,
         managedMarker: write.managedMarker,
+        ...(write.coverage === undefined ? {} : { coverage: write.coverage }),
       };
       if (write.approvalSha256 !== sha256(JSON.stringify(approvalBound))) errors.push(`${label}.approvalSha256 does not match the proposed write`);
     }
@@ -440,6 +451,34 @@ function validateAdoptionPlan(value, errors) {
   if (!Array.isArray(value.mutations) || value.mutations.length !== 0) errors.push("adoptionPlan.mutations must be empty");
   if (value.status !== "candidate") errors.push("adoptionPlan.status must equal candidate");
   if (value.strategy === "no-change" && (value.proposedWrites?.length ?? 0) !== 0) errors.push("no-change adoptionPlan cannot propose writes");
+  const supportedCursor = hostEntries.some((host) => host.adapterId === "cursor" && host.status === "supported");
+  const cursorNoChange = value.strategy === "no-change" && supportedCursor;
+  if (cursorNoChange && hostEntries.length !== 1) errors.push("supported Cursor no-change plan requires a Cursor-only selection");
+  const cursorSharedPlan = value.strategy === "shared-contract-with-thin-bindings"
+    && supportedCursor
+    && Array.isArray(value.evidence) && value.evidence.includes(cursorSharedContractCoverageEvidence);
+  const supportedCursorRoute = cursorNoChange || cursorSharedPlan;
+  if (supportedCursor && (!supportedCursorRoute || writePaths.includes(cursorSharedCoreRulePath))) {
+    errors.push("supported Cursor route requires verified shared-Core coverage and must omit the Cursor Rule");
+  }
+  if (cursorNoChange && ![cursorSharedCoreCoverageEvidence, cursorSharedContractCoverageEvidence].some((item) => Array.isArray(value.evidence) && value.evidence.includes(item))) errors.push("supported Cursor no-change plan requires shared Core evidence");
+  if (cursorNoChange || cursorSharedPlan) {
+    const coverage = value.cursorCoverage;
+    if (!exactKeys(coverage, ["agentsContent", "agentsSha256", "coreSha256", "sourceCoreSha256"], [], "adoptionPlan.cursorCoverage", errors)) {
+      errors.push("supported Cursor shared Core requires verifiable coverage evidence");
+    } else {
+      string(coverage.agentsContent, "adoptionPlan.cursorCoverage.agentsContent", errors);
+      for (const key of ["agentsSha256", "coreSha256", "sourceCoreSha256"]) string(coverage[key], `adoptionPlan.cursorCoverage.${key}`, errors, digestPattern);
+      if (typeof coverage.agentsContent === "string" && sha256(coverage.agentsContent) !== coverage.agentsSha256) errors.push("Cursor AGENTS.md coverage digest does not match its content");
+      if (coverage.coreSha256 !== coverage.sourceCoreSha256) errors.push("Cursor project Core must match the package Core");
+      if (typeof coverage.agentsContent === "string" && !applicableCorePointer(coverage.agentsContent)) errors.push("Cursor coverage lacks an applicable Core pointer");
+      if (cursorSharedPlan && typeof coverage.agentsContent === "string" && !applicableContractPointer(coverage.agentsContent)) errors.push("Cursor shared coverage lacks an applicable contract pointer");
+    }
+  } else if (value.cursorCoverage !== undefined) errors.push("Cursor coverage is allowed only for a supported shared Core route");
+  const hasCursorCoverage = value.proposedWrites.some((write) => write.coverage !== undefined);
+  if (value.strategy !== "shared-contract-with-thin-bindings" && hasCursorCoverage) {
+    errors.push("Cursor shared coverage is allowed only on a shared-contract plan that omits the Cursor Rule");
+  }
   if (value.strategy === "single-host-managed-block") {
     if (hostEntries.length !== 1) errors.push("single-host-managed-block requires exactly one host");
     if (value.proposedWrites?.length !== 1) errors.push("single-host-managed-block requires exactly one proposed write");
@@ -448,11 +487,42 @@ function validateAdoptionPlan(value, errors) {
   }
   if (value.strategy === "shared-contract-with-thin-bindings") {
     if (hostEntries.length < 1) errors.push("shared-contract-with-thin-bindings requires at least one host");
-    if (value.proposedWrites?.length !== hostEntries.length + 1) errors.push("shared-contract-with-thin-bindings requires one contract and one write per host");
+    const coveredCursor = hostEntries.find((host) => host.adapterId === "cursor" && host.bindingTarget === cursorSharedCoreRulePath);
+    const cursorCovered = coveredCursor !== undefined && Array.isArray(value.evidence) && value.evidence.includes(cursorSharedContractCoverageEvidence);
+    if (!cursorCovered && hasCursorCoverage) errors.push("Cursor shared coverage is allowed only when the shared-contract plan omits the Cursor Rule");
+    if (cursorCovered && value.proposedWrites?.some((write) => write.path === coveredCursor.bindingTarget)) {
+      errors.push("shared-contract plan must not propose a Cursor Rule when the shared project Core already covers Cursor");
+    }
+    const expectedWrites = hostEntries.length + 1 - (cursorCovered ? 1 : 0);
+    if (value.proposedWrites?.length !== expectedWrites) errors.push("shared-contract-with-thin-bindings requires one contract and one write per host");
+    if (writePaths[0] !== "FORGERAIL.md") errors.push("shared-contract plan must write FORGERAIL.md before Host bindings");
+    if (cursorCovered) {
+      const expected = value.cursorCoverage;
+      if (value.proposedWrites?.some((write) => !write.coverage || !expected || ["agentsSha256", "coreSha256", "sourceCoreSha256"].some((key) => write.coverage[key] !== expected[key]))) errors.push("shared-contract Cursor coverage must be bound to every proposed write");
+      const agentsIndex = writePaths.indexOf("AGENTS.md");
+      if (agentsIndex >= 0 && agentsIndex !== writePaths.length - 1) errors.push("shared-contract Cursor coverage requires AGENTS.md to be the final write");
+      if (agentsIndex >= 0 && typeof expected?.agentsContent === "string" && typeof value.proposedWrites[agentsIndex]?.content === "string") {
+        const write = value.proposedWrites[agentsIndex];
+        const prior = expected.agentsContent;
+        const start = `<!-- ${write.managedMarker}:start -->`;
+        const end = `<!-- ${write.managedMarker}:end -->`;
+        const startIndex = prior.indexOf(start);
+        const endIndex = prior.indexOf(end, startIndex);
+        const contentEnd = write.content.indexOf(end) < 0 ? -1 : write.content.indexOf(end) + end.length;
+        let finalContent;
+        if (write.operation === "create") finalContent = write.content;
+        else if (write.baseSha256 !== sha256(prior)) errors.push("covered AGENTS.md base digest does not match the proposed snapshot");
+        else if (write.operation === "append-managed-block") finalContent = `${prior}${write.content}`;
+        else if (startIndex >= 0 && endIndex >= 0 && contentEnd >= end.length) finalContent = `${prior.slice(0, startIndex)}${write.content.slice(0, contentEnd)}${prior.slice(endIndex + end.length)}`;
+        else errors.push("covered AGENTS.md managed block cannot be rendered from the proposed snapshot");
+        if (finalContent !== undefined && (!applicableCorePointer(finalContent) || !applicableContractPointer(finalContent))) errors.push("final covered AGENTS.md must retain the Core and contract pointers");
+      }
+    }
     const contract = value.proposedWrites?.find((write) => write.path === "FORGERAIL.md");
     if (!contract) errors.push("shared-contract-with-thin-bindings must propose FORGERAIL.md");
     else if (contract.managedMarker !== "forgerail:adoption-contract:v1") errors.push("FORGERAIL.md must use the portable Adoption Contract marker");
     for (const host of hostEntries) {
+      if (cursorCovered && host.adapterId === "cursor") continue;
       const binding = value.proposedWrites?.find((write) => write.path === host.bindingTarget);
       if (!binding) errors.push(`shared-contract plan is missing host binding: ${host.adapterId}`);
       else if (binding.managedMarker !== `forgerail:binding:${host.adapterId}:v1`) errors.push(`shared-contract binding marker is invalid: ${host.adapterId}`);
@@ -494,7 +564,12 @@ function validateBindingReceipt(value, errors) {
     if (value.activationVerification?.verified !== true) errors.push("complete bindingReceipt requires verified activation discovery");
     if ((value.hosts ?? []).some((host) => host.status !== "verified")) errors.push("complete bindingReceipt requires every host binding to be verified");
     if ((value.deviations?.length ?? 0) > 0) errors.push("bindingReceipt with deviations cannot be complete");
-    for (const host of value.hosts ?? []) if (!value.changedFiles?.includes(host.target)) errors.push(`complete bindingReceipt.changedFiles is missing host target: ${host.target}`);
+    for (const host of value.hosts ?? []) {
+      const unchanged = host.baseSha256 !== null && host.baseSha256 === host.appliedSha256;
+      const changed = value.changedFiles?.includes(host.target);
+      if (unchanged && changed) errors.push(`complete bindingReceipt cannot list an unchanged host target in changedFiles: ${host.target}`);
+      if (!changed && !unchanged) errors.push(`complete bindingReceipt requires a changed or verified unchanged host target: ${host.target}`);
+    }
     if (value.contractPath !== null && !value.changedFiles?.includes(value.contractPath)) errors.push("complete bindingReceipt.changedFiles is missing contractPath");
   }
 }

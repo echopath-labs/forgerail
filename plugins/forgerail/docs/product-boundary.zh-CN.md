@@ -7,7 +7,7 @@ ForgeRail 帮助宿主 Agent 确定工程任务范围、遵守项目规约和审
 | Core 与 CLI | Profile/Envelope 组合、合同和回执检查、有界本地 Git 观察 | `launch` 生成合同，不启动 Agent |
 | Diagnosis 与 Health | 只读观察、诊断和建议 | 不自动修复，不建立监控 daemon 或项目记忆 |
 | Architecture Convergence | 可选的责任归属、工程范式与漂移评估 | 使用项目已接受规则，不强制目录布局，不自带依赖边界执行引擎 |
-| Adoption 与宿主 profile | 绑定计划、明确授权的 managed-file 写入与验证 | Cursor rules 保持 `profile-only`；指令接入与执行器是两种能力 |
+| Adoption 与宿主 profile | 绑定计划、明确授权的 managed-file 写入与验证 | 当前项目 Core 目录已通过 Cursor IDE Agent 新会话发现与有边界行为验收；仅该共用 Core 路径标记支持，Rule 回退路径仍为 profile-only。这不恢复 Cursor 执行器，也不认证 Cloud Agent |
 | 跨工作区 Pack | 依赖波次、写入冲突、交接与回执检查 | 宿主或 RelayPact 拥有任务派发、进程生命周期、等待、取消和恢复 |
 | Rulesets、Release Safety、Thread Closure Pack | 指引、审批及证据要求、本地 fixture 验证 | 经授权后由宿主使用项目工具执行，不内置远端执行器 |
 | 版本化控制合同 | 已发布 schema、字段和 fixture 校验 | 合同校验不等于实时 Authority、Topology、Revision 或 Provider evaluator |
@@ -18,7 +18,7 @@ ForgeRail 帮助宿主 Agent 确定工程任务范围、遵守项目规约和审
 
 ## Cursor 实验退出
 
-截至 0.1.2 曾随包分发的 Cursor 实验执行器从下一份源码候选移除：不再提供其直接 CLI/模块路径、专用 schema 和 fake-executor 测试。既有发布和历史保持不变。直接使用过实验路径的用户需要另选受支持的宿主或委派能力；没有自动迁移，也不新增 RelayPact 依赖。Cursor 指令绑定及其 `profile-only` 状态保留。
+截至 0.1.2 曾随包分发的 Cursor 实验执行器从下一份源码候选移除：不再提供其直接 CLI/模块路径、专用 schema 和 fake-executor 测试。既有发布和历史保持不变。直接使用过实验路径的用户需要另选受支持的宿主或委派能力；没有自动迁移，也不新增 RelayPact 依赖。当前项目 Core 已通过 Cursor IDE Agent 新会话验收；Rule 回退路径仍为 profile-only，这并不恢复该执行器。
 
 ## 如何保持边界
 

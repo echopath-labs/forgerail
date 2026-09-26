@@ -6,7 +6,7 @@ import {
 } from "node:fs";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadHostAdapters } from "./adoption.mjs";
+import { hasMatchingCursorSharedCore, loadHostAdapters } from "./adoption.mjs";
 import { inspectBoundedPath } from "./bounded-read.mjs";
 
 const defaultPluginRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -98,12 +98,14 @@ export function diagnoseWorkspace(workspace, pluginRoot = defaultPluginRoot) {
   const hostAdapters = registry.adapters.map((adapter) => {
     const binding = inspectBoundedPath(root, adapter.bindingTarget, { finalKind: "file", read: true });
     const detected = adapter.detectionTargets.some((path) => inspectBoundedPath(root, path).present);
+    const sharedCursorCore = adapter.id === "cursor" && hasMatchingCursorSharedCore(pluginRoot, root);
     if (binding.present && binding.state !== "available") gaps.push(`host-binding-unavailable:${adapter.id}`);
     return {
       id: adapter.id,
-      status: adapter.status,
+      status: adapter.id === "cursor" && !sharedCursorCore ? "profile-only" : adapter.status,
       target: adapter.bindingTarget,
-      observed: detected || binding.present,
+      ...(adapter.id === "cursor" ? { effectiveRoute: sharedCursorCore ? "AGENTS.md + matching shared Core" : "Cursor Rule or incomplete shared Core" } : {}),
+      observed: detected || binding.present || sharedCursorCore,
       readState: binding.state,
       managedBindingObserved: binding.state === "available" && binding.content.includes(`<!-- ${adapter.managedMarker}:start -->`),
     };
@@ -117,10 +119,11 @@ export function diagnoseWorkspace(workspace, pluginRoot = defaultPluginRoot) {
   }
 
   const managedBindingObserved = hostAdapters.some((adapter) => adapter.managedBindingObserved);
+  const sharedCursorCoreObserved = hostAdapters.some((adapter) => adapter.id === "cursor" && adapter.effectiveRoute === "AGENTS.md + matching shared Core");
   const projectAdoption = projectAdoptionObservation(root);
   evidence.push(observed("project-adoption", ".forgerail/installation.json", projectAdoption));
   const portableContract = inspectBoundedPath(root, "FORGERAIL.md", { finalKind: "file" }).state === "available";
-  const adoptionLevel = projectAdoption.adopted || portableContract || managedBindingObserved ? "lightweight-adoption" : "plugin-only";
+  const adoptionLevel = projectAdoption.adopted || portableContract || managedBindingObserved || sharedCursorCoreObserved ? "lightweight-adoption" : "plugin-only";
   evidence.push(observed("host-adapters", "registry-owned bounded host instruction paths", hostAdapters));
   evidence.push(observed("forgerail-adoption-level", "bounded ForgeRail markers", adoptionLevel));
 

@@ -1,50 +1,77 @@
-# ForgeRail 0.1.0-alpha.1 发布 Runbook
+# ForgeRail 0.1.7 稳定版发布 Runbook
 
-这是 ForgeRail 首个可用预发布版的项目专属 runbook，约束 `@echopath-labs/forgerail@0.1.0-alpha.1`、Git tag `v0.1.0-alpha.1` 与同一 EchoPath Labs Marketplace 快照。未作用域 `forgerail@0.0.0-reserved.0` 继续只作名称占位，不属于产品发布路径；文档本身不授予任何执行权限。
+本项目自有 runbook 约束 `@echopath-labs/forgerail@0.1.7`、annotated tag
+`v0.1.7` 与对应的正式 GitHub Release。公开仓是私有 canonical source 的
+确定性投影；外部 Capability Pack 保持各自 alpha.4 身份和独立生命周期。
+本文描述流程，本身不授予执行权限。
 
-## 独立审批门
+## 独立门禁
 
-三个审批门互不继承：
+1. `remote_integration_approval` 覆盖精确公开投影分支、Draft PR、required
+   checks、最终评审与获批合并。
+2. `release_approval` 覆盖精确合并树、npm `latest` 发布、annotated tag 与
+   正式 GitHub Release。
+3. `lifecycle_change_approval` 单独约束 AGW 退役、消费者迁移、Ruleset、
+   branch protection、回滚或删除。
 
-1. `remote_integration_approval` 只允许将一个精确签名 commit 推到 `release/0.1.0-alpha.1`，基于精确 `main` 创建 Draft PR，观察 Node.js 22 and 24 CI 并返回 receipt。
-2. `release_approval` 才可把该精确 PR 转 Ready、按批准方式合并、发布精确 npm 预发布版、创建 annotated tag 与 GitHub prerelease，并核验消费者安装。
-3. 任何 AGW 弃用、重定向、归档、删除或激活切换都需要单独的 `lifecycle_change_approval`。
+Owner 明确要求发布某个版本时，可以在一条指令中同时授予前两个门禁；
+该授权不会传递到第三个门禁。
 
-Ruleset、branch protection、稳定版、其他产品与 OpenSpec archive 不在上述授权内，除非新的审批明确加入。
+## Source-first 公开集成
 
-## Source-first 候选
+- 先修改并验证 canonical source，再生成公开投影；禁止 public-only 修复。
+- 将候选绑定到私有 source commit/tree、公开 base、确定性投影摘要、npm
+  归档摘要与精确版本。
+- `release/0.1.7` 必须是已观测公开 `main` 的普通子 commit，并且只应用
+  生成的投影。使用精确 SHA refspec 非强制推送。
+- 基于已观测 `main` 创建 Draft PR；任何修正后都重新核对 head、base、
+  tree、版本、许可证、required checks 和 Agent review。
+- 只有最终投影仍为当前候选时才合并；公开 `main` 的合并 tree 必须等于
+  已签名 projection tree。
 
-- canonical source 只在 EchoPath 工作区维护；禁止 public-only 修复。
-- 每次修正都要重新校验、确定性投影，并绑定精确 source commit、tree、inventory、manifest digest 与 projection receipt。
-- 首个公共候选必须是已观测 `main` 的普通子 commit。remote integration 后若在同一 release branch 上进行 source-first 替换，新候选必须是当前 release head 的普通 fast-forward successor。两种形式都只能用精确 SHA refspec 推送且不得 force push；PR base 与 publication comparison baseline 继续绑定已观测 `main`。
-- squash merge 后的公共 `main` tree 必须等于最终签名 projection tree。
-- Draft PR 必须绑定精确 base/head；任何 SHA、tree、版本、许可证或 check 漂移都停止。
-- 必须通过 Node.js 22 and 24 Plugin Contracts，包括 Core/contracts、渐进式采用、外部 packs、冻结 AGW 覆盖、发布源校验与一次性消费者生命周期。
+Required CI 覆盖 Node.js 22/24、Core/contracts、完整 fixtures、渐进接入、
+完整性、发布源校验、一次性消费者生命周期和 Universal Directory。
 
-## 发布审批后的门序
+## 稳定版执行
 
-获得新的精确 `release_approval` 后才执行：
+1. 确认公开 PR 仍为 Open、可合并，base/head 与批准对象一致，required
+   checks 和最终 Agent review 全部通过。
+2. 仅将该 PR 转为 Ready，并通过 exact-head guard squash merge；确认合并后
+   的公开 `main` tree 等于签名投影。
+3. 在干净的 merged `main` 上使用 Node.js 22 和 24 执行
+   `npm run test:maintainer` 与 `npm audit`；重新生成精确 npm 归档并比较
+   inventory 与摘要。
+4. 核实 `gh`、Git SSH、npm 都解析为获授权的 EchoPath Labs 身份；确认
+   `@echopath-labs/forgerail@0.1.7` 尚不存在，并观察 `latest`、`next`。
+5. 仅以 public access 和 `latest` tag 发布
+   `@echopath-labs/forgerail@0.1.7`。除非 trusted publishing 已独立配置并
+   验证，否则关闭 provenance。
+6. 回读 registry version、shasum、integrity、license、repository、binary
+   shim 和 dist-tags；在 Node.js 22/24 匿名安装精确版本，运行
+   `forgerail validate`、包内自检和一次有边界只读诊断。
+7. 在精确 merged public `main` 上创建 annotated `v0.1.7` 并非强制推送；
+   使用版本化发布说明创建正式 GitHub Release `ForgeRail 0.1.7`。本版没有
+   standalone binary assets。
+8. 将精确 tag 作为一次性 Codex Marketplace 验证：发现主 Plugin Skills，
+   验证只读接入规划，只在一次性工作区应用明确批准的 managed block，
+   校验 Host Binding Receipt，并确认没有持久任务治理状态。每个外部
+   Capability Pack 独立发现，不认证、不执行。
+9. 写入耐久发布回执，并在收尾前重新观察公开 `main`、npm dist-tags、
+   annotated tag 与 GitHub Release。
 
-1. 复核 PR 仍为 Open/Draft、可合并、base/head 与批准包一致，required checks 全部成功。
-2. 仅将该 PR 转 Ready，并用 exact-head guard squash merge；确认合并后 `main` tree 等于签名候选 tree。
-3. 在干净的 merged `main` 上用 Node.js 22 和 24 运行 `npm test`、`npm run test:shadow`、`npm run test:release`、`npm run test:consumer`、`npm pack --dry-run --json` 与 `npm audit`。
-4. 不暴露凭据地验证 npm 身份及 `@echopath-labs` 组织 package 权限；确认 scoped alpha.1 尚不存在，并记录 scoped package 的 `latest`、`next`。另行确认未作用域 `forgerail` 仍只有 `0.0.0-reserved.0` 且占位 tags 未变。
-5. 仅以 public access 与 `next` tag 发布 `@echopath-labs/forgerail@0.1.0-alpha.1`；在可信发布链完成独立验证前关闭 provenance。不得向未作用域 `forgerail` 发布产品代码。
-6. 核验 registry version、shasum、integrity、license、repository、binary shim，并执行精确版本隔离安装、`forgerail validate` 与一次有界只读诊断。
-7. 精确版本 smoke 通过后才把 scoped package 的 `latest` 移到 alpha.1；核验 exact、scoped `next`、scoped `latest` 隔离安装，并保持未作用域 `forgerail` 的所有 version/dist-tag 不变。
-8. 在精确 merged `main` 上创建 annotated `v0.1.0-alpha.1` 并推送，不移动任何已有 tag。
-9. 发布标题为 `ForgeRail v0.1.0-alpha.1` 的 GitHub prerelease，release notes 使用版本化 CHANGELOG；此版本没有 standalone binary assets。
-10. 在一次性环境中注册精确 tag Marketplace，安装主插件并启动新 Codex 任务，验证三个主 Skill；生成单宿主 Codex Adoption Plan，证明规划不修改工作区，仅在显式批准后向一次性项目写入 managed block，再启动新任务或执行受支持的等价发现检查，并校验 Host Binding Receipt；确认没有 `.forgerail/` 状态。每个外部 Capability Pack 分别安装与发现，不认证、不执行。
-11. 返回绑定 canonical、PR/merge、tree、npm、dist-tags、tag、prerelease、Plugin discovery、校验、非变更项与恢复锚点的 durable receipt。
+## 停止与恢复
 
-## 停止与回滚
+- npm 发布前若身份、源码、投影、检查、评审、包清单或消费者行为漂移，
+  立即停止。
+- 不撤回或覆盖不可变 npm 版本，不移动不可变发布 tag；已发布缺陷通过
+  单独批准的前向修正版解决。
+- PR 或 merge 缺陷使用普通 review 后的 revert/forward commit；禁止强推
+  或改写公开历史。
+- 可变 dist-tag 回滚、AGW 生命周期变化与真实消费者迁移需要单独授权。
 
-- npm 发布前任何身份、tree、check、凭据、package 或消费者结果漂移都立即停止，不产生发布副作用。
-- Do not unpublish 或覆盖不可变 npm version；不得移动已发布 Git tag。发布后缺陷通过新版本前向修复。
-- 若 scoped npm 精确发布成功但消费者 smoke 失败，只有得到单独批准后才可删除或移动 scoped `latest`/`next` 到最近已验证的 scoped 版本。首个 scoped prerelease 没有更早 runtime，immutable alpha.1 必须保留；不得把 scoped tags 指向未作用域占位版本。
-- PR 或 merge 缺陷使用普通 review 后的 revert/forward commit；禁止 force push 与历史重写。
-- 真实兼容期 canary 完成前 AGW 继续可用；本次发布不授权 AGW 生命周期变更。
+## 必需回执
 
-## 必需 receipt
-
-记录精确 repo、branch、PR、批准 head/base、merged commit/tree、canonical 与投影 digest、Node.js 22/24 checks、Host Adapter 状态、采用规划非变更、Codex Host Binding Receipt、pack metadata、npm 身份及不可变 package metadata、最终 dist-tags、annotated tag object/peeled commit、GitHub prerelease、一次性 Plugin/CLI 安装结果、rollback anchors，并确认没有 `.forgerail/`、Ruleset、branch protection、stable release、AGW lifecycle 或 OpenSpec archive 变更。
+记录 canonical source/evidence commits、public base/head/PR/merge/tree、投影
+和归档摘要、Node.js 22/24 结果、Agent review、npm 身份和不可变包元数据、
+最终 dist-tags、annotated tag object/peeled commit、GitHub Release、一次性
+安装和 Plugin 检查、非变更项、剩余风险与恢复锚点。

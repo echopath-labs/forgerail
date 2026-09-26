@@ -38,7 +38,9 @@ const issueForms = [
   ".github/ISSUE_TEMPLATE/documentation.yml"
 ];
 const skills = ["$forgerail", "$forgerail-workspace-diagnosis", "$workspace-health-review", "$architecture-convergence-audit"];
-const exactInstall = "npm install --global @echopath-labs/forgerail@0.1.6";
+const releaseVersion = "0.1.7";
+const releaseTag = `v${releaseVersion}`;
+const exactInstall = `npm install --global @echopath-labs/forgerail@${releaseVersion}`;
 
 function record(condition, message) {
   if (!condition) failures.push(message);
@@ -89,7 +91,7 @@ for (const path of requiredFiles) record(existsSync(resolve(pluginRoot, path)), 
 
 for (const path of entryFiles) {
   const content = read(path);
-  record(content.includes("0.1.6") && content.includes("v0.1.6"), `release 0.1.6 identity is explicit: ${path}`);
+  record(content.includes(releaseVersion) && content.includes(releaseTag), `release ${releaseVersion} identity is explicit: ${path}`);
   record(!classify("release-text", content).includes("stale-release"), `no stale alpha.2 current-install claim: ${path}`);
   record(classify("public-text", content).length === 0, `no private path: ${path}`);
   record(classify("markdown-link", content, dirname(resolve(pluginRoot, path))).length === 0, `relative Markdown links resolve: ${path}`);
@@ -97,7 +99,7 @@ for (const path of entryFiles) {
 
 for (const path of ["README.md", "README.zh-CN.md", "docs/installation.md", "docs/installation.zh-CN.md"]) {
   const content = read(path);
-  record(content.includes(exactInstall), `exact 0.1.6 npm command is present: ${path}`);
+  record(content.includes(exactInstall), `exact ${releaseVersion} npm command is present: ${path}`);
   for (const skill of skills) record(content.includes(skill), `${path} covers ${skill}`);
 }
 
