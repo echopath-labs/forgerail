@@ -54,7 +54,7 @@ npx --yes @echopath-labs/forgerail@0.1.7 adoption-plan --workspace . --selection
 
 外部传入的计划必须先通过 `validateContract("adoption-plan", plan)` **整份校验**，然后才能批准或应用其中任何写入；单条写入摘要不能代替整份校验。运行时会拒绝大小写折叠后的重复目标、祖先/后代目标和与保留 `FORGERAIL.md` 冲突的宿主目标；仅用 JSON Schema 无法比较任意条目之间的路径。thin-reference 模板必须在自己的受管块中引用准确的共享 `FORGERAIL.md`；这是结构检查，不是 Agent 已遵循指令的证明。
 
-受支持的 Cursor 共用 Core 计划包含 `AGENTS.md` 快照及项目和当前包的 Core 摘要。接收 Cursor 的 `no-change` 计划后，在接受“已有绑定”的结论前调用 `scripts/lib/adoption.mjs` 中的 `verifyCursorNoChangePlan(workspace, plan)`，只读复核工作区和当前包 Core。省略 Cursor Rule 的共享契约计划则在每次已批准写入前复核同一证据；涉及 `AGENTS.md` 时，还要保证最终渲染内容保留可用的 Core 与契约指针。任一来源变化都需重新生成和审阅计划。
+受支持的 Cursor 共用 Core 计划包含 `AGENTS.md` 快照、项目和当前包的 Core 摘要，以及被引用 `FORGERAIL.md` 的修改前/应用后摘要。接收 Cursor 的 `no-change` 计划后，在接受“已有绑定”的结论前调用 `scripts/lib/adoption.mjs` 中的 `verifyCursorNoChangePlan(workspace, plan)`，只读复核工作区、被引用契约和当前包 Core。省略 Cursor Rule 的共享契约计划在第一项获批写入前核对契约基线，此后每项写入核对已应用的契约摘要；涉及 `AGENTS.md` 时，还要保证最终渲染内容保留可用的 Core 与契约指针。任一受绑定来源变化都需重新生成和审阅计划。
 
 ## Level 2 — Persisted Governance
 
@@ -74,7 +74,7 @@ npx --yes @echopath-labs/forgerail@0.1.7 adoption-plan --workspace . --selection
 
 默认 `all-detected` 规划会在共用 `AGENTS.md`/Core 路径匹配时纳入 Cursor，即使没有 `.cursor` 目录。收到的计划只有在多宿主契约省略 Cursor Rule 时才能携带共用 Cursor 覆盖摘要；契约写入须在首位，受覆盖的 `AGENTS.md` 更新须在末位。
 
-选中 Cursor 且工作区的 `AGENTS.md` 有适用的 `.agents/skills/forgerail/SKILL.md` 入口、项目 Core 完整目录与当前包源码一致时，接入计划会记录已有轻量接入。带明确指令动词的 Markdown 编号列表项可作为入口；缩进、围栏内或否定语句中的路径示例不算入口；存在竞争的 `.cursor/skills/forgerail/SKILL.md` 时不宣称共用 Core 覆盖成立。只选 Cursor 时不提议任何新文件；新会话验收后，完整 Host Binding Receipt 以 `AGENTS.md` 为实际未修改绑定，记录相同的修改前后摘要，`changedFiles` 为空。多宿主计划保留共享契约与其他宿主绑定；只有现有 `AGENTS.md` 也引用 `FORGERAIL.md` 才省略 Cursor Rule，否则须提议 Rule 以连接新契约，并在该 IDE 路径得到验证前标记为 `profile-only`。省略 Rule 时，每项获批写入都绑定当前 `AGENTS.md` 和 Core 目录摘要；任一来源漂移便拒绝执行。按计划顺序执行写入；若选中 `AGENTS.md` 更新，它排在最后，使此前写入仍可核对获批的覆盖基线。若 Codex 管理块替换后的内容会删去唯一的 Core 指针，计划保留 Cursor Rule。若已有 Cursor Rule，计划会提示复核其归属，不暗中修改。Core 缺失或不一致时仍会报告；Rule 不能代替缺失的 Core。计划器不会暗中安装第二份 Core，也不会把文件存在当作激活证据。
+选中 Cursor 且工作区的 `AGENTS.md` 有适用的 `.agents/skills/forgerail/SKILL.md` 入口、项目 Core 完整目录与当前包源码一致时，接入计划会记录已有轻量接入。带明确指令动词的 Markdown 编号列表项可作为入口；缩进、围栏内、父目录穿越或否定语句中的路径示例都不算入口，否定词与动词之间带副词的明确禁令也会按否定处理；存在竞争的 `.cursor/skills/forgerail/SKILL.md` 时不宣称共用 Core 覆盖成立。只选 Cursor 时不提议任何新文件；若 `AGENTS.md` 同时引用 `FORGERAIL.md`，该契约必须可读。新会话验收后，完整 Host Binding Receipt 以 `AGENTS.md` 为实际未修改绑定；未改动的被引用契约用相同的 `contractBaseSha256` 与 `contractAppliedSha256` 表达，`changedFiles` 仍为空。多宿主计划保留共享契约与其他宿主绑定；只有现有 `AGENTS.md` 也引用 `FORGERAIL.md` 才省略 Cursor Rule，否则须提议 Rule 以连接新契约，并在该 IDE 路径得到验证前标记为 `profile-only`。省略 Rule 时，每项获批写入都绑定当前 `AGENTS.md`、Core 目录与共享契约状态；任一受绑定来源漂移便拒绝执行。按计划顺序执行写入；若选中 `AGENTS.md` 更新，它排在最后，使此前写入仍可核对获批的覆盖基线。若 Codex 管理块替换后的内容会删去唯一的 Core 指针，计划保留 Cursor Rule。若已有 Cursor Rule，计划会提示复核其归属，不暗中修改。Core 缺失或不一致时仍会报告；Rule 不能代替缺失的 Core。计划器不会暗中安装第二份 Core，也不会把文件存在当作激活证据。
 
 未知宿主必须先有受审查的 Host Adapter，ForgeRail 才能生成绑定。每个 adapter 都必须提供 thin-reference 投影，使 `all-detected` 与 `all-available` 始终能通过共享契约组合；adapter 还可以为单个显式 Host 额外提供 managed-block 投影。Registry 将目标、检测路径和模板路径限制在 ASCII 安全的跨平台路径字符集中，并拒绝尾随句点别名和 Windows 设备名称，再对剩余身份进行大小写折叠。所有绑定目标必须互不相同、互不构成祖先/后代关系，且不得与保留的 `FORGERAIL.md` 冲突。每个模板还必须只包含一对有序、归属于该 adapter 的 marker 边界。Host Adapter 只是宿主投影边界，不是 ForgeRail Core，也不是第二套策略真相。
 

@@ -13,7 +13,7 @@ function instructionTargetMentions(line, target) {
 function targetInstructionKind(clause, target) {
   let applicable = false;
   let contradicted = false;
-  const directive = /\b(?:do\s+not|don['’]t|never|must\s+not|should\s+not|cannot|can['’]t|won['’]t)\s+(?:use|read|follow)\b|\b(?:use|read|follow|avoid|exclude|except|without|forbid|ignore|omit|skip|reject|instead\s+of|rather\s+than|not|but)\b/gi;
+  const directive = /\b(?:do\s+not|don['’]t|never|must\s+not|should\s+not|cannot|can['’]t|won['’]t)(?:\s+[\p{L}\p{N}_-]+){0,4}\s+(?:use|read|follow)\b|\b(?:use|read|follow|avoid|exclude|except|without|forbid|ignore|omit|skip|reject|instead\s+of|rather\s+than|not|but)\b/giu;
   for (const { index } of instructionTargetMentions(clause, target)) {
     let governing = null;
     for (const match of clause.slice(0, index).matchAll(directive)) governing = match[0].toLowerCase();

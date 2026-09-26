@@ -172,6 +172,16 @@ test("Cursor plan surfaces a shared Core pointer and missing Skill before any wr
   const negative = planAdoption(root, workspace, ["cursor"]);
   assert.equal(negative.evidence.includes(cursorSharedCoreCoverageEvidence), false);
   assert.deepEqual(negative.proposedWrites.map(({ path }) => path), ["FORGERAIL.md", ".cursor/rules/forgerail.mdc"]);
+  for (const prohibition of [
+    "Do not ever use .agents/skills/forgerail/SKILL.md here.\n",
+    "Never ever use .agents/skills/forgerail/SKILL.md here.\n",
+    "Do not under any circumstances use .agents/skills/forgerail/SKILL.md here.\n",
+  ]) {
+    writeFileSync(resolve(workspace, "AGENTS.md"), prohibition);
+    const prohibited = planAdoption(root, workspace, ["cursor"]);
+    assert.equal(prohibited.hostSelection.hosts.cursor.status, "profile-only");
+    assert.notEqual(prohibited.strategy, "no-change");
+  }
 });
 
 test("an HTML comment cannot establish shared Core coverage", (t) => {
@@ -269,7 +279,13 @@ test("multi-host Cursor coverage is bound to every approved write", (t) => {
   assert.equal(validateContract("adoption-plan", omittedCoverage).valid, false);
   const reorderedCoverage = structuredClone(plan);
   const reorderedWrite = reorderedCoverage.proposedWrites[1];
-  reorderedWrite.coverage = { sourceCoreSha256: reorderedWrite.coverage.sourceCoreSha256, coreSha256: reorderedWrite.coverage.coreSha256, agentsSha256: reorderedWrite.coverage.agentsSha256 };
+  reorderedWrite.coverage = {
+    sourceCoreSha256: reorderedWrite.coverage.sourceCoreSha256,
+    contractAppliedSha256: reorderedWrite.coverage.contractAppliedSha256,
+    coreSha256: reorderedWrite.coverage.coreSha256,
+    contractBaseSha256: reorderedWrite.coverage.contractBaseSha256,
+    agentsSha256: reorderedWrite.coverage.agentsSha256,
+  };
   reorderedWrite.approvalSha256 = adoptionWriteApprovalDigest(reorderedWrite);
   assert.equal(validateContract("adoption-plan", reorderedCoverage).valid, true);
 
@@ -295,6 +311,8 @@ test("multi-host Cursor coverage is bound to every approved write", (t) => {
   rmSync(resolve(workspace, ".cursor"), { recursive: true });
   const applied = applyApprovedAdoptionWrite(workspace, plan.proposedWrites[0], plan.proposedWrites[0].approvalSha256);
   assert.equal(applied.path, "FORGERAIL.md");
+  writeFileSync(resolve(workspace, "FORGERAIL.md"), "# Drifted shared contract\n");
+  assert.throws(() => applyApprovedAdoptionWrite(workspace, plan.proposedWrites[1], plan.proposedWrites[1].approvalSha256), /Cursor shared coverage changed/);
 });
 
 test("covered writes reject a package Core that changed after planning", async (t) => {
@@ -334,9 +352,10 @@ test("received covered plans reject a final AGENTS.md without the Core pointer",
   const digest = createHash("sha256").update(prior).digest("hex");
   const coreDigest = plan.evidence.find((item) => item.includes("Core tree matches the package source"))?.match(/[a-f0-9]{64}/)?.[0];
   const workspaceSha256 = received.proposedWrites[0].workspaceSha256;
-  received.cursorCoverage = { workspaceSha256, agentsContent: prior, agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest };
+  const contractAppliedSha256 = received.proposedWrites.find(({ path }) => path === "FORGERAIL.md").contentSha256;
+  received.cursorCoverage = { workspaceSha256, agentsContent: prior, agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest, contractBaseSha256: null, contractAppliedSha256 };
   for (const write of received.proposedWrites) {
-    write.coverage = { agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest };
+    write.coverage = { agentsSha256: digest, coreSha256: coreDigest, sourceCoreSha256: coreDigest, contractBaseSha256: null, contractAppliedSha256 };
     write.approvalSha256 = adoptionWriteApprovalDigest(write);
   }
   assert.ok(validateContract("adoption-plan", received).errors.some((error) => error.includes("final covered AGENTS.md must retain")));
@@ -461,6 +480,26 @@ test("Cursor no-change requires an available referenced contract", (t) => {
   const available = planAdoption(root, workspace, ["cursor"]);
   assert.equal(available.hostSelection.hosts.cursor.status, "supported");
   assert.equal(available.strategy, "no-change");
+  const contractDigest = createHash("sha256").update("# Existing shared contract\n").digest("hex");
+  assert.equal(available.cursorCoverage.contractBaseSha256, contractDigest);
+  assert.equal(available.cursorCoverage.contractAppliedSha256, contractDigest);
+  const receipt = JSON.parse(readFileSync(resolve(root, "scripts/fixtures/contracts/host-binding-receipt.valid.json"), "utf8"));
+  receipt.planId = available.planId;
+  receipt.workspace = available.workspace;
+  receipt.adoptionLevel = available.proposedLevel;
+  receipt.contractPath = "FORGERAIL.md";
+  receipt.contractBaseSha256 = contractDigest;
+  receipt.contractAppliedSha256 = contractDigest;
+  receipt.hosts = [{ adapterId: "cursor", target: "AGENTS.md", baseSha256: available.cursorCoverage.agentsSha256, appliedSha256: available.cursorCoverage.agentsSha256, status: "verified", verification: ["Fresh Cursor task verified the unchanged shared route."] }];
+  receipt.changedFiles = [];
+  assert.equal(validateContract("binding-receipt", receipt).valid, true);
+  const missingContractIdentity = structuredClone(receipt);
+  delete missingContractIdentity.contractBaseSha256;
+  delete missingContractIdentity.contractAppliedSha256;
+  assert.equal(validateContract("binding-receipt", missingContractIdentity).valid, false);
+  writeFileSync(resolve(workspace, "FORGERAIL.md"), "# Drifted shared contract\n");
+  assert.throws(() => verifyCursorNoChangePlan(workspace, available), /Cursor shared coverage changed/);
+  writeFileSync(resolve(workspace, "FORGERAIL.md"), "# Existing shared contract\n");
   rmSync(resolve(workspace, "FORGERAIL.md"));
   assert.throws(() => verifyCursorNoChangePlan(workspace, available), /Cursor shared coverage changed/);
 });
@@ -480,6 +519,10 @@ test("diagnosis reports the effective Cursor route instead of registry capabilit
   assert.equal(cursor().observed, true);
   assert.deepEqual(Object.keys(planAdoption(root, workspace).hostSelection.hosts), ["codex", "cursor"]);
   assert.equal(diagnoseWorkspace(workspace, root).evidence.find(({ id }) => id === "forgerail-adoption-level").value, "lightweight-adoption");
+  writeFileSync(resolve(workspace, "AGENTS.md"), "Use .agents/skills/forgerail/SKILL.md.\nFollow FORGERAIL.md.\n");
+  assert.equal(cursor().status, "profile-only");
+  writeFileSync(resolve(workspace, "FORGERAIL.md"), "# Existing shared contract\n");
+  assert.equal(cursor().status, "supported");
 });
 
 test("received plans cannot attach Cursor coverage to unsupported routes", (t) => {

@@ -415,10 +415,12 @@ function validateAdoptionPlan(value, errors) {
     string(write.content, `${label}.content`, errors);
     string(write.managedMarker, `${label}.managedMarker`, errors, /^forgerail:(?:binding:[a-z][a-z0-9-]+|adoption-contract):v1$/);
     string(write.approvalSha256, `${label}.approvalSha256`, errors, digestPattern);
-    if (write.coverage !== undefined && exactKeys(write.coverage, ["agentsSha256", "coreSha256", "sourceCoreSha256"], [], `${label}.coverage`, errors)) {
+    if (write.coverage !== undefined && exactKeys(write.coverage, ["agentsSha256", "coreSha256", "sourceCoreSha256", "contractBaseSha256", "contractAppliedSha256"], [], `${label}.coverage`, errors)) {
       string(write.coverage.agentsSha256, `${label}.coverage.agentsSha256`, errors, digestPattern);
       string(write.coverage.coreSha256, `${label}.coverage.coreSha256`, errors, digestPattern);
       string(write.coverage.sourceCoreSha256, `${label}.coverage.sourceCoreSha256`, errors, digestPattern);
+      nullableString(write.coverage.contractBaseSha256, `${label}.coverage.contractBaseSha256`, errors, digestPattern);
+      string(write.coverage.contractAppliedSha256, `${label}.coverage.contractAppliedSha256`, errors, digestPattern);
     }
     if (typeof write.content === "string" && write.contentSha256 !== sha256(write.content)) errors.push(`${label}.contentSha256 does not match content`);
     if (typeof write.content === "string") {
@@ -464,15 +466,22 @@ function validateAdoptionPlan(value, errors) {
   if (cursorNoChange && ![cursorSharedCoreCoverageEvidence, cursorSharedContractCoverageEvidence].some((item) => Array.isArray(value.evidence) && value.evidence.includes(item))) errors.push("supported Cursor no-change plan requires shared Core evidence");
   if (cursorNoChange || cursorSharedPlan) {
     const coverage = value.cursorCoverage;
-    if (!exactKeys(coverage, ["workspaceSha256", "agentsContent", "agentsSha256", "coreSha256", "sourceCoreSha256"], [], "adoptionPlan.cursorCoverage", errors)) {
+    if (!exactKeys(coverage, ["workspaceSha256", "agentsContent", "agentsSha256", "coreSha256", "sourceCoreSha256", "contractBaseSha256", "contractAppliedSha256"], [], "adoptionPlan.cursorCoverage", errors)) {
       errors.push("supported Cursor shared Core requires verifiable coverage evidence");
     } else {
       string(coverage.agentsContent, "adoptionPlan.cursorCoverage.agentsContent", errors);
       for (const key of ["workspaceSha256", "agentsSha256", "coreSha256", "sourceCoreSha256"]) string(coverage[key], `adoptionPlan.cursorCoverage.${key}`, errors, digestPattern);
+      nullableString(coverage.contractBaseSha256, "adoptionPlan.cursorCoverage.contractBaseSha256", errors, digestPattern);
+      nullableString(coverage.contractAppliedSha256, "adoptionPlan.cursorCoverage.contractAppliedSha256", errors, digestPattern);
       if (typeof coverage.agentsContent === "string" && sha256(coverage.agentsContent) !== coverage.agentsSha256) errors.push("Cursor AGENTS.md coverage digest does not match its content");
       if (coverage.coreSha256 !== coverage.sourceCoreSha256) errors.push("Cursor project Core must match the package Core");
       if (typeof coverage.agentsContent === "string" && !applicableCorePointer(coverage.agentsContent)) errors.push("Cursor coverage lacks an applicable Core pointer");
       if (cursorSharedPlan && typeof coverage.agentsContent === "string" && !applicableContractPointer(coverage.agentsContent)) errors.push("Cursor shared coverage lacks an applicable contract pointer");
+      if (cursorNoChange && typeof coverage.agentsContent === "string" && applicableContractPointer(coverage.agentsContent)
+        && (!digestPattern.test(coverage.contractBaseSha256 ?? "") || coverage.contractBaseSha256 !== coverage.contractAppliedSha256)) errors.push("Cursor no-change contract coverage requires equal base and applied digests");
+      if (cursorNoChange && typeof coverage.agentsContent === "string" && !applicableContractPointer(coverage.agentsContent)
+        && (coverage.contractBaseSha256 !== null || coverage.contractAppliedSha256 !== null)) errors.push("Cursor no-change coverage cannot bind an unreferenced contract");
+      if (cursorSharedPlan && !digestPattern.test(coverage.contractAppliedSha256 ?? "")) errors.push("Cursor shared contract coverage requires an applied contract digest");
     }
   } else if (value.cursorCoverage !== undefined) errors.push("Cursor coverage is allowed only for a supported shared Core route");
   const hasCursorCoverage = value.proposedWrites.some((write) => write.coverage !== undefined);
@@ -498,7 +507,7 @@ function validateAdoptionPlan(value, errors) {
     if (writePaths[0] !== "FORGERAIL.md") errors.push("shared-contract plan must write FORGERAIL.md before Host bindings");
     if (cursorCovered) {
       const expected = value.cursorCoverage;
-      if (value.proposedWrites?.some((write) => !write.coverage || !expected || ["agentsSha256", "coreSha256", "sourceCoreSha256"].some((key) => write.coverage[key] !== expected[key]))) errors.push("shared-contract Cursor coverage must be bound to every proposed write");
+      if (value.proposedWrites?.some((write) => !write.coverage || !expected || ["agentsSha256", "coreSha256", "sourceCoreSha256", "contractBaseSha256", "contractAppliedSha256"].some((key) => write.coverage[key] !== expected[key]))) errors.push("shared-contract Cursor coverage must be bound to every proposed write");
       const agentsIndex = writePaths.indexOf("AGENTS.md");
       if (agentsIndex >= 0 && agentsIndex !== writePaths.length - 1) errors.push("shared-contract Cursor coverage requires AGENTS.md to be the final write");
       if (agentsIndex >= 0 && typeof expected?.agentsContent === "string" && typeof value.proposedWrites[agentsIndex]?.content === "string") {
@@ -533,12 +542,14 @@ function validateAdoptionPlan(value, errors) {
 
 function validateBindingReceipt(value, errors) {
   const keys = ["schemaVersion", "planId", "workspace", "adoptionLevel", "contractPath", "hosts", "changedFiles", "validationEvidence", "discoveredSkills", "activationVerification", "confirmedNonMutations", "deviations", "closeout"];
-  if (!exactKeys(value, keys, [], "bindingReceipt", errors)) return;
+  if (!exactKeys(value, keys, ["contractBaseSha256", "contractAppliedSha256"], "bindingReceipt", errors)) return;
   schemaVersion(value.schemaVersion, "bindingReceipt", errors);
   string(value.planId, "bindingReceipt.planId", errors, taskIdPattern);
   string(value.workspace, "bindingReceipt.workspace", errors);
   if (!["plugin-only", "lightweight-adoption", "persisted-governance"].includes(value.adoptionLevel)) errors.push("bindingReceipt.adoptionLevel is invalid");
   nullableString(value.contractPath, "bindingReceipt.contractPath", errors);
+  if (value.contractBaseSha256 !== undefined) nullableString(value.contractBaseSha256, "bindingReceipt.contractBaseSha256", errors, digestPattern);
+  if (value.contractAppliedSha256 !== undefined) nullableString(value.contractAppliedSha256, "bindingReceipt.contractAppliedSha256", errors, digestPattern);
   if (!Array.isArray(value.hosts) || value.hosts.length === 0) errors.push("bindingReceipt.hosts must contain at least one host");
   else value.hosts.forEach((host, index) => {
     const label = `bindingReceipt.hosts[${index}]`;
@@ -570,7 +581,12 @@ function validateBindingReceipt(value, errors) {
       if (unchanged && changed) errors.push(`complete bindingReceipt cannot list an unchanged host target in changedFiles: ${host.target}`);
       if (!changed && !unchanged) errors.push(`complete bindingReceipt requires a changed or verified unchanged host target: ${host.target}`);
     }
-    if (value.contractPath !== null && !value.changedFiles?.includes(value.contractPath)) errors.push("complete bindingReceipt.changedFiles is missing contractPath");
+    if (value.contractPath !== null) {
+      const contractChanged = value.changedFiles?.includes(value.contractPath);
+      const contractUnchanged = digestPattern.test(value.contractBaseSha256 ?? "") && value.contractBaseSha256 === value.contractAppliedSha256;
+      if (contractChanged && contractUnchanged) errors.push("complete bindingReceipt cannot list an unchanged contract in changedFiles");
+      if (!contractChanged && !contractUnchanged) errors.push("complete bindingReceipt requires a changed or verified unchanged contractPath");
+    } else if (value.contractBaseSha256 !== undefined || value.contractAppliedSha256 !== undefined) errors.push("bindingReceipt contract digests require contractPath");
   }
 }
 

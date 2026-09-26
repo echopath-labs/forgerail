@@ -5,6 +5,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { acceptedCursorIdeCoreSha256, coreTreeDigest } from "./lib/adoption.mjs";
 import { validateProductSurface } from "./lib/product-surface.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -199,6 +200,9 @@ export function validateRelease() {
     && cursorAdapter.verification?.expectedSkills?.length === 0;
   record("cursor-adapter-evidence-gated", (cursorSupported || cursorProfileOnly)
     && cursorAdapter.skillDiscovery === "agent-skills" && cursorAdapter.detectionTargets?.includes(".cursor"), cursorAdapter.status);
+  const currentCoreSha256 = coreTreeDigest(root, "skills/forgerail");
+  record("cursor-runtime-acceptance-matches-current-core", currentCoreSha256 === acceptedCursorIdeCoreSha256, { currentCoreSha256, acceptedCursorIdeCoreSha256 });
+  record("cursor-adapter-names-accepted-core", cursorAdapter.limitations?.some((value) => value.includes(acceptedCursorIdeCoreSha256)) === true, acceptedCursorIdeCoreSha256);
   for (const adapter of [codexAdapter, claudeAdapter, cursorAdapter]) {
     const modes = Object.keys(adapter.bindingTemplates ?? {}).sort();
     record(`adapter-${adapter.id}-template-modes`, JSON.stringify(modes) === JSON.stringify([...adapter.bindingModes].sort()), { modes, bindingModes: adapter.bindingModes });
