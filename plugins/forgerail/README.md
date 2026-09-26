@@ -16,7 +16,7 @@ ForgeRail 0.1.7 adds the evidence-bounded Cursor IDE Agent shared-Core route and
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Release line:** `0.1.7` candidate for the shared-Core Cursor IDE Agent route and iteration discipline. Check the versioned GitHub Release and npm registry for publication status before installing; native Plugin activation and experimental integrations remain outside the stable support boundary.
+> **Release line:** `0.1.7` is the current stable release for the shared-Core Cursor IDE Agent route and iteration discipline. Install from the versioned GitHub Release or the exact npm package; native Plugin activation and experimental integrations remain outside the stable support boundary.
 
 > **0.1.7 scope:** The exact shared `AGENTS.md` plus matching project Core route is supported for Cursor IDE Agent. The Cursor Rule fallback stays `profile-only`; broad Cursor CLI behavior and Cloud Agent are unverified. Core guidance now covers repeated-failure escalation, non-critical uncertainty and resumable human gates. See the [release notes](docs/release-0.1.7.md) and [project replacement requirements](docs/agw-replacement.md).
 
