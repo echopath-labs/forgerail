@@ -87,6 +87,7 @@ as a reason to hand control back to the user.
 | Decide or update durable records, root indexes or relationships | [Durable records](references/durable-record-decision.md) |
 | Complete changes affecting existing behavior | [Impact review](references/impact-review.md) |
 | High risk, long-running work, interruption or handoff | [Risk, progress and handoff](references/risk-and-context.md) |
+| Repeated failures against verification systems, stalled progress, or a blocked critical path | [Iteration and escalation discipline](references/iteration-discipline.md) |
 | User-authorized context platform input | [Optional platform](references/context-governance-platform.md) |
 | Existing consumer explicitly requests AGW-shaped structured exchange | [Compatibility result format](references/result-contract.md) |
 

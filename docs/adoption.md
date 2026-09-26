@@ -1,10 +1,10 @@
 # Progressive Adoption
 
-> This guide targets 0.1.6. Consult npm and the versioned GitHub Release for publication status.
+> This guide accompanies ForgeRail 0.1.7. Confirm availability through npm and the versioned GitHub Release.
 
 ForgeRail separates **installation**, **availability**, **project adoption**, and **execution approval**. Installing the Plugin exposes guidance to the Agent; it does not edit workspace instructions, create durable state, enable Capability Packs, or authorize external effects.
 
-This guide accompanies `0.1.6` / `v0.1.6` release. Follow the [npm installation guide](installation.md) and explicitly load the packaged Skills. npm installation does not register a native Plugin; any binding that requires native discovery must have that prerequisite verified separately.
+This guide accompanies `0.1.7` / `v0.1.7` release. Follow the [npm installation guide](installation.md) and explicitly load the packaged Skills. npm installation does not register a native Plugin; any binding that requires native discovery must have that prerequisite verified separately.
 
 Start with Plugin Only. Move up only when repeated evidence shows that a small durable project binding is more useful than asking explicitly each time.
 
@@ -31,13 +31,13 @@ The optional planner is read-only:
 
 ```bash
 # Default: resolve only registered hosts detected in this workspace.
-npx --yes @echopath-labs/forgerail@0.1.6 adoption-plan --workspace . --selection all-detected
+npx --yes @echopath-labs/forgerail@0.1.7 adoption-plan --workspace . --selection all-detected
 
 # Explicit subset chosen from the validated Host Adapter Registry.
-npx --yes @echopath-labs/forgerail@0.1.6 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.7 adoption-plan --workspace . --host codex
 
 # Every adapter in the current validated registry.
-npx --yes @echopath-labs/forgerail@0.1.6 adoption-plan --workspace . --selection all-available
+npx --yes @echopath-labs/forgerail@0.1.7 adoption-plan --workspace . --selection all-available
 ```
 
 Read-only diagnosis never follows links inside the selected workspace. It reads only bounded regular `package.json` and registered Host binding files, with a 4 MiB per-file limit; opened paths are revalidated against the canonical workspace before content is consumed. Unsafe, changed, non-regular, or oversized entries are reported as unavailable evidence for human review. A Markdown record practice is reported only when a safely confined well-known directory contains at least one bounded regular `.md` file; enumeration is capped at 4,096 entries, and empty, oversized, linked, or non-regular evidence is not treated as an ADR practice.
@@ -54,19 +54,27 @@ Only selected hosts enter strict write planning. Other registered bindings are i
 
 Before approving or applying **any** write from a received plan, validate the complete plan with `validateContract("adoption-plan", plan)`. Per-write approval digests do not replace that check. The runtime rejects case-folded duplicates, ancestor/descendant write targets and Host targets conflicting with reserved `FORGERAIL.md`; JSON Schema alone cannot compare arbitrary paths across entries. Thin-reference templates must name the exact shared `FORGERAIL.md` inside their managed block. This is a structural reference check, not proof that an Agent obeyed the instruction.
 
+A supported Cursor shared-Core plan includes a snapshot of `AGENTS.md`, both project/package Core digests, and the base/applied digest of any referenced `FORGERAIL.md`. For a received Cursor `no-change` plan, call `verifyCursorNoChangePlan(workspace, plan)` from `scripts/lib/adoption.mjs` before accepting its existing-binding claim; this rechecks the workspace, referenced contract and current package Core without writing. For shared-contract writes that omit the Cursor Rule, the first approved write binds the observed contract baseline and every later write binds the applied contract digest; a covered `AGENTS.md` write must preserve applicable Core and contract pointers in its final rendered content. If any bound source changes, generate and review a new plan.
+
 ## Level 2 — Persisted Governance
 
-Persisted machine-consumed ForgeRail state is deferred beyond 0.1.6. It should be considered only when important evidence cannot be represented coherently through existing project sources, such as repeated cross-host conflicts or genuinely machine-enforced policy.
+Persisted machine-consumed ForgeRail state is deferred beyond 0.1.7. It should be considered only when important evidence cannot be represented coherently through existing project sources, such as repeated cross-host conflicts or genuinely machine-enforced policy.
 
 ForgeRail does not create `.forgerail/` at this level today. A future design must define ownership, precedence, migration, recovery, and deletion before enabling it.
 
 ## Host support
 
+This table describes ForgeRail 0.1.7. The historical 0.1.6 package still labels Cursor `profile-only`; its adapter status is not rewritten by the successor release.
+
 | Host | Native target | Adapter status | Verification boundary |
 | --- | --- | --- | --- |
-| Codex | `AGENTS.md` | `supported` | Registry status retained; 0.1.6 native activation is unverified. Verify the selected loading route and approved binding in a fresh task |
+| Codex | `AGENTS.md` | `supported` | Registry status retained; native Plugin activation is unverified. Verify the selected loading route and approved binding in a fresh task |
 | Claude Code | `CLAUDE.md` | `profile-only` | Target and thin binding are modeled; end-to-end activation is not claimed |
-| Cursor | `.cursor/rules/forgerail.mdc` | `profile-only` | Target is modeled; Skill discovery and end-to-end activation are not claimed |
+| Cursor IDE Agent | Shared `AGENTS.md` plus `.agents/skills/forgerail/SKILL.md`; `.cursor/rules/forgerail.mdc` fallback | `supported` for the exact tested shared Core tree; Rule fallback remains `profile-only` | Fresh disposable Cursor Desktop Agents 3.22.7 tasks on 2026-09-26 discovered the final candidate Core without a Cursor Rule, read the iteration-discipline reference, and applied its shared-owner guidance in a bounded verifier repair. The accepted Core-tree digest is `00f8af0e805cd66a4fc034a35fc76ce9b0c4d1d235d511a12e49cb3b167574fc`. Cursor CLI 2026.09.18 read-only checks covered the Rule plus Skill fixture, but Rule-only IDE behavior remains unverified. Verify each adopted project in a fresh session; Cloud Agent and full CLI engineering behavior remain unverified |
+
+Default `all-detected` planning includes Cursor when the matching shared `AGENTS.md`/Core route is present, even without a `.cursor` directory. Received plans may carry shared Cursor coverage only when the multi-host contract omits the Cursor Rule; the contract write must come first and a covered `AGENTS.md` update last.
+
+When Cursor is selected and the workspace already has an applicable `AGENTS.md` pointer to `.agents/skills/forgerail/SKILL.md` plus a complete project Core tree matching the package source, the adoption plan records existing lightweight adoption. Numbered Markdown list items with an explicit instruction verb do count as pointers; indented, fenced, parent-traversing or negated examples do not, including prohibitions with intervening adverbs, and a competing `.cursor/skills/forgerail/SKILL.md` prevents shared-Core coverage. For Cursor alone the plan proposes no new file; if `AGENTS.md` also references `FORGERAIL.md`, that contract must be readable. After fresh-session verification, a complete Host Binding Receipt uses `AGENTS.md` as the effective unchanged target; an unchanged referenced contract is represented by equal `contractBaseSha256` and `contractAppliedSha256`, while `changedFiles` remains empty. A multi-host plan keeps the shared contract and other hosts' bindings. It omits the Cursor Rule only if the existing `AGENTS.md` also points to `FORGERAIL.md`; otherwise the proposed Rule links the new contract and the Cursor route remains `profile-only` pending exact IDE verification. When the Rule is omitted, every approved write binds the current `AGENTS.md`, Core tree and shared-contract state and refuses execution if any bound source drifts. Apply its writes in plan order; a selected `AGENTS.md` update is last so earlier writes retain the approved coverage baseline. If the rendered Codex managed-block replacement would remove the only Core pointer, the plan retains a Cursor Rule. If a Cursor Rule already exists, the plan reports it for ownership review without changing it. A missing or mismatched Core is reported, and a Rule cannot activate the Core in its place. The planner does not silently install a second Core or treat file presence as activation.
 
 Unknown hosts need a reviewed Host Adapter before ForgeRail can generate a binding. Every adapter provides a thin-reference projection so `all-detected` and `all-available` can always compose through the shared contract; adapters may additionally provide a managed-block projection for a single explicit Host. Registry validation limits target, detection and template locators to an ASCII-safe portable path alphabet, rejects trailing-dot aliases and Windows device basenames, then case-folds the remaining identities. Binding targets are prefix-free and cannot conflict with reserved `FORGERAIL.md`; every template contains exactly one ordered adapter-owned marker boundary. A Host Adapter projects ForgeRail into a host; it is not ForgeRail Core or a second policy source.
 

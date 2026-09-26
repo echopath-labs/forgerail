@@ -7,7 +7,7 @@ Accepted on 2026-08-12:
 - Workspace Profile is computed from existing sources; no `.forgerail/profile.yaml` is created by default.
 - A lightweight npm/npx CLI is approved for deterministic diagnosis, contract validation, and installation inspection; it is not a prerequisite for using the Agent Plugin. Public-projection bundle construction is a source-repository maintainer tool and is not exposed by the installed CLI.
 - Adoption is progressive: Plugin Only by default, explicitly confirmed Lightweight Adoption through Host Adapters, and evidence-gated Persisted Governance deferred beyond alpha.1.
-- Host instruction entries are projections of one portable Adoption Contract. Codex is supported; Claude Code and Cursor remain profile-only until host-specific activation is verified.
+- Host instruction entries are projections of one portable Adoption Contract. Codex is supported. The current shared-Core Cursor IDE Agent path passed fresh disposable acceptance on its exact Core tree; its Rule fallback remains profile-only. Claude Code remains profile-only. Cursor CLI and Cloud Agent are not certified by the earlier IDE result.
 
 ## Measurable Acceptance
 

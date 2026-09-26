@@ -1,8 +1,8 @@
 # Install ForgeRail with npm
 
-> This guide targets 0.1.6. Consult npm and the versioned GitHub Release for publication status.
+> This guide installs ForgeRail 0.1.7. Confirm availability through npm and the versioned GitHub Release.
 
-This guide targets `@echopath-labs/forgerail@0.1.6`, source tag `v0.1.6`, on npm `latest`. The prerelease `next` channel remains separate; use the exact version below. Codex Marketplace registration and native Plugin activation are deferred for this release route.
+This guide covers `@echopath-labs/forgerail@0.1.7`, source tag `v0.1.7`, and npm `latest`. The prerelease `next` channel remains separate. Codex Marketplace registration and native Plugin activation are deferred for this release route.
 
 ## Requirements
 
@@ -10,12 +10,12 @@ Install Node.js 22 or newer on the machine running the CLI. Node.js 22 and 24 ar
 
 There is currently no standalone binary that bundles Node.js. The npm `forgerail` command is a Node.js executable entrypoint, not a runtime-free binary. A standalone binary is a future distribution option and does not block this npm release.
 
-## Install and verify 0.1.6
+## Install and verify 0.1.7
 
 First inspect any global installation, for example with `npm list --global @echopath-labs/forgerail --depth=0`. If another project depends on a different version, keep it and use exact-version `npm exec` below or an isolated tools directory. When global installation is appropriate, install the exact package from npm:
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.6
+npm install --global @echopath-labs/forgerail@0.1.7
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -25,14 +25,14 @@ forgerail diagnose --workspace .
 For a one-off CLI invocation:
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.6 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.7 diagnose --workspace .
 ```
 
 ## Delegate setup to an agent
 
 Open your coding agent in the **target project** and send it the [complete prompt in the README](../README.md#five-minute-quickstart). The human states the outcome and decisions; the agent reads the docs, inspects the workspace, performs authorized steps, and returns evidence. You do not need to learn every CLI flag before delegating. The prompt authorizes safe setup steps for this project without repeated approval. Existing adoption, unknown same-name Skills, or drift require source and ownership checks before a write.
 
-The agent should choose a route supported by its actual host: Codex has the 0.1.6 **project adoption lifecycle** shown below; other agents can **explicitly load** the packaged Skills while following their host rules. Claude Code and Cursor adapters remain `profile-only`. A template or package file does not establish automatic discovery or activation. If the host cannot support a project binding, report the completed installation and explicit loading alongside the missing discovery verification.
+The agent should choose a route supported by its actual host: Codex has the 0.1.7 **project adoption lifecycle** shown below; other agents can **explicitly load** the packaged Skills while following their host rules. ForgeRail 0.1.7 supports the verified shared-Core Cursor IDE Agent path; Claude Code and the Cursor Rule fallback remain `profile-only`, while broad Cursor CLI behavior and Cloud Agent remain unverified. The historical 0.1.6 Cursor status is unchanged. A template or package file does not establish automatic discovery or activation. If the host cannot support a project binding, report the completed installation and explicit loading alongside the missing discovery verification.
 
 Ask the agent to return a short result with the exact version and source, chosen host route, changed files, static checks, host discovery evidence, behavior on a concrete task, and any unverified layer or real blocker. On failure, report the current state and recovery entry instead of claiming success.
 
@@ -42,11 +42,11 @@ For a new project adoption, Codex should follow this sequence (`<project>` is th
 
 ```bash
 node --version
-npm exec --yes --package=@echopath-labs/forgerail@0.1.6 -- forgerail init --workspace "<project>"
+npm exec --yes --package=@echopath-labs/forgerail@0.1.7 -- forgerail init --workspace "<project>"
 # Review operations, warnings, change count, and planSha256; confirm managed ownership
-npm exec --yes --package=@echopath-labs/forgerail@0.1.6 -- forgerail init --workspace "<project>" --apply <planSha256>
-npm exec --yes --package=@echopath-labs/forgerail@0.1.6 -- forgerail validate
-npm exec --yes --package=@echopath-labs/forgerail@0.1.6 -- forgerail doctor --workspace "<project>"
+npm exec --yes --package=@echopath-labs/forgerail@0.1.7 -- forgerail init --workspace "<project>" --apply <planSha256>
+npm exec --yes --package=@echopath-labs/forgerail@0.1.7 -- forgerail validate
+npm exec --yes --package=@echopath-labs/forgerail@0.1.7 -- forgerail doctor --workspace "<project>"
 ```
 
 If an older version is already adopted, follow [project adoption and recovery](project-adoption.md) to inspect its identity and choose the appropriate `update` or legacy migration path. A failed `init` is not permission to overwrite it. `init` returns a read-only plan by default; `--apply` binds the current plan but does not grant permission. A successful adoption places pinned project Skills, a managed `AGENTS.md` block, and installation records under `.forgerail/`. The latter do not enable persisted governance. The CLI can live in a tools environment; the target does not become a Node project.
@@ -71,7 +71,7 @@ Core governance applies to non-trivial features, fixes, refactors, dependency/co
 
 ## Load the packaged guidance in an Agent
 
-The npm package includes all four Skills and their references. Installing npm does not register Skills in Codex or any other Agent. **Only after confirming the global package is 0.1.6**, find its directory with:
+The npm package includes all four Skills and their references. Installing npm does not register Skills in Codex or any other Agent. **Only after confirming the global package is 0.1.7**, find its directory with:
 
 ```bash
 npm root --global
@@ -80,10 +80,10 @@ npm root --global
 Append `@echopath-labs/forgerail` to that directory. If the global version differs, choose an isolated tools directory outside the target project and install the exact version there:
 
 ```bash
-npm install --prefix "<tools-dir>" --no-save @echopath-labs/forgerail@0.1.6
+npm install --prefix "<tools-dir>" --no-save @echopath-labs/forgerail@0.1.7
 ```
 
-The package path is then `<tools-dir>/node_modules/@echopath-labs/forgerail`. `npm exec` runs an exact-version CLI but does not make that version the global Skill path. With either route, verify that the package's `package.json` reports version `0.1.6` before loading. Its independent entrypoints are:
+The package path is then `<tools-dir>/node_modules/@echopath-labs/forgerail`. `npm exec` runs an exact-version CLI but does not make that version the global Skill path. With either route, verify that the package's `package.json` reports version `0.1.7` before loading. Its independent entrypoints are:
 
 | Skill label | Path inside the installed package |
 | --- | --- |
@@ -108,7 +108,7 @@ Project bindings and automatic recovery have their own adoption requirements. Do
 
 ## Release verification
 
-The 0.1.6 release gate tests the actual installed archive, CLI validation, read-only diagnosis and package self-tests on Node.js 22 and 24. Publication closeout downloads the public artifact and checks it against the approved archive; see the [versioned release notes](release-0.1.6.md) and GitHub release for the final publication result. Historical alpha.5 receipts remain in [its release notes](release-alpha5.md).
+The 0.1.7 release gate tests the actual installed archive, CLI validation, read-only diagnosis and package self-tests on Node.js 22 and 24. Publication closeout downloads the public artifact and checks it against the approved archive; see the [versioned release notes](release-0.1.7.md) and GitHub release for the final publication result. Historical alpha.5 receipts remain in [its release notes](release-alpha5.md).
 
 ## Upgrade, rollback and uninstall
 

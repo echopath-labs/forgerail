@@ -270,7 +270,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.6") errors.push("Plugin version must be 0.1.6");
+  if (manifest.version !== "0.1.7") errors.push("Plugin version must be 0.1.7");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -656,7 +656,8 @@ function validateAdoption() {
   if (multi?.strategy !== "shared-contract-with-thin-bindings" || !multi?.proposedWrites?.some((write) => write.path === "FORGERAIL.md")) errors.push("multi-host plan is missing the shared Adoption Contract");
   if (detected?.hostSelection?.mode !== "all-detected" || Object.keys(detected?.hostSelection?.hosts ?? {}).join(",") !== "codex") errors.push("default adoption planning did not resolve detected hosts");
   if (available?.hostSelection?.mode !== "all-available" || Object.keys(available?.hostSelection?.hosts ?? {}).length !== registry.adapters.length) errors.push("all-available adoption planning did not resolve the current registry");
-  if (multi?.hostSelection?.hosts?.["claude-code"]?.status !== "profile-only" || multi?.hostSelection?.hosts?.cursor?.status !== "profile-only") errors.push("unverified hosts must remain profile-only");
+  if (multi?.hostSelection?.hosts?.["claude-code"]?.status !== "profile-only") errors.push("unverified Claude Code host must remain profile-only");
+  if (multi?.hostSelection?.hosts?.cursor?.status !== "profile-only" || multi?.hostSelection?.hosts?.cursor?.verificationMode !== "profile-only") errors.push("unverified Cursor Rule fallback must remain profile-only");
   if ([...(single?.proposedWrites ?? []), ...(multi?.proposedWrites ?? [])].some((write) => write.path === ".forgerail" || write.path.startsWith(".forgerail/"))) errors.push("alpha.1 adoption plan cannot propose .forgerail state");
   try {
     planAdoption(root, workspace, ["codex"], "persisted-governance");

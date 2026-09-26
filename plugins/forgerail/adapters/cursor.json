@@ -2,9 +2,9 @@
   "schemaVersion": "1.0",
   "id": "cursor",
   "displayName": "Cursor",
-  "status": "profile-only",
+  "status": "supported",
   "instructionDiscovery": "rules",
-  "skillDiscovery": "unknown",
+  "skillDiscovery": "agent-skills",
   "bindingTarget": ".cursor/rules/forgerail.mdc",
   "detectionTargets": [".cursor"],
   "bindingModes": ["thin-reference"],
@@ -13,13 +13,14 @@
   },
   "unmanagedBindingPolicy": "reject",
   "managedMarker": "forgerail:binding:cursor:v1",
-  "activationBoundary": "host-specific-verification-required",
+  "activationBoundary": "new-task-required",
   "verification": {
-    "mode": "profile-only",
-    "expectedSkills": []
+    "mode": "new-task-discovery",
+    "expectedSkills": ["forgerail"]
   },
   "limitations": [
-    "The project Rules target is modeled, but ForgeRail alpha.1 does not claim verified Skill discovery or end-to-end activation in Cursor.",
-    "Treat generated content as a proposal until verified in the target host."
+    "Cursor Desktop Agents 3.22.7 was verified on 2026-09-26 in fresh disposable read-only and bounded engineering sessions using AGENTS.md and the exact current .agents/skills/forgerail Core tree (SHA-256 00f8af0e805cd66a4fc034a35fc76ce9b0c4d1d235d511a12e49cb3b167574fc). A changed Core tree needs new IDE acceptance. The Cursor Rule plus Skill path was independently smoke-tested only in Cursor CLI 2026.09.18 and remains profile-only in the IDE.",
+    "Each adopted project still needs fresh-session verification of its own binding, Skill identity, and behavior; CLI and Cloud Agent behavior are not certified by the IDE result.",
+    "A Cursor Rule can duplicate an existing AGENTS.md Core pointer; review the adoption plan and keep one Core owner."
   ]
 }

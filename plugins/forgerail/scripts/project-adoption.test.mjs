@@ -154,7 +154,7 @@ test("new CLI migrates a verified older package without implicitly upgrading its
   rmSync(resolve(old, "scripts/lib/project-adoption.mjs")); rmSync(resolve(old, "scripts/lib/project-state.mjs")); rmSync(resolve(old, "adapters/project"), { recursive: true });
   const options = { legacyLock, legacySource: old }; const plan = planProject(plugin, root, "init", options); applyProject(plugin, root, "init", plan.planSha256, options);
   assert.equal(doctorProject(plugin, root).installedVersion, "0.1.3"); assert.ok(readProjectFile(root, ".agents/skills/forgerail/SKILL.md").includes("Old released skill"));
-  const update = planProject(plugin, root, "update"); applyProject(plugin, root, "update", update.planSha256); assert.equal(doctorProject(plugin, root).installedVersion, "0.1.6");
+  const update = planProject(plugin, root, "update"); applyProject(plugin, root, "update", update.planSha256); assert.equal(doctorProject(plugin, root).installedVersion, "0.1.7");
 });
 test("UTF8 BOM in user instructions is preserved exactly", (t) => {
   const root = fixture(t); write(root, "AGENTS.md", "\ufeffUser rules\n"); adopt(root); assert.ok(readProjectFile(root, "AGENTS.md").startsWith("\ufeffUser rules\n"));

@@ -1,6 +1,6 @@
-# Project adoption lifecycle (0.1.6)
+# Project adoption lifecycle (0.1.7)
 
-This guide targets 0.1.6. Consult npm and the versioned GitHub Release for publication status. Published 0.1.4 lacks these commands. Existing workspace snapshots require an explicit update; installing the CLI does not migrate them.
+This guide targets 0.1.7. Consult npm and the versioned GitHub Release for publication status. Published 0.1.4 lacks these commands. Existing workspace snapshots require an explicit update; installing the CLI does not migrate them.
 
 ForgeRail manages its own Codex project Skills and a bounded AGENTS block.
 The target project needs no package.json, dependency installation or Node project.

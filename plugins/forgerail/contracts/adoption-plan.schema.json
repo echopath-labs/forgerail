@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://forgerail.dev/schemas/adoption-plan-v1.json",
   "title": "ForgeRail Adoption Plan",
-  "$comment": "Before approval or applying any write, validate the complete plan with ForgeRail validateContract('adoption-plan', plan). Runtime validation additionally rejects case-folded duplicate and ancestor/descendant target paths and reserved shared-contract collisions; standard JSON Schema cannot compare arbitrary path strings across entries.",
+  "$comment": "Before approval or applying any write, validate the complete plan with ForgeRail validateContract('adoption-plan', plan). Runtime validation additionally rejects case-folded duplicate and ancestor/descendant target paths and reserved shared-contract collisions; standard JSON Schema cannot compare arbitrary path strings across entries. Supported shared-Core Cursor plans carry AGENTS.md content and project/package Core digests. A received Cursor no-change claim also requires verifyCursorNoChangePlan(workspace, plan); covered writes recheck current files and package Core at apply time. Structural validation alone does not independently verify workspace files or host behavior.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "planId", "workspace", "currentLevel", "proposedLevel", "strategy", "hostSelection", "evidence", "proposedWrites", "requiredConfirmation", "verification", "confirmedNonMutations", "mutations", "status"],
@@ -47,6 +47,20 @@
       }
     },
     "evidence": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true },
+    "cursorCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspaceSha256", "agentsContent", "agentsSha256", "coreSha256", "sourceCoreSha256", "contractBaseSha256", "contractAppliedSha256"],
+      "properties": {
+        "workspaceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "agentsContent": { "type": "string", "minLength": 1 },
+        "agentsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "coreSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "sourceCoreSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "contractBaseSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+        "contractAppliedSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
     "proposedWrites": {
       "type": "array",
       "items": {
@@ -61,7 +75,19 @@
           "contentSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
           "content": { "type": "string", "minLength": 1 },
           "managedMarker": { "type": "string", "pattern": "^forgerail:(binding:[a-z][a-z0-9-]+|adoption-contract):v1$" },
-          "approvalSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          "approvalSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "coverage": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["agentsSha256", "coreSha256", "sourceCoreSha256", "contractBaseSha256", "contractAppliedSha256"],
+            "properties": {
+              "agentsSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "coreSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "sourceCoreSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "contractBaseSha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+              "contractAppliedSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          }
         }
       }
     },

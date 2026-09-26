@@ -8,6 +8,7 @@ Use this reference when creating branches, committing, merging, pushing, alignin
 - [Primary Branch Naming](#primary-branch-naming)
 - [Resolve Branch Rules](#resolve-branch-rules)
 - [Branch Ownership And Creation](#branch-ownership-and-creation)
+- [Bounded Parallel Work](#bounded-parallel-work)
 - [Lightweight Integration Paths](#lightweight-integration-paths)
 - [Release And Shared Environment Work](#release-and-shared-environment-work)
 - [Commit Rules](#commit-rules)
@@ -142,6 +143,17 @@ branch decision merely because safely preservable unrelated dirty files exist.
 
 Branch creation authorization does not authorize merge, push, branch deletion,
 release, or deployment.
+
+## Bounded Parallel Work
+
+Keep parallel lines of work for the same objective bounded and attributable.
+Each active branch or worktree SHALL be able to answer which acceptance item it
+advances and when it converges; a line that cannot answer both is debt, not
+parallelism. After integration, delete the integrated branch only when branch
+deletion is explicitly authorized; otherwise report the retained branch. Re-sync
+local state before opening the next line. Before stacking new work on an existing
+branch, verify it has not been orphaned by an upstream rewrite; reconcile or
+rebase deliberately instead of building on an unreconciled divergence.
 
 ## Lightweight Integration Paths
 

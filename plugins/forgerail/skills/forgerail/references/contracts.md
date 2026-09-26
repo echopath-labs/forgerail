@@ -10,6 +10,7 @@ Record the current task's:
 - applicable packs;
 - independent approval gates;
 - validation requirements;
+- the acceptance item this task advances and the evidence that will prove it;
 - required Return Receipt fields.
 
 Task authorization expires with the task. Never promote it into workspace policy automatically.
@@ -46,12 +47,12 @@ Planning is read-only. Do not expose an apply command or generate `.forgerail/` 
 
 ## Host Binding Receipt
 
-After an explicitly approved write, record:
+After an explicitly approved write, or after verifying that an existing binding already satisfies a `no-change` plan, record:
 
 - the plan identity and adopted level;
 - shared contract path when present;
 - each host target, base and applied digests, support check, and verification status;
-- changed files, discovered Skills, and activation verification mode;
+- changed files, discovered Skills, and activation verification mode. For an unchanged binding, use the effective existing instruction file as its host target, record equal base and applied digests, and leave it out of `changedFiles`;
 - non-mutations and deviations.
 
 A complete receipt requires every included host to be verified, activation discovery to pass, and deviations to be empty. A `profile-only` host normally keeps closeout incomplete until its host-specific check exists.
