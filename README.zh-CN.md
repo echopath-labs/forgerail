@@ -16,7 +16,7 @@
   <a href="CHANGELOG.md">变更记录</a>
 </p>
 
-> **版本：** `0.1.7` 候选，覆盖 Cursor IDE Agent 共用 Core 路径与迭代纪律；安装前先核对版本化 GitHub Release 和 npm registry。原生 Plugin 激活和实验性集成不属于稳定支持范围。
+> **版本：** `0.1.7` 是当前稳定版本，覆盖 Cursor IDE Agent 共用 Core 路径与迭代纪律；请从版本化 GitHub Release 或精确 npm 包安装。原生 Plugin 激活和实验性集成不属于稳定支持范围。
 
 > **0.1.7 范围：** Cursor IDE Agent 仅支持共用 `AGENTS.md` 加匹配项目 Core 的精确路径；Cursor Rule 回退仍为 `profile-only`，广义 CLI 行为与 Cloud Agent 未验证。Core 指引新增同类失败升级、非关键不确定性和可恢复人类门禁。见[发布说明](docs/release-0.1.7.zh-CN.md)和[项目替代要求](docs/agw-replacement.zh-CN.md)。
 
