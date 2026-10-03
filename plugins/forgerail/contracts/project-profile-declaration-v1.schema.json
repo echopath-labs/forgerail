@@ -162,6 +162,122 @@
       ]
     },
     "resourceBinding": {
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "adapterId": {
+                "const": "github-cli-api"
+              },
+              "locator": {
+                "properties": {
+                  "kind": {
+                    "const": "provider-native"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "locator": {
+                "properties": {
+                  "coordinates": {
+                    "type": "object",
+                    "required": [
+                      "host"
+                    ],
+                    "properties": {
+                      "host": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 300
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "adapterId": {
+                "const": "git-ssh"
+              },
+              "locator": {
+                "properties": {
+                  "kind": {
+                    "const": "provider-native"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "locator": {
+                "properties": {
+                  "coordinates": {
+                    "type": "object",
+                    "required": [
+                      "hostAlias"
+                    ],
+                    "properties": {
+                      "hostAlias": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 300
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "adapterId": {
+                "const": "npm-registry"
+              },
+              "locator": {
+                "properties": {
+                  "kind": {
+                    "const": "provider-native"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "locator": {
+                "properties": {
+                  "coordinates": {
+                    "type": "object",
+                    "required": [
+                      "registry"
+                    ],
+                    "properties": {
+                      "registry": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 300
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
       "type": "object",
       "additionalProperties": false,
       "required": ["bindingId", "providerId", "purpose", "operationIds", "adapterId", "locator", "expectedIdentityClaimIds", "requiredness"],

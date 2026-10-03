@@ -3,7 +3,7 @@ import { isAbsolute, resolve } from "node:path";
 import { realpathSync } from "node:fs";
 import { resolveEffectiveProfileV2 } from "./composition.mjs";
 import { validateContract } from "./contracts.mjs";
-import { readProjectFileBytes } from "./project-state.mjs";
+import { readProjectFileBytes, projectFileLimit } from "./project-state.mjs";
 
 export const projectProfilePath = ".forgerail/project-profile.json";
 export const projectProfileResolverVersion = "project-profile-resolver-v1";
@@ -128,16 +128,23 @@ export function loadProjectProfile({ workspace, workspaceIdentity, computedAt = 
 
   const confirmedSourceDigests = {};
   const sourceState = new Map();
+  let remainingSourceBytes = 16 * 1024 * 1024;
   const claimsBySource = new Map(discovery.declaration.sources.map((source) => [source.sourceId, []]));
   for (const claim of discovery.declaration.claims) claimsBySource.get(claim.sourceId).push(claim);
 
-  for (const source of discovery.declaration.sources) {
+  for (const source of [...discovery.declaration.sources].sort((left, right) => left.sourceId.localeCompare(right.sourceId))) {
     let text = null;
     let bytes = null;
     let limitedReason = null;
     try {
-      bytes = readProjectFileBytes(discovery.workspace, source.locator);
-      if (bytes !== null) text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+      if (remainingSourceBytes === 0) limitedReason = `source ${source.sourceId} exceeds the aggregate source byte budget`;
+      else {
+        bytes = readProjectFileBytes(discovery.workspace, source.locator, Math.min(projectFileLimit, remainingSourceBytes));
+        if (bytes !== null) {
+          remainingSourceBytes -= bytes.length;
+          text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+        }
+      }
     }
     catch { limitedReason = `source ${source.sourceId} is not a bounded readable regular file`; }
     if (text === null && limitedReason === null) limitedReason = `source ${source.sourceId} is absent`;

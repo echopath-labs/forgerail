@@ -543,3 +543,40 @@ test("inspection CLI refuses secret selectors without emitting or hashing them",
     assert.equal(result.stdout.includes("execution-context:"),false);
   }
 });
+
+
+test("resolver rejects every malformed auxiliary collection before use", () => {
+  for (const key of ["workspaceRelationshipIds", "applicablePackIds", "sourceRequiredness"]) for (const value of [null, 42, "invalid"]) {
+    const result = resolveEffectiveProfileV2({profileId:"profile:test", profileRevisionId:"revision:test", workspaceIdentityId:"workspace:test", [key]:value});
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((error)=>error.includes(key)));
+  }
+});
+
+test("aggregate source content is bounded and independent of declaration ordering", () => {
+  const root=workspace(); const content="## Policy\n"+"x".repeat(4*1024*1024-10);
+  write(root,"large.md",content);
+  const sources=Array.from({length:5},(_,i)=>source(`source:${i}`,"large.md",content));
+  const claims=sources.map((s,i)=>claim(`claim:${i}`,s.sourceId,"git.actor","owner"));
+  install(root,declaration(sources,claims));
+  const first=loadProjectProfile({workspace:root,workspaceIdentity:identity(root),computedAt:observedAt});
+  assert.equal(first.status,"resolved");
+  assert.equal(first.profile.completeness,"unresolved");
+  assert.equal(first.governanceSources.filter((s)=>s.observationStatus==="observed").length,4);
+  assert.match(first.governanceSources.find((s)=>s.sourceId==="source:4").limitedReason,/aggregate source byte budget/);
+  install(root,declaration(sources.reverse(),claims.reverse()));
+  const second=loadProjectProfile({workspace:root,workspaceIdentity:identity(root),computedAt:observedAt});
+  assert.deepEqual(second.profile,first.profile);
+});
+
+test("workspace evidence credentials never enter Profile results or CLI output", () => {
+  const root=workspace(); const policy="## Policy\n"; write(root,"AGENTS.md",policy);
+  install(root,declaration([source("source:policy","AGENTS.md",policy)],[claim("claim:actor","source:policy","git.actor","owner")]));
+  const evidence=absoluteIdentity(root); const secret="ghp_"+"A".repeat(30);
+  evidence.boundaryClaims[0].identity=secret;
+  const result=loadProjectProfile({workspace:root,workspaceIdentity:evidence,computedAt:observedAt});
+  assert.equal(result.status,"invalid");assert.equal(JSON.stringify(result).includes(secret),false);
+  const evidencePath=resolve(root,"identity.json");writeFileSync(evidencePath,JSON.stringify(evidence));
+  const cli=spawnSync(process.execPath,[resolve(plugin,"scripts/forgerail.mjs"),"project-profile-inspect","--workspace",root,"--workspace-identity",evidencePath],{encoding:"utf8",env:{PATH:""}});
+  assert.equal(cli.status,1);assert.match(cli.stdout,/credential material/);assert.equal((cli.stdout+cli.stderr).includes(secret),false);
+});

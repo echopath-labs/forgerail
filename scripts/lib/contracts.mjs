@@ -239,7 +239,7 @@ export function containsInlineSecret(value) {
       || /(?:gh[pousr]_|github_pat_|npm_)[A-Za-z0-9_]{16,}/i.test(value)
       || /(?:^|[\s,{])(?:_authToken|password|cookie|secret)\s*[:=]/i.test(value)
       || /:\/\/[^/\s:@]+:[^/\s@]+@/.test(value)
-      || /(?:^|\s)eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?:\s|$)/.test(value);
+      || /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/.test(value);
   }
   if (Array.isArray(value)) return value.some(containsInlineSecret);
   if (object(value)) return Object.entries(value).some(([key, item]) => containsInlineSecret(key) || containsInlineSecret(item));
@@ -365,6 +365,10 @@ function validateProjectProfileDeclaration(value, errors) {
     if (Array.isArray(binding.expectedIdentityClaimIds) && binding.expectedIdentityClaimIds.length > 16) errors.push(`${label}.expectedIdentityClaimIds must contain at most 16 items`);
     if (!["required", "optional"].includes(binding.requiredness)) errors.push(`${label}.requiredness is invalid`);
     validateProjectProfileLocator(binding.locator, { providerId: binding.providerId, ownerWorkspaceIdentityId: value.workspaceIdentityId }, relationships, errors, `${label}.locator`);
+    if (binding.locator?.kind === "provider-native") {
+      const coordinate = { "github-cli-api": "host", "git-ssh": "hostAlias", "npm-registry": "registry" }[binding.adapterId];
+      if (coordinate) exactKeys(binding.locator.coordinates, [coordinate], [], `${label}.locator.coordinates`, errors);
+    }
     const compatibility = providerAdapterRegistry[binding.adapterId];
     if (compatibility && binding.providerId !== compatibility.providerId) errors.push(`${label}.providerId is incompatible with ${binding.adapterId}`);
     if (compatibility && !compatibility.locatorKinds.includes(binding.locator?.kind)) errors.push(`${label}.locator is incompatible with ${binding.adapterId}`);
@@ -1755,6 +1759,9 @@ function validateCrossWorkspacePackComposition(value, errors) {
 export function validateContract(type, payload) {
   const errors = [];
   if (!contractTypes.includes(type)) return { valid: false, errors: [`unknown contract type: ${type}`] };
+  if (["workspace-identity", "workspace-relationship", "execution-context-identity"].includes(type) && containsInlineSecret(payload)) {
+    return { valid: false, errors: [`${type} contains credential material`] };
+  }
   ({
     pack: validatePack,
     profile: validateProfile,

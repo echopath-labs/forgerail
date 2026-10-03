@@ -153,6 +153,11 @@ export function resolveEffectiveProfileV2({
   if (!Array.isArray(governanceSources)) errors.push("governanceSources must be an array");
   if (!Array.isArray(ruleClaims)) errors.push("ruleClaims must be an array");
   if (!Array.isArray(dependencyEdges)) errors.push("dependencyEdges must be an array");
+  for (const [label, values] of [["workspaceRelationshipIds", workspaceRelationshipIds], ["applicablePackIds", applicablePackIds]]) {
+    if (!Array.isArray(values) || values.some((value) => typeof value !== "string")) errors.push(`${label} must be an array of strings`);
+  }
+  if (!sourceRequiredness || typeof sourceRequiredness !== "object" || Array.isArray(sourceRequiredness)
+      || Object.values(sourceRequiredness).some((value) => !["required", "optional"].includes(value))) errors.push("sourceRequiredness must be a required/optional map");
   if (errors.length) return { profile: null, explanation: null, valid: false, errors };
 
   // Validate collections before sorting or dereferencing any caller input.

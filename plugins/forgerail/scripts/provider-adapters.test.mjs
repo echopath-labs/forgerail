@@ -222,7 +222,7 @@ test("credential-like identifiers and unknown keys are rejected without echoing 
 test("inspection selectors reject all declaration-grade credentials before provider calls", () => {
   const root = workspace(); let calls = 0;
   const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
-  for (const secret of ["npm_" + "A".repeat(30), "https://user:password@example.test", "eyJ" + "a".repeat(12) + "." + "b".repeat(12) + "." + "c".repeat(12)]) {
+  for (const secret of ["npm_" + "A".repeat(30), "https://user:password@example.test", "eyJ" + "a".repeat(12) + "." + "b".repeat(12) + "." + "c".repeat(12)].flatMap((value) => [value, `repo:${value}:suffix`])) {
     for (const field of ["operationId", "targetId"]) {
       assert.throws(() => observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", [field]: secret, executionContextIdentity: context(root), observedAt, run() { calls++; } }), (error) => /credential-like material/.test(error.message) && !error.message.includes(secret));
     }
@@ -248,4 +248,16 @@ test("workspace relationship declarations enforce the shared 128 item limit", ()
   assert.equal(validateContract("project-profile-declaration", value).valid, true);
   value.workspaceRelationshipIds.push("relationship:overflow");
   assert.match(validateContract("project-profile-declaration", value).errors.join("\n"), /at most 128/);
+});
+
+
+test("native provider bindings require their own coordinate and reject unrelated keys", () => {
+  for (const [adapterId, providerId, coordinate, coordinateValue, operationId] of [["github-cli-api", "github", "host", "github.com", "git.push"], ["git-ssh", "git", "hostAlias", "github-work", "git.push"], ["npm-registry", "npm", "registry", "https://registry.npmjs.org", "package.publish"]]) {
+    const value = declaration({ ...base, providerId, adapterId, operationIds: [operationId], locator: { kind: "provider-native", providerId, coordinates: { [coordinate]: coordinateValue } } });
+    assert.equal(validateContract("project-profile-declaration", value).valid, true);
+    value.resourceBindings[0].locator.coordinates.foo = "bar";
+    assert.equal(validateContract("project-profile-declaration", value).valid, false);
+    delete value.resourceBindings[0].locator.coordinates[coordinate];
+    assert.equal(validateContract("project-profile-declaration", value).valid, false);
+  }
 });
