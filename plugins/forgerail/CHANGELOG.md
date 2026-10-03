@@ -4,6 +4,15 @@
 
 No shipping changes yet.
 
+## 0.1.8 - 2026-09-30
+
+- Add an optional workspace-owned Project Profile with bounded source and claim resolution, explicit activation/removal, and read-only GitHub API, Git SSH and npm identity observations.
+- Revalidate changed identity claims, their declared sources and workspace ownership before activating resource bindings. Reject conflicting applicable observations without replacing the active Profile.
+- Preserve no-Profile behavior, package installation ownership, and existing authorization boundaries. Provider identity matches never grant permission to push, merge or publish.
+- Verify representative Profile consumption in fresh Codex and Cursor IDE shared-Core sessions; other Cursor routes, Cline and real-consumer activation remain outside this evidence.
+
+This candidate is not published. See the [Project Profile contract](docs/project-profile-contract.md).
+
 ## 0.1.7 - 2026-09-26
 
 - Support the exact Cursor IDE Agent shared-Core route when an applicable `AGENTS.md` points to the matching project-local ForgeRail Core. Keep the Cursor Rule fallback `profile-only`; broad Cursor CLI behavior, Cloud Agent behavior, and automatic activation remain unverified.

@@ -7,8 +7,11 @@ import { fileURLToPath } from "node:url";
 import { loadHostAdapters, planAdoption } from "./lib/adoption.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
 import { contractSchemaNames, contractTypes, readJson, validateContract } from "./lib/contracts.mjs";
-import { planProject, doctorProject, applyProject, planRecovery, recoverProject, releaseInterruptedLock } from "./lib/project-adoption.mjs";
+import { planProject, doctorProject, applyProject, planRecovery, recoverProject, releaseInterruptedLock, projectProfilePreflightBindingIds } from "./lib/project-adoption.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
+import { discoverProjectProfile, loadProjectProfile, verifyProjectWorkspaceIdentity, projectProfilePath } from "./lib/project-profile.mjs";
+import { classifyProjectProfileInspection, observeProjectProfileBindings } from "./lib/provider-adapters.mjs";
+import { readProjectFile } from "./lib/project-state.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -33,10 +36,38 @@ function args(name) {
   return optionValues(name);
 }
 
+function contractEvidence(paths, type, identityKey) {
+  const seen = new Set();
+  return paths.map((path) => {
+    let value;
+    try { value = readJson(resolve(path)); } catch { throw new Error(`${type} evidence is unreadable: ${path}`); }
+    const validation = validateContract(type, value);
+    if (!validation.valid) throw new Error(`invalid ${type} evidence: ${validation.errors.join("; ")}`);
+    if (seen.has(value[identityKey])) throw new Error(`duplicate ${type} evidence: ${value[identityKey]}`);
+    seen.add(value[identityKey]);
+    return value;
+  });
+}
+
+function ownerWorkspaceIdentity(path, workspace, expectedWorkspaceIdentityId) {
+  if (!path) throw new Error("adopted Project Profile requires --workspace-identity evidence");
+  const [identity] = contractEvidence([path], "workspace-identity", "workspaceIdentityId");
+  verifyProjectWorkspaceIdentity(workspace, identity, { requireAbsoluteLocator: true });
+  if (identity.workspaceIdentityId !== expectedWorkspaceIdentityId) throw new Error("Project Profile Workspace Identity does not match independent owner evidence");
+  return identity;
+}
+
+function executionContextIdentity(workspaceIdentity, operationId, targetId, observedAt, entrypointCommand = "project-profile-inspect") {
+  return { schemaVersion: "1.0", executionContextIdentityId: `execution-context:${createHash("sha256").update(`${workspaceIdentity.canonicalRootLocator}\n${entrypointCommand}\n${operationId ?? "local-only"}\n${targetId ?? ""}\n${observedAt}\n`).digest("hex").slice(0, 24)}`, workspaceIdentityId: workspaceIdentity.workspaceIdentityId, subjectId: `workspace-subject:${createHash("sha256").update(`${workspaceIdentity.canonicalRootLocator}\n${targetId ?? ""}`).digest("hex").slice(0, 24)}`, entrypoint: { entrypointId: `entrypoint:${entrypointCommand}`, kind: "local-command", locator: `forgerail ${entrypointCommand}`, digest: null }, invocationRoot: workspaceIdentity.canonicalRootLocator, executor: { executorId: "forgerail", kind: "local-process" }, runner: { runnerId: "local", trustClass: "local-observed" }, toolIdentities: [`forgerail:${JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")).version}`], providerIdentities: [], dependencies: [], observedAt, sanitized: true };
+}
+
 function validateCommandOptions(command) {
   const allowedByCommand = new Map([
     ["validate", []],
     ...["init", "update", "remove"].map((name) => [name, ["--workspace", "--apply", "--legacy-lock", "--legacy-source"]]),
+    ["project-profile-set", ["--workspace", "--candidate", "--apply", "--workspace-identity", "--operation", "--target", "--workspace-relationship", "--related-workspace-identity"]],
+    ["project-profile-remove", ["--workspace", "--apply"]],
+    ["project-profile-inspect", ["--workspace", "--workspace-identity", "--operation", "--target", "--workspace-relationship", "--related-workspace-identity"]],
     ["doctor", ["--workspace"]],
     ["recover", ["--workspace", "--apply", "--release-lock"]],
     ["validate-fixtures", ["--scope"]],
@@ -73,6 +104,29 @@ function collectSchemaRefs(value, refs = []) {
 
 function sameMembers(actual, expected) {
   return Array.isArray(actual) && actual.length === expected.length && expected.every((item) => actual.includes(item));
+}
+
+function validateProjectProfileDeclarationSchema(schema, errors) {
+  const assertions = [];
+  const required = schema?.required ?? [];
+  const locatorRefs = schema?.$defs?.locator?.oneOf?.map((item) => item.$ref) ?? [];
+  const expectedLocatorRefs = [
+    "#/$defs/workspaceFileLocator",
+    "#/$defs/relatedWorkspaceFileLocator",
+    "#/$defs/environmentVariableLocator",
+    "#/$defs/providerNativeLocator",
+  ];
+  const related = schema?.$defs?.relatedWorkspaceFileLocator;
+  const binding = schema?.$defs?.resourceBinding;
+  if (["schemaVersion", "profileId", "workspaceIdentityId", "workspaceRelationshipIds", "sources", "claims", "resourceBindings"].every((key) => required.includes(key))
+    && schema?.additionalProperties === false
+    && sameMembers(locatorRefs, expectedLocatorRefs)
+    && related?.properties?.rootEnvironmentVariable
+    && related?.properties?.workspaceRelationshipId
+    && binding?.properties?.locator?.$ref === "#/$defs/locator"
+    && sameMembers(binding?.properties?.adapterId?.enum, ["github-cli-api", "git-ssh", "npm-registry"])) assertions.push("project_profile_declaration_has_one_bounded_contract_shape");
+  else errors.push("project-profile-declaration-v1 schema must bind the owner, four locator kinds, related workspace root, and reviewed adapters");
+  return assertions;
 }
 
 function validateEffectiveProfileV2Schema(schema, errors) {
@@ -270,7 +324,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.7") errors.push("Plugin version must be 0.1.7");
+  if (manifest.version !== "0.1.8") errors.push("Plugin version must be 0.1.8");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -306,7 +360,9 @@ function validatePlugin() {
   const schemaIdSet = new Set(schemaIds);
   for (const { name, ref } of schemaRefs) if (ref.startsWith("https://forgerail.dev/schemas/") && !schemaIdSet.has(ref)) errors.push(`${name}.schema.json has unresolved schema $id reference: ${ref}`);
   const effectiveProfileV2Schema = schemas.find(({ type }) => type === "effective-profile-v2")?.schema;
+  const projectProfileDeclarationSchema = schemas.find(({ type }) => type === "project-profile-declaration")?.schema;
   const schemaNativeAssertions = [
+    ...validateProjectProfileDeclarationSchema(projectProfileDeclarationSchema, errors),
     ...validateEffectiveProfileV2Schema(effectiveProfileV2Schema, errors),
     ...validateTaskControlSchemas(schemas, errors),
     ...validateTask27Schemas(schemas, errors),
@@ -334,6 +390,12 @@ function validatePlugin() {
 }
 
 const contractFixtureCases = [
+    ["project-profile-declaration", "contracts/project-profile-declaration.valid.json", true],
+    ["project-profile-declaration", "contracts/project-profile-declaration.unknown-version.invalid.json", false],
+    ["project-profile-declaration", "contracts/project-profile-declaration.duplicate-identity.invalid.json", false],
+    ["project-profile-declaration", "contracts/project-profile-declaration.broken-reference.invalid.json", false],
+    ["project-profile-declaration", "contracts/project-profile-declaration.inline-secret.invalid.json", false],
+    ["project-profile-declaration", "contracts/project-profile-declaration.unsupported-locator.invalid.json", false],
     ["workspace-identity", "contracts/workspace-identity.valid.json", true],
     ["workspace-identity", "contracts/workspace-identity.missing-root.invalid.json", false],
     ["workspace-relationship", "contracts/workspace-relationship.valid.json", true],
@@ -682,6 +744,76 @@ if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
     : command === "recover" ? unlock ? releaseInterruptedLock(workspace, unlock) : approved ? recoverProject(workspace, approved) : planRecovery(workspace)
     : approved ? applyProject(root, workspace, command, approved, options) : planProject(root, workspace, command, options);
   emit(result); if (result.valid === false) process.exitCode = 1;
+} else if (["project-profile-set", "project-profile-remove"].includes(command)) {
+  const workspace = arg("--workspace");
+  if (!workspace) fail(`${command} requires --workspace`);
+  const action = command === "project-profile-set" ? "profile-set" : "profile-remove";
+  let profileCandidateText = null;
+  if (action === "profile-set") {
+    const candidate = arg("--candidate");
+    if (!candidate) fail("project-profile-set requires --candidate");
+    if (candidate === projectProfilePath) fail("candidate must remain outside the active fixed entry until approval");
+    profileCandidateText = readProjectFile(workspace, candidate);
+    if (profileCandidateText === null) fail("Project Profile candidate is unavailable");
+  }
+  const options = { profileCandidateText };
+  const approved = arg("--apply");
+  const plan = planProject(root, workspace, action, options);
+  const preflightBindingIds = action === "profile-set" ? projectProfilePreflightBindingIds(plan.operations[0].before, plan.operations[0].after) : [];
+  if (!approved) emit({ ...plan, profilePreflightBindingIds: preflightBindingIds });
+  else if (approved !== plan.planSha256) fail("stale or mismatched project plan digest");
+  else if (action === "profile-remove" || preflightBindingIds.length === 0) {
+    if (args("--operation").length || args("--target").length || arg("--workspace-identity") || args("--workspace-relationship").length || args("--related-workspace-identity").length) fail("Project Profile preflight evidence is not applicable to this plan");
+    emit(applyProject(root, workspace, action, approved, options));
+  } else {
+    const operationIds = args("--operation"), targetIds = args("--target");
+    if (!operationIds.length || operationIds.length !== targetIds.length) fail("Project Profile rebind requires matching --operation and --target values");
+    if (operationIds.length > 128) fail("Project Profile rebind exceeds the 128-operation preflight limit");
+    const candidateDeclaration = JSON.parse(profileCandidateText);
+    const workspaceIdentity = ownerWorkspaceIdentity(arg("--workspace-identity"), workspace, candidateDeclaration.workspaceIdentityId);
+    const relationshipPaths = args("--workspace-relationship"), identityPaths = args("--related-workspace-identity");
+    if (relationshipPaths.length > 128 || identityPaths.length > 128) fail("related workspace evidence exceeds the 128-item limit");
+    const workspaceRelationships = contractEvidence(relationshipPaths, "workspace-relationship", "relationshipId");
+    const relatedWorkspaceIdentities = contractEvidence(identityPaths, "workspace-identity", "workspaceIdentityId");
+    let acceptedPreflight = null;
+    const result = applyProject(root, workspace, action, approved, options, { verifyProfileBindings(requiredBindingIds, declaration) {
+      const selected = { ...declaration, resourceBindings: declaration.resourceBindings.filter((binding) => requiredBindingIds.includes(binding.bindingId)) };
+      const observations = operationIds.map((operationId, index) => {
+        const observedAt = new Date().toISOString();
+        const executionContext = executionContextIdentity(workspaceIdentity, operationId, targetIds[index], observedAt, "project-profile-set");
+        return observeProjectProfileBindings({ workspace, declaration: selected, operationId, targetId: targetIds[index], executionContextIdentity: executionContext, workspaceRelationships, relatedWorkspaceIdentities, observedAt });
+      });
+      const matched = new Set(observations.flatMap((observation) => observation.bindings.filter((binding) => binding.status === "matched").map((binding) => binding.bindingId)));
+      const failed = new Set(observations.flatMap((observation) => observation.bindings.filter((binding) => !["matched", "not-applicable"].includes(binding.status)).map((binding) => binding.bindingId)));
+      const missing = requiredBindingIds.filter((bindingId) => !matched.has(bindingId) || failed.has(bindingId));
+      if (missing.length) throw new Error(`Project Profile binding preflight did not verify expected identity: ${missing.join(", ")}`);
+      acceptedPreflight = { requiredBindingIds, operationTargets: operationIds.map((operationId, index) => ({ operationId, targetId: targetIds[index] })), observations };
+      return true;
+    } });
+    emit({ ...result, profilePreflight: acceptedPreflight });
+  }
+} else if (command === "project-profile-inspect") {
+  const workspace = arg("--workspace"); if (!workspace) fail("project-profile-inspect requires --workspace");
+  const operationId = arg("--operation") ?? null, targetId = arg("--target") ?? null;
+  if ((operationId === null) !== (targetId === null)) fail("project-profile-inspect requires --operation and --target together");
+  const relationshipPaths = args("--workspace-relationship"), identityPaths = args("--related-workspace-identity");
+  if (operationId === null && (relationshipPaths.length || identityPaths.length)) fail("related workspace evidence requires --operation and --target");
+  if (relationshipPaths.length > 128 || identityPaths.length > 128) fail("related workspace evidence exceeds the 128-item limit");
+  const workspaceRelationships = contractEvidence(relationshipPaths, "workspace-relationship", "relationshipId");
+  const relatedWorkspaceIdentities = contractEvidence(identityPaths, "workspace-identity", "workspaceIdentityId");
+  const discovered = discoverProjectProfile(workspace);
+  if (discovered.status !== "discovered") { emit({ ...discovered, localOnly: operationId === null, providerObservation: null, authorizationClaim: false }); if (discovered.status === "invalid") process.exitCode = 1; }
+  else {
+    const observedAt = new Date().toISOString();
+    const workspaceIdentity = ownerWorkspaceIdentity(arg("--workspace-identity"), workspace, discovered.declaration.workspaceIdentityId);
+    const profile = loadProjectProfile({ workspace, workspaceIdentity, computedAt: observedAt, discoverySnapshot: discovered });
+    const executionContext = executionContextIdentity(workspaceIdentity, operationId, targetId, observedAt);
+    const providerObservation = observeProjectProfileBindings({ workspace, declaration: discovered.declaration, operationId, targetId, executionContextIdentity: executionContext, workspaceRelationships, relatedWorkspaceIdentities, observedAt });
+    const profileStatus = profile.status;
+    const inspectionStatus = classifyProjectProfileInspection(profile, providerObservation, operationId);
+    emit({ ...profile, status: inspectionStatus, profileStatus, localOnly: operationId === null, operationId, targetId, executionContextIdentity: executionContext, providerObservation, authorizationClaim: false });
+    if (["invalid", "blocked", "unresolved"].includes(inspectionStatus)) process.exitCode = 1;
+  }
 } else if (command === "validate") {
   const result = validatePlugin(); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "validate-fixtures") {
@@ -727,7 +859,7 @@ if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
   const receipt = arg("--receipt"); const workspace = arg("--workspace");
   if (!receipt || !workspace) fail("verify-receipt requires --receipt and --workspace");
   const result = verifyReceipt(readJson(resolve(receipt)), workspace); emit(result); if (!result.valid) process.exitCode = 1;
-} else fail("usage: forgerail.mjs init | update | doctor | remove | recover | validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");
+} else fail("usage: forgerail.mjs init | update | doctor | remove | recover | project-profile-set | project-profile-remove | project-profile-inspect | validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");
 
 } catch (error) {
   const code = error instanceof SyntaxError ? "INVALID_JSON" : ["ENOENT", "EACCES", "EPERM", "EISDIR", "ENOTDIR"].includes(error.code) ? "INPUT_UNAVAILABLE" : "INTERNAL_ERROR";

@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forgerail.dev/schemas/project-profile-declaration-v1.json",
+  "title": "ForgeRail Project Profile Declaration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profileId", "workspaceIdentityId", "workspaceRelationshipIds", "sources", "claims", "resourceBindings"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "profileId": { "$ref": "#/$defs/identity" },
+    "workspaceIdentityId": { "$ref": "#/$defs/identity" },
+    "workspaceRelationshipIds": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/identity" },
+      "uniqueItems": true
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/claim" }
+    },
+    "resourceBindings": {
+      "type": "array",
+      "maxItems": 128,
+      "items": { "$ref": "#/$defs/resourceBinding" }
+    }
+  },
+  "$defs": {
+    "identity": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]+$"
+    },
+    "ruleKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]+$"
+    },
+    "operationId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]+$"
+    },
+    "relativePath": {
+      "type": "string",
+      "pattern": "^(?![\\/])(?![a-zA-Z]:)(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*(?:^|/)[^/]*\\.(?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.|/|$))(?!.*\\\\)(?!.*\\/$)[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+    },
+    "operationIds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/operationId" },
+      "uniqueItems": true
+    },
+    "sourcePointer": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "heading"],
+          "properties": {
+            "kind": { "const": "markdown-heading" },
+            "heading": { "type": "string", "pattern": "^#{1,6} [^\\r\\n]{1,200}$" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "pointer"],
+          "properties": {
+            "kind": { "const": "json-pointer" },
+            "pointer": { "type": "string", "pattern": "^(?:/(?:[^~/]|~[01])*)+$", "maxLength": 500 }
+          }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceId", "sourceKind", "locator", "requiredness", "expectedSha256"],
+      "properties": {
+        "sourceId": { "$ref": "#/$defs/identity" },
+        "sourceKind": { "enum": ["instructions", "ownership", "platform-policy", "ci", "script", "specification", "decision-record", "structured-profile", "other"] },
+        "locator": { "$ref": "#/$defs/relativePath" },
+        "requiredness": { "enum": ["required", "optional"] },
+        "expectedSha256": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimId", "sourceId", "sourcePointer", "ruleKey", "normalizedValue", "operationIds"],
+      "properties": {
+        "claimId": { "$ref": "#/$defs/identity" },
+        "sourceId": { "$ref": "#/$defs/identity" },
+        "sourcePointer": { "$ref": "#/$defs/sourcePointer" },
+        "ruleKey": { "$ref": "#/$defs/ruleKey" },
+        "normalizedValue": {},
+        "operationIds": { "$ref": "#/$defs/operationIds" }
+      }
+    },
+    "workspaceFileLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path"],
+      "properties": {
+        "kind": { "const": "workspace-file" },
+        "path": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "relatedWorkspaceFileLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "workspaceRelationshipId", "workspaceIdentityId", "rootEnvironmentVariable", "path"],
+      "properties": {
+        "kind": { "const": "related-workspace-file" },
+        "workspaceRelationshipId": { "$ref": "#/$defs/identity" },
+        "workspaceIdentityId": { "$ref": "#/$defs/identity" },
+        "rootEnvironmentVariable": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$" },
+        "path": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "environmentVariableLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": { "const": "environment-variable" },
+        "name": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$" }
+      }
+    },
+    "providerNativeLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "providerId", "coordinates"],
+      "properties": {
+        "kind": { "const": "provider-native" },
+        "providerId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+        "coordinates": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 8,
+          "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9-]+$" },
+          "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 300 }
+        }
+      }
+    },
+    "locator": {
+      "oneOf": [
+        { "$ref": "#/$defs/workspaceFileLocator" },
+        { "$ref": "#/$defs/relatedWorkspaceFileLocator" },
+        { "$ref": "#/$defs/environmentVariableLocator" },
+        { "$ref": "#/$defs/providerNativeLocator" }
+      ]
+    },
+    "resourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindingId", "providerId", "purpose", "operationIds", "adapterId", "locator", "expectedIdentityClaimIds", "requiredness"],
+      "properties": {
+        "bindingId": { "$ref": "#/$defs/identity" },
+        "providerId": { "type": "string", "pattern": "^[a-z][a-z0-9-]+$" },
+        "purpose": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "operationIds": { "$ref": "#/$defs/operationIds" },
+        "adapterId": { "enum": ["github-cli-api", "git-ssh", "npm-registry"] },
+        "locator": { "$ref": "#/$defs/locator" },
+        "expectedIdentityClaimIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/identity" },
+          "uniqueItems": true
+        },
+        "requiredness": { "enum": ["required", "optional"] }
+      }
+    }
+  }
+}

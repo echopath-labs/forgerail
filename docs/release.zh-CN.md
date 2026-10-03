@@ -1,7 +1,7 @@
-# ForgeRail 0.1.7 稳定版发布 Runbook
+# ForgeRail 0.1.8 稳定版发布 Runbook
 
-本项目自有 runbook 约束 `@echopath-labs/forgerail@0.1.7`、annotated tag
-`v0.1.7` 与对应的正式 GitHub Release。公开仓是私有 canonical source 的
+本项目自有 runbook 约束 `@echopath-labs/forgerail@0.1.8`、annotated tag
+`v0.1.8` 与对应的正式 GitHub Release。公开仓是私有 canonical source 的
 确定性投影；外部 Capability Pack 保持各自 alpha.4 身份和独立生命周期。
 本文描述流程，本身不授予执行权限。
 
@@ -22,7 +22,7 @@ Owner 明确要求发布某个版本时，可以在一条指令中同时授予�
 - 先修改并验证 canonical source，再生成公开投影；禁止 public-only 修复。
 - 将候选绑定到私有 source commit/tree、公开 base、确定性投影摘要、npm
   归档摘要与精确版本。
-- `release/0.1.7` 必须是已观测公开 `main` 的普通子 commit，并且只应用
+- `release/0.1.8` 必须是已观测公开 `main` 的普通子 commit，并且只应用
   生成的投影。使用精确 SHA refspec 非强制推送。
 - 基于已观测 `main` 创建 Draft PR；任何修正后都重新核对 head、base、
   tree、版本、许可证、required checks 和 Agent review。
@@ -42,15 +42,15 @@ Required CI 覆盖 Node.js 22/24、Core/contracts、完整 fixtures、渐进接�
    `npm run test:maintainer` 与 `npm audit`；重新生成精确 npm 归档并比较
    inventory 与摘要。
 4. 核实 `gh`、Git SSH、npm 都解析为获授权的 EchoPath Labs 身份；确认
-   `@echopath-labs/forgerail@0.1.7` 尚不存在，并观察 `latest`、`next`。
+   `@echopath-labs/forgerail@0.1.8` 尚不存在，并观察 `latest`、`next`。
 5. 仅以 public access 和 `latest` tag 发布
-   `@echopath-labs/forgerail@0.1.7`。除非 trusted publishing 已独立配置并
+   `@echopath-labs/forgerail@0.1.8`。除非 trusted publishing 已独立配置并
    验证，否则关闭 provenance。
 6. 回读 registry version、shasum、integrity、license、repository、binary
    shim 和 dist-tags；在 Node.js 22/24 匿名安装精确版本，运行
    `forgerail validate`、包内自检和一次有边界只读诊断。
-7. 在精确 merged public `main` 上创建 annotated `v0.1.7` 并非强制推送；
-   使用版本化发布说明创建正式 GitHub Release `ForgeRail 0.1.7`。本版没有
+7. 在精确 merged public `main` 上创建 annotated `v0.1.8` 并非强制推送；
+   使用版本化发布说明创建正式 GitHub Release `ForgeRail 0.1.8`。本版没有
    standalone binary assets。
 8. 将精确 tag 作为一次性 Codex Marketplace 验证：发现主 Plugin Skills，
    验证只读接入规划，只在一次性工作区应用明确批准的 managed block，

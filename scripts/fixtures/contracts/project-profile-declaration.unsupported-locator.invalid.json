@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "profileId": "profile:workspace-forgerail",
+  "workspaceIdentityId": "workspace:forgerail",
+  "workspaceRelationshipIds": [],
+  "sources": [{ "sourceId": "source:agents", "sourceKind": "instructions", "locator": "AGENTS.md", "requiredness": "required", "expectedSha256": null }],
+  "claims": [{ "claimId": "claim:actor", "sourceId": "source:agents", "sourcePointer": { "kind": "markdown-heading", "heading": "## npm" }, "ruleKey": "npm.actor", "normalizedValue": "chasechou007", "operationIds": ["package.publish"] }],
+  "resourceBindings": [{
+    "bindingId": "binding:npm-search",
+    "providerId": "npm",
+    "purpose": "Search for a credential file.",
+    "operationIds": ["package.publish"],
+    "adapterId": "npm-registry",
+    "locator": { "kind": "home-search", "path": ".npmrc" },
+    "expectedIdentityClaimIds": ["claim:actor"],
+    "requiredness": "required"
+  }]
+}

@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "1.0",
+  "profileId": "profile:workspace-forgerail",
+  "workspaceIdentityId": "workspace:forgerail",
+  "workspaceRelationshipIds": ["relationship:ecosystem-root"],
+  "sources": [
+    {
+      "sourceId": "source:agents",
+      "sourceKind": "instructions",
+      "locator": "AGENTS.md",
+      "requiredness": "required",
+      "expectedSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "claims": [
+    {
+      "claimId": "claim:github-actor",
+      "sourceId": "source:agents",
+      "sourcePointer": { "kind": "markdown-heading", "heading": "## Git and security" },
+      "ruleKey": "github.actor",
+      "normalizedValue": "chasechou007",
+      "operationIds": ["pull-request.create"]
+    },
+    {
+      "claimId": "claim:git-actor",
+      "sourceId": "source:agents",
+      "sourcePointer": { "kind": "markdown-heading", "heading": "## Git and security" },
+      "ruleKey": "git.actor",
+      "normalizedValue": "chasechou007",
+      "operationIds": ["git.push"]
+    },
+    {
+      "claimId": "claim:npm-actor",
+      "sourceId": "source:agents",
+      "sourcePointer": { "kind": "markdown-heading", "heading": "## Shared npm credentials" },
+      "ruleKey": "npm.actor",
+      "normalizedValue": "chasechou007",
+      "operationIds": ["package.publish"]
+    }
+  ],
+  "resourceBindings": [
+    {
+      "bindingId": "binding:github-api",
+      "providerId": "github",
+      "purpose": "Observe the GitHub API actor for pull-request work.",
+      "operationIds": ["pull-request.create"],
+      "adapterId": "github-cli-api",
+      "locator": {
+        "kind": "provider-native",
+        "providerId": "github",
+        "coordinates": { "host": "github.com" }
+      },
+      "expectedIdentityClaimIds": ["claim:github-actor"],
+      "requiredness": "required"
+    },
+    {
+      "bindingId": "binding:git-ssh",
+      "providerId": "git",
+      "purpose": "Observe the Git SSH actor through the reviewed host alias.",
+      "operationIds": ["git.push"],
+      "adapterId": "git-ssh",
+      "locator": {
+        "kind": "provider-native",
+        "providerId": "git",
+        "coordinates": { "hostAlias": "github-chase.com" }
+      },
+      "expectedIdentityClaimIds": ["claim:git-actor"],
+      "requiredness": "required"
+    },
+    {
+      "bindingId": "binding:npm-owner-file",
+      "providerId": "npm",
+      "purpose": "Use a credential file contained by the owner workspace.",
+      "operationIds": ["package.publish"],
+      "adapterId": "npm-registry",
+      "locator": { "kind": "workspace-file", "path": ".config/npm/npm-token" },
+      "expectedIdentityClaimIds": ["claim:npm-actor"],
+      "requiredness": "optional"
+    },
+    {
+      "bindingId": "binding:npm-root-file",
+      "providerId": "npm",
+      "purpose": "Use the explicitly related ecosystem root credential file.",
+      "operationIds": ["package.publish"],
+      "adapterId": "npm-registry",
+      "locator": {
+        "kind": "related-workspace-file",
+        "workspaceRelationshipId": "relationship:ecosystem-root",
+        "workspaceIdentityId": "workspace:echopath-labs-root",
+        "rootEnvironmentVariable": "ECHOPATH_LABS_ROOT",
+        "path": ".config/npm/npm-token"
+      },
+      "expectedIdentityClaimIds": ["claim:npm-actor"],
+      "requiredness": "required"
+    },
+    {
+      "bindingId": "binding:npm-environment",
+      "providerId": "npm",
+      "purpose": "Use an explicitly named process environment credential.",
+      "operationIds": ["package.publish"],
+      "adapterId": "npm-registry",
+      "locator": { "kind": "environment-variable", "name": "NPM_TOKEN" },
+      "expectedIdentityClaimIds": ["claim:npm-actor"],
+      "requiredness": "optional"
+    }
+  ]
+}

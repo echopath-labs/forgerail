@@ -1,6 +1,6 @@
-# 项目接入闭环（0.1.7）
+# 项目接入闭环（0.1.8）
 
-本文面向 0.1.7，实际发布状态以 npm 和版本化 GitHub Release 为准。已发布 0.1.4 没有这些命令；安装 CLI 不会自动迁移旧快照，更新需明确授权。完整接口与恢复契约见 [英文说明](project-adoption.md)。
+本文面向 0.1.8，实际发布状态以 npm 和版本化 GitHub Release 为准。已发布 0.1.4 没有这些命令；安装 CLI 不会自动迁移旧快照，更新需明确授权。完整接口与恢复契约见 [英文说明](project-adoption.md)。
 
 本轮只维护 ForgeRail 自身 Codex Skill 和 AGENTS 受管块；不管理第三方升级，不增加执行器或后台服务。目标项目不需要 package.json，CLI 本身仍需 Node.js 22+。
 
@@ -16,6 +16,10 @@
 旧快照使用 `init --legacy-lock <docs下的来源锁>` 显式迁移，版本和全部内容须与来源包一致；新版 CLI 可通过 `--legacy-source <旧发布包目录>` 只读核对旧内容，保留原版本完成迁移，再单独 update。旧锁转为历史指针；旧自定义 AGENTS 不自动删除，旧 v1 受管绑定须明确协调。迁移不能夹带升级。
 
 静态文件一致、宿主发现、模型实际行为分别报告。首次验证仅覆盖 Codex 项目路径；不能据此声称所有宿主自动生效。
+
+## 工作区自有 Project Profile
+
+Project Profile 使用显式 `project-profile-set` 和 `project-profile-remove`，但复用本生命周期的锁、审批摘要、journal、writer 与恢复路径。固定入口不进入 installation manifest，因此 package `init`、`update`、`remove` 不会创建、替换或删除它。候选评审、inspect、resource binding 与凭据边界见 [Project Profile](project-profile-contract.zh-CN.md)。Profile ready 不授权项目接入或任何 provider 副作用。
 
 ## 交叉评审后的恢复约束
 

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0",
+  "profileId": "profile:workspace-forgerail",
+  "workspaceIdentityId": "workspace:forgerail",
+  "workspaceRelationshipIds": [],
+  "sources": [{ "sourceId": "source:agents", "sourceKind": "instructions", "locator": "AGENTS.md", "requiredness": "required", "expectedSha256": null }],
+  "claims": [{ "claimId": "claim:actor", "sourceId": "source:missing", "sourcePointer": { "kind": "markdown-heading", "heading": "## Git" }, "ruleKey": "github.actor", "normalizedValue": "chasechou007", "operationIds": ["pull-request.create"] }],
+  "resourceBindings": []
+}

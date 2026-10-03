@@ -2,6 +2,8 @@ import { lstatSync, readdirSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { adoptionWorkspaceIdentity, applyProjectFile, withProjectOperationLock } from "./adoption.mjs";
 import { CONFIG, MANIFEST, JOURNAL, LOCK, marker, hash, json, digest, exact, ownedArtifact, versionPattern, readProjectFile, validateConfig, validateManifest, managedBlock, readInstallation, installationDrift, projectAdoptionObservation, residualWriteEvidence, projectFileLimit, projectFileIdentity, hasLegacyBinding } from "./project-state.mjs";
+import { validateContract } from "./contracts.mjs";
+import { projectProfilePath } from "./project-profile.mjs";
 
 function delivery(pluginRoot) {
   const adapter = JSON.parse(readProjectFile(pluginRoot, "adapters/project/codex.json"));
@@ -49,6 +51,37 @@ function blockAfter(before, replacement) {
   return `${before ?? ""}${replacement}`;
 }
 function operation(path, before, after) { return { path, before, after, beforeSha256: digest(before), afterSha256: digest(after) }; }
+export function projectProfilePreflightBindingIds(before, after) {
+  if (after === null) return [];
+  const next = JSON.parse(after);
+  let previous = null;
+  if (before !== null) {
+    try {
+      const parsed = JSON.parse(before);
+      if (validateContract("project-profile-declaration", parsed).valid) previous = parsed;
+    } catch {}
+  }
+  // A binding references identity expectations; comparing only its references
+  // misses changes to the identity itself or its declared source and owner.
+  const inputs = (declaration, binding) => ({
+    workspaceIdentityId: declaration.workspaceIdentityId,
+    workspaceRelationshipIds: [...declaration.workspaceRelationshipIds].sort(),
+    binding,
+    claims: [...binding.expectedIdentityClaimIds].sort().map((id) => {
+      const claim = declaration.claims.find((entry) => entry.claimId === id);
+      return { claim, source: declaration.sources.find((entry) => entry.sourceId === claim.sourceId) };
+    }),
+  });
+  const previousById = new Map((previous?.resourceBindings ?? []).map((binding) => [binding.bindingId, binding]));
+  return next.resourceBindings
+    .filter((binding) => {
+      const old = previousById.get(binding.bindingId);
+      return !old || JSON.stringify(inputs(previous, old)) !== JSON.stringify(inputs(next, binding));
+    })
+    .map((binding) => binding.bindingId)
+    .sort();
+}
+
 function compareVersions(a, b) {
   const parse = (v) => v.split(/[.-]/);
   const x = parse(a), y = parse(b);
@@ -69,11 +102,33 @@ export function doctorProject(pluginRoot, workspace) {
   try { lock = readProjectFile(root, LOCK); } catch {}
   return { ...observation, valid: !sourceError && (observation.status === "ready" || observation.status === "not-adopted"), ...(sourceError ? { status: observation.status === "recovery-required" ? "recovery-required" : "source-unavailable", projectStatus: observation.status, errors: [sourceError] } : {}), cliVersion, installedVersion, readOnly: true, network: false, governanceLevel: observation.adopted ? "lightweight-adoption" : "plugin-only", hostDiscovery: "not-verified", behavior: "not-verified", lockDigest: lock === null ? null : hash(lock), recoveryDigest: journal === null ? null : hash(journal) };
 }
-export function planProject(pluginRoot, workspace, action, { legacyLock = null, legacySource = null } = {}) {
-  if (!["init", "update", "remove"].includes(action)) throw new Error("unsupported project action");
+export function planProject(pluginRoot, workspace, action, options = {}) {
+  const { legacyLock = null, legacySource = null, profileCandidateText = null } = options;
+  if (!["init", "update", "remove", "profile-set", "profile-remove"].includes(action)) throw new Error("unsupported project action");
   const root = realpathSync(workspace);
   if (readProjectFile(root, JOURNAL) !== null) throw new Error("recovery required before another project operation");
   const producer = sourceBundle(pluginRoot);
+  const profileAction = action.startsWith("profile-");
+  if (profileAction) {
+    if (legacyLock || legacySource) throw new Error("Profile lifecycle does not accept package migration options");
+    const before = readProjectFile(root, projectProfilePath);
+    let after = null;
+    if (action === "profile-set") {
+      if (typeof profileCandidateText !== "string") throw new Error("profile-set requires reviewed candidate content");
+      if (Buffer.byteLength(profileCandidateText, "utf8") > projectFileLimit) throw new Error("Project Profile candidate exceeds 4 MiB");
+      let candidate;
+      try { candidate = JSON.parse(profileCandidateText); } catch { throw new Error("Project Profile candidate is not valid JSON"); }
+      const validation = validateContract("project-profile-declaration", candidate);
+      if (!validation.valid) throw new Error(`invalid Project Profile candidate: ${validation.errors.join("; ")}`);
+      after = profileCandidateText;
+    }
+    const operations = [operation(projectProfilePath, before, after)];
+    const plan = { schemaVersion: "1.0", action, workspaceSha256: adoptionWorkspaceIdentity(root), source: producer.manifest.source, legacyLock: null, legacySourceSha256: null, operations, warnings: [], hostDiscovery: "not-verified" };
+    const result = { ...plan, planSha256: hash(json(plan)), changes: operations.filter((op) => op.before !== op.after).length };
+    verifyPlan(result);
+    assertJournalCapacity(result);
+    return result;
+  }
   if (legacySource && !legacyLock) throw new Error("legacy source requires an explicit source lock");
   const bundle = legacySource ? sourceBundle(realpathSync(legacySource), producer.adapter) : producer;
   const installed = readInstallation(root);
@@ -135,18 +190,29 @@ function verifyPlan(plan) {
   exact(plan.source, ["package", "version", "kind", "sha256"], "plan source");
   if (plan.source.package !== "@echopath-labs/forgerail" || plan.source.kind !== "package-content" || !versionPattern.test(plan.source.version) || !/^[a-f0-9]{64}$/.test(plan.source.sha256)) throw new Error("invalid plan source");
   if (plan.legacySourceSha256 !== null && (!plan.legacyLock || !/^[a-f0-9]{64}$/.test(plan.legacySourceSha256))) throw new Error("invalid legacy source binding");
-  if (plan.schemaVersion !== "1.0" || !["init", "update", "remove"].includes(plan.action) || hash(json(bound)) !== planSha256 || !/^[a-f0-9]{64}$/.test(plan.workspaceSha256) || !Array.isArray(plan.operations) || plan.operations.length > 520) throw new Error("invalid project plan identity");
+  if (plan.schemaVersion !== "1.0" || !["init", "update", "remove", "profile-set", "profile-remove"].includes(plan.action) || hash(json(bound)) !== planSha256 || !/^[a-f0-9]{64}$/.test(plan.workspaceSha256) || !Array.isArray(plan.operations) || plan.operations.length > 520) throw new Error("invalid project plan identity");
   const seen = new Set();
   for (const op of plan.operations) {
     exact(op, ["path", "before", "after", "beforeSha256", "afterSha256"], "project operation");
-    if (typeof op.path !== "string" || (!ownedArtifact(op.path) && ![CONFIG, MANIFEST, plan.legacyLock].includes(op.path)) || seen.has(op.path) || ![op.before, op.after].every((v) => v === null || typeof v === "string") || digest(op.before) !== op.beforeSha256 || digest(op.after) !== op.afterSha256) throw new Error("invalid project operation");
+    if (typeof op.path !== "string" || (!ownedArtifact(op.path) && ![CONFIG, MANIFEST, projectProfilePath, plan.legacyLock].includes(op.path)) || seen.has(op.path) || ![op.before, op.after].every((v) => v === null || typeof v === "string") || digest(op.before) !== op.beforeSha256 || digest(op.after) !== op.afterSha256) throw new Error("invalid project operation");
     seen.add(op.path);
     if (op.path === CONFIG) for (const content of [op.before, op.after]) if (content !== null) validateConfig(JSON.parse(content));
     if (op.path === MANIFEST) for (const content of [op.before, op.after]) if (content !== null) validateManifest(JSON.parse(content));
   }
   if (changes !== plan.operations.filter((op) => op.before !== op.after).length) throw new Error("invalid project change count");
   if (plan.legacyLock !== null && (typeof plan.legacyLock !== "string" || !/^docs\/[A-Za-z0-9._/-]+\.lock\.json$/.test(plan.legacyLock))) throw new Error("invalid legacy lock path");
-  if (plan.operations.at(-1)?.path !== MANIFEST || !seen.has(CONFIG)) throw new Error("metadata commit order invalid");
+  if (plan.action.startsWith("profile-")) {
+    if (plan.operations.length !== 1 || plan.operations[0].path !== projectProfilePath || plan.legacyLock !== null || plan.legacySourceSha256 !== null) throw new Error("Profile lifecycle plan boundary invalid");
+    if (plan.action === "profile-set" && plan.operations[0].after === null) throw new Error("profile-set candidate missing");
+    if (plan.action === "profile-remove" && plan.operations[0].after !== null) throw new Error("profile-remove target invalid");
+    const validatedContents = plan.action === "profile-set" ? [plan.operations[0].after] : [];
+    for (const content of validatedContents) if (content !== null) {
+      let candidate;
+      try { candidate = JSON.parse(content); } catch { throw new Error("invalid Project Profile operation JSON"); }
+      const validation = validateContract("project-profile-declaration", candidate);
+      if (!validation.valid) throw new Error("invalid Project Profile operation content");
+    }
+  } else if (plan.operations.at(-1)?.path !== MANIFEST || !seen.has(CONFIG) || seen.has(projectProfilePath)) throw new Error("metadata commit order invalid");
 }
 
 const journalVersion = "1.1";
@@ -171,6 +237,10 @@ export function applyProject(pluginRoot, workspace, action, approvedDigest, opti
     verifyPlan(plan);
     assertJournalCapacity(plan);
     if (!plan.changes) return { valid: true, status: "no-change", planSha256: plan.planSha256, hostDiscovery: "not-verified" };
+    const profilePreflightBindingIds = plan.action === "profile-set" ? projectProfilePreflightBindingIds(plan.operations[0].before, plan.operations[0].after) : [];
+    if (profilePreflightBindingIds.length) {
+      if (typeof hooks.verifyProfileBindings !== "function" || hooks.verifyProfileBindings(Object.freeze(profilePreflightBindingIds), JSON.parse(plan.operations[0].after)) !== true) throw new Error("Project Profile binding preflight failed; active declaration unchanged");
+    }
     const state = { schemaVersion: journalVersion, plan, progress: plan.operations.map(() => null) };
     let journal = json(state);
     const write = (path, before, after, identity) => applyProjectFile(root, path, before, after, {}, plan.workspaceSha256, identity);
@@ -209,7 +279,7 @@ export function applyProject(pluginRoot, workspace, action, approvedDigest, opti
       }
       verifyCompleted(plan.operations.length);
       write(JOURNAL, journal, null);
-      return { valid: true, status: action === "remove" ? "removed" : "ready", planSha256: plan.planSha256, changedFiles: plan.changes, hostDiscovery: "not-verified", behavior: "not-verified" };
+      return { valid: true, status: ["remove", "profile-remove"].includes(action) ? "removed" : "ready", planSha256: plan.planSha256, changedFiles: plan.changes, hostDiscovery: "not-verified", behavior: "not-verified" };
     } catch (error) { throw new Error(`${error.message}; recovery-required; run recover to inspect rollback plan`); }
   });
 }
