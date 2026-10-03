@@ -7,6 +7,7 @@ npm and the versioned GitHub Release are the publication authorities.
 - Observe GitHub API, Git SSH and npm identity read-only within the requested operation. Identity matches never authorize operations.
 - Recheck changed identity claims, sources and ownership; reject any failed applicable observation before replacing the active declaration.
 - Verify representative Profile consumption through Codex and Cursor IDE shared Core. Cursor Rule fallback remains profile-only; Cline, broad CLI/Cloud and real PDM activation are outside this acceptance.
+- Reject contradictory identity expectations and credential-like identifiers; preserve valid degraded Profiles for unavailable optional inputs and clean temporary npm credentials on SIGINT, SIGTERM and SIGHUP.
 
 The target project needs no package.json. The CLI requires Node.js 22+. Installation does not prove native Plugin activation or model compliance. Every adopted project still needs a fresh-session host verification against its exact Core tree.
 

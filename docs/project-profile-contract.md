@@ -70,7 +70,7 @@ forgerail project-profile-remove --workspace /path/to/project --apply <planSha25
 
 Removal leaves candidate, Git, pull-request, and specification history untouched and never activates another file. Interrupted writes use the same `recover` flow as package adoption.
 
-The preview reports `profilePreflightBindingIds`. When a candidate adds or changes any resource binding, apply requires independent owner Workspace Identity evidence plus one or more matching `--operation`/`--target` pairs. ForgeRail runs only the affected adapters under the existing operation lock before creating a journal or changing the active declaration. Every changed binding must authenticate its expected actor; otherwise apply fails and preserves the previous active declaration. Relationship and related-identity evidence use the same repeatable options as inspection.
+The preview reports `profilePreflightBindingIds`. When a candidate adds or changes any resource binding, apply requires independent owner Workspace Identity evidence plus one or more matching `--operation`/`--target` pairs. ForgeRail runs only the affected adapters under the existing operation lock before creating a journal or changing the active declaration. A binding must reference 1–16 string-valued identity claims that agree on one actor. Reordering declaration keys or identity-keyed collections alone does not require fresh preflight. Every changed binding must authenticate its expected actor; otherwise apply fails and preserves the previous active declaration. Relationship and related-identity evidence use the same repeatable options as inspection.
 
 ```bash
 forgerail project-profile-set --workspace /path/to/project \

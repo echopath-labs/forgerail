@@ -152,6 +152,8 @@ test("an observed optional source with an unconfirmed claim remains visibly degr
     [claim("claim:optional", "source:optional", "git.actor", "expected-user", { kind: "json-pointer", pointer: "/actor" })],
   ));
   const result = loadProjectProfile({ workspace: root, workspaceIdentity: identity(root), computedAt: observedAt });
+  assert.equal(result.status, "resolved", JSON.stringify(result.errors));
+  assert.deepEqual(result.explanation.sourceSummaries[0].claimIds, []);
   assert.equal(result.profile.completeness, "degraded");
   assert.equal(result.ruleClaims.length, 0);
   assert.equal(result.governanceSources[0].observationStatus, "unverified");
@@ -465,4 +467,40 @@ test("project-profile CLI accepts validated related-workspace evidence and surfa
   assert.equal(output.profileStatus, "resolved");
   assert.equal(output.providerObservation.providerCalls, 1);
   assert.equal(JSON.stringify(output).includes("npm_RELATED"), false);
+});
+
+
+test("preflight ignores semantic reordering but detects a changed expected actor", () => {
+  const value = declaration([source("source:policy", "AGENTS.md", "## Policy\n")],
+    [claim("claim:one", "source:policy", "git.actor", "owner"), claim("claim:two", "source:policy", "git.actor", "owner")],
+    [{ bindingId: "binding:github", providerId: "github", purpose: "Verify actor", operationIds: ["git.push"], adapterId: "github-cli-api", locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } }, expectedIdentityClaimIds: ["claim:one", "claim:two"], requiredness: "required" }]);
+  const reverseKeys = (v) => Array.isArray(v) ? v.map(reverseKeys).reverse() : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).reverse().map(([k, item]) => [k, reverseKeys(item)])) : v;
+  const reordered = reverseKeys(value);
+  assert.deepEqual(projectProfilePreflightBindingIds(JSON.stringify(value), JSON.stringify(reordered)), []);
+  reordered.claims.forEach((c) => c.normalizedValue = "other-owner");
+  assert.deepEqual(projectProfilePreflightBindingIds(JSON.stringify(value), JSON.stringify(reordered)), ["binding:github"]);
+});
+
+test("missing optional sources resolve as degraded without dangling claims", () => {
+  const root = workspace();
+  install(root, declaration([{ ...source("source:optional", "missing.md", ""), requiredness: "optional" }], [claim("claim:optional", "source:optional", "git.actor", "owner")]));
+  const result = loadProjectProfile({ workspace: root, workspaceIdentity: identity(root), computedAt: observedAt });
+  assert.equal(result.status, "resolved", JSON.stringify(result.errors));
+  assert.equal(result.profile.completeness, "degraded");
+  assert.deepEqual(result.explanation.sourceSummaries[0].claimIds, []);
+});
+
+test("unavailable dependencies determine required and optional Profile completeness", () => {
+  const root = workspace(); const policy = "## Policy\n";
+  write(root, "AGENTS.md", policy);
+  install(root, declaration([source("source:policy", "AGENTS.md", policy)], [claim("claim:actor", "source:policy", "git.actor", "owner")]));
+  const loaded = loadProjectProfile({ workspace: root, workspaceIdentity: identity(root), computedAt: observedAt });
+  for (const requiredness of ["required", "optional"]) {
+    const edge = { schemaVersion: "1.0", edgeId: "edge:skill", workspaceIdentityId: "workspace:test", declaringSourceId: "source:policy", target: { kind: "skill", locator: "skills/missing/SKILL.md", identity: "skill:missing" }, requiredness, applicabilityScope: ["git.push"], provenanceStatus: "structured", observationStatus: "unavailable", affectedClaimIds: ["claim:actor"], observedAt, limitedReason: "Skill is unavailable" };
+    const result = resolveEffectiveProfileV2({ profileId: loaded.profile.profileId, profileRevisionId: loaded.profile.revisionId, workspaceIdentityId: "workspace:test", governanceSources: loaded.governanceSources, ruleClaims: loaded.ruleClaims, dependencyEdges: [edge], computedAt: observedAt });
+    assert.equal(result.valid, true, result.errors.join("\n"));
+    assert.equal(result.profile.completeness, requiredness === "required" ? "unresolved" : "degraded");
+    assert.ok(result.profile.limitedReasons.includes("Skill is unavailable"));
+    assert.equal(result.explanation.completeness, result.profile.completeness);
+  }
 });

@@ -4,10 +4,11 @@
 
 No shipping changes yet.
 
-## 0.1.8 - 2026-09-30
+## 0.1.8 - 2026-10-03
 
 - Add an optional workspace-owned Project Profile with bounded source and claim resolution, explicit activation/removal, and read-only GitHub API, Git SSH and npm identity observations.
 - Revalidate changed identity claims, their declared sources and workspace ownership before activating resource bindings. Reject conflicting applicable observations without replacing the active Profile.
+- Reject contradictory identity expectations and credential-like declaration identifiers; keep semantic reordering out of preflight, handle optional source/dependency degradation, and clean temporary npm credentials on handled process signals.
 - Preserve no-Profile behavior, package installation ownership, and existing authorization boundaries. Provider identity matches never grant permission to push, merge or publish.
 - Verify representative Profile consumption in fresh Codex and Cursor IDE shared-Core sessions; other Cursor routes, Cline and real-consumer activation remain outside this evidence.
 

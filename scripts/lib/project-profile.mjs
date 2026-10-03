@@ -27,7 +27,7 @@ function canonicalValue(value) {
   return value;
 }
 
-function semanticDeclaration(declaration) {
+export function semanticDeclaration(declaration) {
   return canonicalValue({
     ...declaration,
     workspaceRelationshipIds: [...declaration.workspaceRelationshipIds].sort(),
@@ -187,7 +187,7 @@ export function loadProjectProfile({ workspace, workspaceIdentity, computedAt = 
       applicabilityScope: applicabilityScope.length ? applicabilityScope : ["workspace"],
       workspaceRelationshipIds: [...discovery.declaration.workspaceRelationshipIds].sort(),
       observationStatus: sourceObserved ? "observed" : "unverified",
-      ruleClaimIds: declaredClaims.map((claim) => claim.claimId),
+      ruleClaimIds: evaluatedClaims.filter((item) => item.confirmed || source.requiredness !== "optional").map((item) => item.claim.claimId),
       dependencyEdgeIds: [],
       observedAt: computedAt,
       limitedReason: sourceObserved ? null : optionalClaimFailure?.limitedReason ?? state.limitedReason,

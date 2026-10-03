@@ -15,7 +15,7 @@ let transientSignalHandlers = null;
 function retainSignalCleanup(cleanup) {
   transientCredentialCleanups.add(cleanup);
   if (transientSignalHandlers === null) {
-    transientSignalHandlers = new Map(["SIGINT", "SIGTERM"].map((signal) => [signal, () => {
+    transientSignalHandlers = new Map(["SIGINT", "SIGTERM", "SIGHUP"].map((signal) => [signal, () => {
       for (const activeCleanup of transientCredentialCleanups) activeCleanup();
       transientCredentialCleanups.clear();
       for (const [name, handler] of transientSignalHandlers) process.off(name, handler);
@@ -163,7 +163,7 @@ export function observeProjectProfileBindings({ workspace, declaration, operatio
     if (!observationValidation.valid) throw new Error(`invalid sanitized provider observation: ${observationValidation.errors.join("; ")}`);
     const expected = binding.expectedIdentityClaimIds.map((id) => declaration.claims.find((claim) => claim.claimId === id)?.normalizedValue).filter((value) => typeof value === "string");
     observations.push(observation);
-    const status = actorId ? expected.includes(actorId) ? "matched" : "wrong-actor" : "unresolved";
+    const status = actorId ? expected.length > 0 && expected.every((value) => value === actorId) ? "matched" : "wrong-actor" : "unresolved";
     bindings.push({ bindingId: binding.bindingId, operationIds: binding.operationIds, requiredness: binding.requiredness, status, targetId, targetPermission: binding.adapterId === "npm-registry" ? "unverified" : "not-observed", observationId: observation.observationId, rebind: status === "unresolved" ? { required: true, currentLocator: binding.locator, action: "review-project-profile-candidate" } : null });
   }
   return { executionContextIdentityId: executionContextIdentity.executionContextIdentityId, observations, bindings, providerCalls };

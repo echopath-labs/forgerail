@@ -218,6 +218,12 @@ export function resolveEffectiveProfileV2({
     optionalUnavailable ||= !required;
     limitedReasons.push(source.limitedReason ?? `source ${source.sourceId} is not observed`);
   }
+  for (const edge of dependencyEdges) {
+    if (edge.observationStatus === "available") continue;
+    requiredUnavailable ||= edge.requiredness === "required";
+    optionalUnavailable ||= edge.requiredness === "optional";
+    limitedReasons.push(edge.limitedReason ?? `dependency ${edge.edgeId} is not available`);
+  }
   for (const conflict of uniqueConflicts) limitedReasons.push(conflict.limitedReason);
   for (const claim of claims) if (claim.enforcement === "unresolved" && claim.limitedReason) limitedReasons.push(claim.limitedReason);
   const normalizedLimitedReasons = [...new Set(limitedReasons)].sort();

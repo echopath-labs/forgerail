@@ -84,7 +84,7 @@ test("npm temporary credential material is removed on provider error and interru
   }
 });
 
-test("npm temporary credentials are removed when the observing process receives SIGTERM", async () => {
+for (const signalName of ["SIGINT", "SIGTERM", "SIGHUP"]) test(`npm temporary credentials are removed when the observing process receives ${signalName}`, async () => {
   const root = workspace();
   const marker = resolve(root, "config-path.txt");
   const childScript = resolve(root, "signal-observer.mjs");
@@ -95,9 +95,9 @@ test("npm temporary credentials are removed when the observing process receives 
   assert.equal(existsSync(marker), true);
   const configPath = readFileSync(marker, "utf8");
   assert.equal(existsSync(configPath), true);
-  child.kill("SIGTERM");
+  child.kill(signalName);
   const result = await new Promise((resolveExit) => child.once("exit", (code, signal) => resolveExit({ code, signal })));
-  assert.equal(result.signal, "SIGTERM");
+  assert.equal(result.signal, signalName);
   assert.equal(existsSync(configPath), false);
 });
 
@@ -178,4 +178,43 @@ test("inspection classification blocks required wrong actors and degrades option
   assert.equal(classifyProjectProfileInspection(profile, { bindings: [{ requiredness: "required", status: "matched", targetPermission: "unverified" }] }, "package.publish"), "unresolved");
   assert.equal(classifyProjectProfileInspection(profile, { bindings: [{ requiredness: "required", status: "matched", targetPermission: "unverified" }] }, "package.inspect"), "ready");
   assert.equal(classifyProjectProfileInspection(profile, { bindings: [{ requiredness: "optional", status: "unresolved" }] }, "git.push"), "degraded");
+});
+
+
+test("bindings reject contradictory identities before observing and bound identity references", () => {
+  const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  value.claims = Array.from({ length: 16 }, (_, index) => ({ ...value.claims[0], claimId: `claim:actor-${index}` }));
+  value.resourceBindings[0].expectedIdentityClaimIds = value.claims.map((claim) => claim.claimId);
+  assert.equal(validateContract("project-profile-declaration", value).valid, true);
+  value.claims.push({ ...value.claims[0], claimId: "claim:actor-16" });
+  value.resourceBindings[0].expectedIdentityClaimIds.push("claim:actor-16");
+  assert.match(validateContract("project-profile-declaration", value).errors.join("\n"), /at most 16/);
+  value.claims.pop(); value.resourceBindings[0].expectedIdentityClaimIds.pop();
+  value.claims[1].normalizedValue = "other-user";
+  assert.match(validateContract("project-profile-declaration", value).errors.join("\n"), /consistent string identity/);
+  let calls = 0;
+  assert.throws(() => observeProjectProfileBindings({ workspace: workspace(), declaration: value, observedAt, run() { calls++; } }), /consistent string identity/);
+  assert.equal(calls, 0);
+});
+
+test("credential-like identifiers and unknown keys are rejected without echoing secrets", () => {
+  const secret = "ghp_" + "A".repeat(30);
+  const baseValue = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  const mutate = [
+    (v) => v.profileId = secret,
+    (v) => v.workspaceIdentityId = secret,
+    (v) => v.sources[0].sourceId = secret,
+    (v) => v.claims[0].claimId = secret,
+    (v) => v.resourceBindings[0].bindingId = secret,
+    (v) => v.claims[0].sourcePointer.heading = secret,
+    (v) => v[secret] = "unknown",
+    (v) => v.claims[0].normalizedValue = { [secret]: "unknown" },
+  ];
+  for (const change of mutate) {
+    const value = structuredClone(baseValue); change(value);
+    const result = validateContract("project-profile-declaration", value);
+    assert.equal(result.valid, false);
+    assert.match(result.errors.join("\n"), /credential material/);
+    assert.equal(JSON.stringify(result).includes(secret), false);
+  }
 });

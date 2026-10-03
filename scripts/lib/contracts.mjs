@@ -242,7 +242,7 @@ function containsInlineSecret(value) {
       || /(?:^|\s)eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?:\s|$)/.test(value);
   }
   if (Array.isArray(value)) return value.some(containsInlineSecret);
-  if (object(value)) return Object.values(value).some(containsInlineSecret);
+  if (object(value)) return Object.entries(value).some(([key, item]) => containsInlineSecret(key) || containsInlineSecret(item));
   return false;
 }
 
@@ -311,6 +311,11 @@ function validateProjectProfileLocator(value, binding, relationships, errors, la
 }
 
 function validateProjectProfileDeclaration(value, errors) {
+  // Screen all declaration text before diagnostics can interpolate identifiers.
+  if (containsInlineSecret(value)) {
+    errors.push("projectProfileDeclaration contains credential material");
+    return;
+  }
   const keys = ["schemaVersion", "profileId", "workspaceIdentityId", "workspaceRelationshipIds", "sources", "claims", "resourceBindings"];
   if (!exactKeys(value, keys, [], "projectProfileDeclaration", errors)) return;
   contractVersion(value.schemaVersion, "1.0", "projectProfileDeclaration", errors);
@@ -356,6 +361,7 @@ function validateProjectProfileDeclaration(value, errors) {
     if (Array.isArray(binding.operationIds) && binding.operationIds.length > 64) errors.push(`${label}.operationIds must contain at most 64 items`);
     if (!["github-cli-api", "git-ssh", "npm-registry"].includes(binding.adapterId)) errors.push(`${label}.adapterId is unsupported`);
     strings(binding.expectedIdentityClaimIds, `${label}.expectedIdentityClaimIds`, errors, { min: 1, pattern: taskIdPattern, unique: true });
+    if (Array.isArray(binding.expectedIdentityClaimIds) && binding.expectedIdentityClaimIds.length > 16) errors.push(`${label}.expectedIdentityClaimIds must contain at most 16 items`);
     if (!["required", "optional"].includes(binding.requiredness)) errors.push(`${label}.requiredness is invalid`);
     validateProjectProfileLocator(binding.locator, { providerId: binding.providerId, ownerWorkspaceIdentityId: value.workspaceIdentityId }, relationships, errors, `${label}.locator`);
     const compatibility = providerAdapterRegistry[binding.adapterId];
@@ -377,6 +383,13 @@ function validateProjectProfileDeclaration(value, errors) {
   if (new Set(bindingIds).size !== bindingIds.length) errors.push("projectProfileDeclaration.resourceBindings contains duplicate identities");
   const sourceSet = new Set(sourceIds), claimSet = new Set(claimIds), claimById = new Map(claimItems.map((claim) => [claim.claimId, claim]));
   for (const claim of claimItems) if (typeof claim.sourceId === "string" && !sourceSet.has(claim.sourceId)) errors.push(`projectProfileDeclaration claim references an unknown source: ${claim.claimId ?? "unknown"}`);
+  for (const binding of bindingItems) {
+    const expectations = (Array.isArray(binding.expectedIdentityClaimIds) ? binding.expectedIdentityClaimIds : [])
+      .map((id) => claimById.get(id)?.normalizedValue);
+    if (expectations.some((value) => typeof value !== "string") || new Set(expectations).size > 1) {
+      errors.push("projectProfileDeclaration resource binding requires consistent string identity expectations");
+    }
+  }
   for (const binding of bindingItems) for (const claimId of Array.isArray(binding.expectedIdentityClaimIds) ? binding.expectedIdentityClaimIds : []) {
     if (!claimSet.has(claimId)) errors.push(`projectProfileDeclaration resource binding references an unknown identity claim: ${binding.bindingId ?? "unknown"}`);
     else if (Array.isArray(binding.operationIds) && Array.isArray(claimById.get(claimId)?.operationIds)) {

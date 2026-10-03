@@ -7,6 +7,7 @@ npm 和版本化 GitHub Release 是实际发行依据。
 - 支持 GitHub API、Git SSH 和 npm 的操作范围只读身份观测；身份匹配不产生操作授权。
 - 身份声明、来源或归属变化重新预检；同次适用观测出现失败即拒绝激活，保留旧声明。
 - 已完成 Codex 与 Cursor IDE 共用 Core 的代表性 Profile 行为验收。Cursor Rule 回退仍为 profile-only，Cline、广义 CLI/Cloud 与 PDM 新 Profile 接入不在本次验收范围。
+- 拒绝矛盾的身份要求和疑似凭据的标识符；可选输入不可用时保留有效的降级 Profile，并在 SIGINT、SIGTERM、SIGHUP 中清理临时 npm 凭据。
 
 CLI 需要 Node.js 22+，目标项目不必创建 package.json。安装不证明原生 Plugin 激活或模型行为遵从；每个接入项目仍须针对其精确 Core tree 做新会话验收。
 

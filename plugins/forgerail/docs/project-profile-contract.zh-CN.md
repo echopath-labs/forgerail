@@ -24,7 +24,7 @@ Project Profile 声明是 ForgeRail 0.1.8 的可选能力，用于让项目拥�
 - 显式 `claims`，指向具体 source 位置并声明适用 operation ID；
 - 可选 `resourceBindings`，把 adapter 支持的 operation 和预期 identity claim 连接到一个经过评审的 provider adapter 与 locator。
 
-每个 claim 和 binding 最多包含 64 个 operation ID。每个预期 identity claim 必须适用于 binding 声明的所有 operation；仅仅存在但不适用的 claim 不能作为该 binding 的证据。
+每个 claim 和 binding 最多包含 64 个 operation ID。每个 binding 引用 1–16 个预期身份 claim，值必须是指向同一 actor 的一致字符串。每个预期 identity claim 必须适用于 binding 声明的所有 operation；仅仅存在但不适用的 claim 不能作为该 binding 的证据。
 
 声明不能设置 precedence、enforcement、completeness、authorization 或计算后的 Profile 结果。这些仍由 Governance Source、Rule Claim、Effective Profile v2、Profile Explanation 和现有任务授权合同负责。
 
@@ -107,4 +107,4 @@ node scripts/forgerail.mjs validate-contract \
 
 该验证检查 schema identity、有界字段、集合 identity、source 与 claim 引用、稳定 operation ID、locator 与 adapter 兼容性、疑似凭据内容和可执行内容。loader 与 assembler 位于 `scripts/lib/project-profile.mjs`；provider 观测位于 `scripts/lib/provider-adapters.mjs`。
 
-激活预检也覆盖绑定引用的预期身份声明、声明来源及工作区归属变化。同次请求提供的每项适用观测均须匹配；一次成功不能掩盖同一绑定的失败。无关声明变化不触发重新核验。
+激活预检也覆盖绑定引用的预期身份声明、声明来源及工作区归属变化。同次请求提供的每项适用观测均须匹配；一次成功不能掩盖同一绑定的失败。无关声明变化不触发重新核验；仅调整对象键或按身份组织的集合顺序，也不触发预检。

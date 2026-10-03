@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { adoptionWorkspaceIdentity, applyProjectFile, withProjectOperationLock } from "./adoption.mjs";
 import { CONFIG, MANIFEST, JOURNAL, LOCK, marker, hash, json, digest, exact, ownedArtifact, versionPattern, readProjectFile, validateConfig, validateManifest, managedBlock, readInstallation, installationDrift, projectAdoptionObservation, residualWriteEvidence, projectFileLimit, projectFileIdentity, hasLegacyBinding } from "./project-state.mjs";
 import { validateContract } from "./contracts.mjs";
-import { projectProfilePath } from "./project-profile.mjs";
+import { projectProfilePath, semanticDeclaration } from "./project-profile.mjs";
 
 function delivery(pluginRoot) {
   const adapter = JSON.parse(readProjectFile(pluginRoot, "adapters/project/codex.json"));
@@ -53,12 +53,12 @@ function blockAfter(before, replacement) {
 function operation(path, before, after) { return { path, before, after, beforeSha256: digest(before), afterSha256: digest(after) }; }
 export function projectProfilePreflightBindingIds(before, after) {
   if (after === null) return [];
-  const next = JSON.parse(after);
+  const next = semanticDeclaration(JSON.parse(after));
   let previous = null;
   if (before !== null) {
     try {
       const parsed = JSON.parse(before);
-      if (validateContract("project-profile-declaration", parsed).valid) previous = parsed;
+      if (validateContract("project-profile-declaration", parsed).valid) previous = semanticDeclaration(parsed);
     } catch {}
   }
   // A binding references identity expectations; comparing only its references
