@@ -233,6 +233,36 @@ function validateProfile(value, errors) {
   }
 }
 
+function containsEmbeddedUrlUserinfo(value) {
+  // Only special schemes interpret omitted/slanted separators as an authority.
+  // Scan scheme starts and authority boundaries monotonically, including when
+  // opaque identifiers precede the URL. Never parse every overlapping suffix.
+  const schemes = /(?<![A-Za-z0-9+.-])(?:https?|ftp|wss?):/gi;
+  let authorityEnd = 0, nextAt = value.indexOf("@");
+  if (nextAt === -1) return false;
+  for (let match; (match = schemes.exec(value)) !== null;) {
+    let authorityStart = schemes.lastIndex;
+    while (value[authorityStart] === "/" || value[authorityStart] === "\\") authorityStart++;
+    if (authorityStart >= authorityEnd) {
+      authorityEnd = authorityStart;
+      while (authorityEnd < value.length && !"/\\?#".includes(value[authorityEnd])) authorityEnd++;
+    }
+    while (nextAt !== -1 && nextAt < authorityStart) nextAt = value.indexOf("@", nextAt + 1);
+    if (nextAt === -1) return false;
+    if (nextAt >= authorityEnd) continue;
+    try {
+      const url = new URL(value.slice(match.index, authorityEnd));
+      if (url.username || url.password) return true;
+    } catch {
+      // Preserve the textual guard's conservative treatment of userinfo even
+      // when surrounding non-URL text makes the authority invalid.
+      return true;
+    }
+    schemes.lastIndex = authorityEnd;
+  }
+  return false;
+}
+
 export function containsInlineSecret(value) {
   if (typeof value === "string") {
     // Use the same URL semantics as provider consumers, including special-scheme
@@ -244,6 +274,10 @@ export function containsInlineSecret(value) {
       for (const key of url.searchParams.keys()) if (/^(?:_authToken|token|access_token|api_key|password|cookie|secret)$/i.test(key)) return true;
     } catch {}
 
+    // WHATWG removes these controls throughout a URL, including its scheme and
+    // query keys. Normalize once before inspecting URLs within opaque selectors.
+    value = value.replace(/[\t\r\n]/g, "");
+    if (containsEmbeddedUrlUserinfo(value)) return true;
     if (/:\/\/[^/?#\s@]*@/.test(value)) return true;
     // URL query names are ASCII; screen their percent-decoded representation too.
     value = value.replace(/%([0-9a-f]{2})/gi, (_match, hex) => String.fromCharCode(parseInt(hex, 16)));

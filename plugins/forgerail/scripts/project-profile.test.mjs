@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdtempSync, mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
@@ -561,6 +561,33 @@ test("inspection CLI refuses secret selectors without emitting or hashing them",
   }
 });
 
+
+test("inspection CLI rejects embedded URL userinfo without emitting the sentinel or invoking a provider", () => {
+  const root = workspace(); const policy = "## Policy\n";
+  write(root, "AGENTS.md", policy);
+  const binding = { bindingId: "binding:github", purpose: "Observe GitHub identity.", providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], expectedIdentityClaimIds: ["claim:actor"], requiredness: "required", locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } };
+  install(root, declaration([source("source:policy", "AGENTS.md", policy)], [claim("claim:actor", "source:policy", "git.actor", "owner")], [binding]));
+  const identityPath = resolve(root, "identity.json"); writeFileSync(identityPath, JSON.stringify(absoluteIdentity(root)));
+  // A disposable provider canary would record any invocation; it uses no real
+  // provider or credentials and remains available even to the control case.
+  write(root, "bin/gh", '#!/bin/sh\nprintf invoked > "${0%/*}/called"\nprintf "owner\\n"\n');
+  chmodSync(resolve(root, "bin/gh"), 0o755);
+  const sentinel = "SYNTHETICSENTINEL123456";
+  const run = (targetId) => spawnSync(process.execPath, [resolve(plugin, "scripts/forgerail.mjs"), "project-profile-inspect", "--workspace", root, "--workspace-identity", identityPath, "--operation", "git.push", "--target", targetId], { encoding: "utf8", env: { PATH: resolve(root, "bin") } });
+  for (const targetId of [`repo:https:/${sentinel}@registry.example/`, `workspace:repo:h\tt\rt\nps:\t//%53YNTHETICSENTINEL123456@registry.example/`]) {
+    const result = run(targetId);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /credential-like material/);
+    assert.equal((result.stdout + result.stderr).includes(sentinel), false);
+    assert.equal((result.stdout + result.stderr).includes("%53YNTHETICSENTINEL"), false);
+    assert.equal(result.stdout.includes("execution-context:"), false);
+    assert.equal(existsSync(resolve(root, "bin/called")), false);
+  }
+  const normal = run("repo:owner/name");
+  assert.equal(normal.status, 0);
+  assert.equal(JSON.parse(normal.stdout).providerObservation.providerCalls, 1);
+  assert.equal(existsSync(resolve(root, "bin/called")), true);
+});
 
 test("resolver rejects every malformed auxiliary collection before use", () => {
   for (const key of ["workspaceRelationshipIds", "applicablePackIds", "sourceRequiredness"]) for (const value of [null, 42, "invalid"]) {

@@ -5,7 +5,7 @@ import { dirname, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import test from "node:test";
 import { classifyProjectProfileInspection, observeProjectProfileBindings, providerAdapterRegistry } from "./lib/provider-adapters.mjs";
-import { validateContract } from "./lib/contracts.mjs";
+import { containsInlineSecret, validateContract } from "./lib/contracts.mjs";
 
 const observedAt = "2026-09-27T00:00:00Z";
 const workspace = () => realpathSync(mkdtempSync(resolve(tmpdir(), "forgerail-provider-")));
@@ -305,6 +305,53 @@ test("URL userinfo is rejected before persistence or selector observation", () =
     assert.equal(JSON.stringify(validation).includes("SUPERSECRET"), false);
     assert.throws(() => observeProjectProfileBindings({ workspace: workspace(), declaration: value, operationId: "package.publish", targetId: registry, observedAt, run() { assert.fail("provider must not run"); } }), /credential/);
   }
+});
+
+test("embedded URL credentials are rejected through nested identifiers before provider calls", () => {
+  const sentinel = "SYNTHETICSENTINEL123456";
+  const root = workspace(); let calls = 0;
+  const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  const urls = [
+    `https://${sentinel}@registry.example/`,
+    `https:/${sentinel}@registry.example/`,
+    `https:${sentinel}@registry.example/`,
+    `https:////${sentinel}:@registry.example/`,
+    String.raw`https:\${sentinel}@registry.example/`,
+    `h\tt\rt\nps:\t//${sentinel}@registry.example/`,
+    `https:/%53YNTHETICSENTINEL123456:pa%73s@registry.example/`,
+    `https:/user:http:@registry.example/`,
+    `https:ignored https:/${sentinel}@registry.example/`,
+    `https:/${sentinel}@registry.example trailing-text`,
+    `https:/registry.example/?to%6ben=${sentinel}`,
+    `https:/registry.example/?to\tken=${sentinel}`,
+  ];
+  for (const prefix of ["repo:", "workspace:repo:", "workspace:scope:repository:"]) {
+    for (const url of urls) {
+      const secret = prefix + url;
+      assert.equal(containsInlineSecret(secret), true);
+      const unsafe = structuredClone(value); unsafe.claims[0].normalizedValue = secret;
+      const validation = validateContract("project-profile-declaration", unsafe);
+      assert.equal(validation.valid, false);
+      assert.equal(JSON.stringify(validation).includes(sentinel), false);
+      for (const field of ["operationId", "targetId"]) {
+        assert.throws(() => observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", [field]: secret, executionContextIdentity: context(root), observedAt, run() { calls++; } }), (error) => /credential-like material/.test(error.message) && !error.message.includes(sentinel));
+      }
+    }
+  }
+  for (const scheme of ["http", "ftp", "ws", "wss"]) assert.equal(containsInlineSecret(`repo:${scheme}:/${sentinel}@registry.example/`), true);
+  assert.equal(calls, 0);
+});
+
+test("embedded URL screening preserves ordinary identifiers and scans long inputs without recursion", () => {
+  for (const targetId of ["repo:owner/name", "workspace:foo", "workspace:repo:owner/name", "repo:https:/registry.example/path", "repo:https://registry.example/@scope/name", "repo:https:/registry.example/?custom=value", "repo:owner/name@revision"]) {
+    assert.equal(containsInlineSecret(targetId), false);
+  }
+  const prefixes = "workspace:".repeat(10000);
+  assert.equal(containsInlineSecret(prefixes + "repo:owner/name"), false);
+  assert.equal(containsInlineSecret(prefixes + "https:/SYNTHETICSENTINEL123456@registry.example/"), true);
+  const schemes = "repo:https:".repeat(10000);
+  assert.equal(containsInlineSecret(schemes + "/registry.example/"), false);
+  assert.equal(containsInlineSecret(schemes + "/SYNTHETICSENTINEL123456@registry.example/"), true);
 });
 
 test("SSH observation requires completed GitHub authentication, not a buffered greeting", () => {
