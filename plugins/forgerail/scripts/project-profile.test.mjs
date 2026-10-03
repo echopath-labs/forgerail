@@ -610,3 +610,16 @@ test("inspection bounds explicit identity evidence before JSON parsing", () => {
   assert.match(result.stdout, /evidence is unreadable/);
   assert.equal(result.stdout.includes("execution-context:"), false);
 });
+
+
+test("inspection never echoes credential-like evidence paths", () => {
+  const root = workspace(); const policy = "## Policy\n";
+  write(root, "AGENTS.md", policy);
+  install(root, declaration([source("source:policy", "AGENTS.md", policy)], [claim("claim:actor", "source:policy", "git.actor", "owner")]));
+  for (const secret of ["ghp_" + "A".repeat(30), "https://registry.example/?token=SUPERSECRETTOKENVALUE123456"]) {
+    const result = spawnSync(process.execPath, [resolve(plugin, "scripts/forgerail.mjs"), "project-profile-inspect", "--workspace", root, "--workspace-identity", secret], { encoding: "utf8", env: { PATH: "" } });
+    assert.equal(result.status, 1);
+    assert.equal((result.stdout + result.stderr).includes(secret), false);
+    assert.match(result.stdout, /credential-like material/);
+  }
+});

@@ -237,7 +237,7 @@ export function containsInlineSecret(value) {
   if (typeof value === "string") {
     return /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(value)
       || /(?:gh[pousr]_|github_pat_|npm_)[A-Za-z0-9_]{16,}/i.test(value)
-      || /(?:^|[\s,{])(?:_authToken|password|cookie|secret)\s*[:=]/i.test(value)
+      || /(?:^|[\s,{?&#"'])(?:_authToken|token|access_token|api_key|password|cookie|secret)\s*[:=]/i.test(value)
       || /:\/\/[^/\s:@]+:[^/\s@]+@/.test(value)
       || /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/.test(value);
   }

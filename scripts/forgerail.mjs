@@ -6,7 +6,7 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadHostAdapters, planAdoption } from "./lib/adoption.mjs";
 import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/composition.mjs";
-import { contractSchemaNames, contractTypes, readJson, validateContract } from "./lib/contracts.mjs";
+import { containsInlineSecret, contractSchemaNames, contractTypes, readJson, validateContract } from "./lib/contracts.mjs";
 import { planProject, doctorProject, applyProject, planRecovery, recoverProject, releaseInterruptedLock, projectProfilePreflightBindingIds } from "./lib/project-adoption.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
 import { discoverProjectProfile, loadProjectProfile, verifyProjectWorkspaceIdentity, projectProfilePath } from "./lib/project-profile.mjs";
@@ -59,7 +59,8 @@ function contractEvidence(paths, type, identityKey) {
   const seen = new Set();
   return paths.map((path) => {
     let value;
-    try { value = boundedEvidence(path); } catch { throw new Error(`${type} evidence is unreadable: ${path}`); }
+    if (containsInlineSecret(path)) throw new Error(`${type} evidence path contains credential-like material`);
+    try { value = boundedEvidence(path); } catch { throw new Error(`${type} evidence is unreadable`); }
     const validation = validateContract(type, value);
     if (!validation.valid) throw new Error(`invalid ${type} evidence: ${validation.errors.join("; ")}`);
     if (seen.has(value[identityKey])) throw new Error(`duplicate ${type} evidence: ${value[identityKey]}`);

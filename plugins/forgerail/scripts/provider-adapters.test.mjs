@@ -269,3 +269,17 @@ test("native provider bindings require their own coordinate and reject unrelated
     assert.equal(validateContract("project-profile-declaration", value).valid, false);
   }
 });
+
+
+test("URL credential query parameters are refused before observation", () => {
+  for (const key of ["_authToken", "token", "access_token", "api_key"]) {
+    const secret = `https://registry.example/?${key}=SUPERSECRETTOKENVALUE123456`;
+    const value = declaration({ ...base, providerId: "npm", adapterId: "npm-registry", operationIds: ["package.publish"], locator: { kind: "provider-native", providerId: "npm", coordinates: { registry: secret } } });
+    const validation = validateContract("project-profile-declaration", value);
+    assert.equal(validation.valid, false);
+    assert.equal(JSON.stringify(validation).includes("SUPERSECRET"), false);
+    let calls = 0;
+    assert.throws(() => observeProjectProfileBindings({ workspace: workspace(), declaration: value, operationId: "package.publish", targetId: secret, observedAt, run() { calls++; } }), /credential/);
+    assert.equal(calls, 0);
+  }
+});
