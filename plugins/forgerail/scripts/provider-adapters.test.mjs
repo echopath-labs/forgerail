@@ -298,7 +298,7 @@ test("npm refuses non-TLS and non-registry URL components before invoking a prov
 
 
 test("URL userinfo is rejected before persistence or selector observation", () => {
-  for (const registry of ["https://SUPERSECRETTOKENVALUE123456@registry.example/", "https://SUPERSECRETTOKENVALUE123456:@registry.example/", "https://user%2Fname:pass@registry.example/"]) {
+  for (const registry of ["https://SUPERSECRETTOKENVALUE123456@registry.example/", "https://SUPERSECRETTOKENVALUE123456:@registry.example/", "https://user%2Fname:pass@registry.example/", "https:/SUPERSECRETTOKENVALUE123456@registry.example/", "https:SUPERSECRETTOKENVALUE123456@registry.example/", "https:////user:pass@registry.example/", "https:\t//user:pass@registry.example/", String.raw`https:\SUPERSECRETTOKENVALUE123456@registry.example/`]) {
     const value = declaration({ ...base, providerId: "npm", adapterId: "npm-registry", operationIds: ["package.publish"], locator: { kind: "provider-native", providerId: "npm", coordinates: { registry } } });
     const validation = validateContract("project-profile-declaration", value);
     assert.equal(validation.valid, false);

@@ -235,6 +235,15 @@ function validateProfile(value, errors) {
 
 export function containsInlineSecret(value) {
   if (typeof value === "string") {
+    // Use the same URL semantics as provider consumers, including special-scheme
+    // spellings and percent-decoded query keys. Text screening below also covers
+    // credential material embedded in non-URL strings.
+    try {
+      const url = new URL(value);
+      if (url.username || url.password) return true;
+      for (const key of url.searchParams.keys()) if (/^(?:_authToken|token|access_token|api_key|password|cookie|secret)$/i.test(key)) return true;
+    } catch {}
+
     if (/:\/\/[^/?#\s@]*@/.test(value)) return true;
     // URL query names are ASCII; screen their percent-decoded representation too.
     value = value.replace(/%([0-9a-f]{2})/gi, (_match, hex) => String.fromCharCode(parseInt(hex, 16)));
