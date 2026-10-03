@@ -108,6 +108,7 @@ function commandFor(binding, context, credentials) {
   const cleanup = () => { cleanupMaterial(); releaseSignalCleanup?.(); releaseSignalCleanup = null; };
   try {
     const parsedRegistry = new URL(registry);
+    if (parsedRegistry.protocol !== "https:" || parsedRegistry.username || parsedRegistry.password || parsedRegistry.search || parsedRegistry.hash) throw new Error("npm registry requires HTTPS without userinfo, query or fragment");
     temporaryRoot = mkdtempSync(resolve(tmpdir(), "forgerail-npm-observe-"));
     releaseSignalCleanup = retainSignalCleanup(cleanupMaterial);
     const env = { ...context.environment };

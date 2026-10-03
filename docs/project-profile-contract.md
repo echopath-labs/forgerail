@@ -116,3 +116,5 @@ Project Profile source loading has a 16 MiB aggregate byte budget in addition to
 Profile canonicalization and aggregate-budget ordering use locale-independent string order. A related-workspace credential root must resolve to a different canonical directory from the owner workspace; a second identity label does not create a separate filesystem boundary.
 
 Computed Profile claims narrow partially shadowed operations to their remaining effective scopes; the loader's observed `ruleClaims` retain the original scopes. Required unavailable dependency edges make affected claims unresolved, and edge/claim inventories must agree. Revision hashing uses the verified real owner path. Adding an unrelated relationship ID does not invalidate unchanged resource-binding preflight. Explicit CLI identity/relationship evidence is limited to 256 KiB per file and 16 MiB total per invocation before parsing.
+
+Npm identity observation requires an HTTPS registry URL without userinfo, query or fragment; unsupported URLs are rejected before invoking npm. Credential screening includes percent-encoded query names.

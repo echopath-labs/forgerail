@@ -272,7 +272,7 @@ test("native provider bindings require their own coordinate and reject unrelated
 
 
 test("URL credential query parameters are refused before observation", () => {
-  for (const key of ["_authToken", "token", "access_token", "api_key"]) {
+  for (const key of ["_authToken", "token", "access_token", "api_key", "%5FauthToken", "to%6ben"]) {
     const secret = `https://registry.example/?${key}=SUPERSECRETTOKENVALUE123456`;
     const value = declaration({ ...base, providerId: "npm", adapterId: "npm-registry", operationIds: ["package.publish"], locator: { kind: "provider-native", providerId: "npm", coordinates: { registry: secret } } });
     const validation = validateContract("project-profile-declaration", value);
@@ -281,5 +281,17 @@ test("URL credential query parameters are refused before observation", () => {
     let calls = 0;
     assert.throws(() => observeProjectProfileBindings({ workspace: workspace(), declaration: value, operationId: "package.publish", targetId: secret, observedAt, run() { calls++; } }), /credential/);
     assert.equal(calls, 0);
+  }
+});
+
+
+test("npm refuses non-TLS and non-registry URL components before invoking a provider", () => {
+  for (const registry of ["http://registry.example/", "ftp://registry.example/", "https://user@registry.example/", "https://registry.example/?custom=value", "https://registry.example/#fragment"]) {
+    const value = declaration({ ...base, providerId: "npm", adapterId: "npm-registry", operationIds: ["package.publish"], locator: { kind: "provider-native", providerId: "npm", coordinates: { registry } } });
+    let calls = 0;
+    const root = workspace();
+    const result = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "package.publish", targetId: "package:@scope/name", executionContextIdentity: context(root), observedAt, run() { calls++; return { status: 0, stdout: "expected-user", stderr: "" }; } });
+    assert.equal(calls, 0);
+    assert.equal(result.bindings[0].status, "unresolved");
   }
 });

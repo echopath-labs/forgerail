@@ -235,6 +235,8 @@ function validateProfile(value, errors) {
 
 export function containsInlineSecret(value) {
   if (typeof value === "string") {
+    // URL query names are ASCII; screen their percent-decoded representation too.
+    value = value.replace(/%([0-9a-f]{2})/gi, (_match, hex) => String.fromCharCode(parseInt(hex, 16)));
     return /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(value)
       || /(?:gh[pousr]_|github_pat_|npm_)[A-Za-z0-9_]{16,}/i.test(value)
       || /(?:^|[\s,{?&#"'])(?:_authToken|token|access_token|api_key|password|cookie|secret)\s*[:=]/i.test(value)
