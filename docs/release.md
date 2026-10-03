@@ -1,7 +1,7 @@
-# ForgeRail 0.1.7 Stable Release Runbook
+# ForgeRail 0.1.8 Stable Release Runbook
 
-This project-owned runbook governs `@echopath-labs/forgerail@0.1.7`, annotated
-tag `v0.1.7`, and the matching stable GitHub Release. The public repository is a
+This project-owned runbook governs `@echopath-labs/forgerail@0.1.8`, annotated
+tag `v0.1.8`, and the matching stable GitHub Release. The public repository is a
 deterministic projection of the private canonical source. External Capability
 Packs keep their independent alpha.4 identities and release lifecycles. This
 document describes the procedure; it does not grant authority by itself.
@@ -25,7 +25,7 @@ third gate.
   Public-only fixes are prohibited.
 - Bind the candidate to the private source commit and tree, public base,
   deterministic projection digest, npm archive digest and exact version.
-- Create `release/0.1.7` as an ordinary child of the observed public `main` and
+- Create `release/0.1.8` as an ordinary child of the observed public `main` and
   apply only the generated projection. Push by exact SHA refspec without force.
 - Open a Draft PR to the observed `main`. Recheck head, base, tree, version,
   license, required checks and Agent review after any correction.
@@ -46,18 +46,18 @@ and the Universal Directory.
    `npm audit` on Node.js 22 and 24. Create the exact npm archive and compare its
    inventory and digest with the approved candidate.
 4. Verify `gh`, Git SSH and npm all resolve to the authorized EchoPath Labs
-   identity. Confirm `@echopath-labs/forgerail@0.1.7` is absent and observe the
+   identity. Confirm `@echopath-labs/forgerail@0.1.8` is absent and observe the
    current `latest` and `next` dist-tags.
-5. Publish exactly `@echopath-labs/forgerail@0.1.7` with public access and the
+5. Publish exactly `@echopath-labs/forgerail@0.1.8` with public access and the
    `latest` tag. Keep provenance disabled unless trusted publishing has been
    independently configured and verified.
 6. Read back registry version, shasum, integrity, license, repository, binary
    shim and dist-tags. Anonymously install the exact version on Node.js 22 and
    24, then run `forgerail validate`, package self-tests and one bounded
    read-only diagnosis.
-7. Create annotated tag `v0.1.7` on the exact merged public `main` commit and
+7. Create annotated tag `v0.1.8` on the exact merged public `main` commit and
    push it without moving an existing tag. Publish stable GitHub Release
-   `ForgeRail 0.1.7` from the versioned release notes. This release has no
+   `ForgeRail 0.1.8` from the versioned release notes. This release has no
    standalone binary assets.
 8. Validate the exact tag as a disposable Codex Marketplace: discover the main
    Plugin Skills, verify read-only adoption planning, apply only an explicitly

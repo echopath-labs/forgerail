@@ -19,7 +19,7 @@
     "expectedSkills": ["forgerail"]
   },
   "limitations": [
-    "Cursor Desktop Agents 3.22.7 was verified on 2026-09-26 in fresh disposable read-only and bounded engineering sessions using AGENTS.md and the exact current .agents/skills/forgerail Core tree (SHA-256 00f8af0e805cd66a4fc034a35fc76ce9b0c4d1d235d511a12e49cb3b167574fc). A changed Core tree needs new IDE acceptance. The Cursor Rule plus Skill path was independently smoke-tested only in Cursor CLI 2026.09.18 and remains profile-only in the IDE.",
+    "Cursor Desktop Agents 3.22.12 was verified on 2026-09-30 in separate fresh disposable read-only and bounded engineering sessions using AGENTS.md and the exact current .agents/skills/forgerail Core tree (SHA-256 297b42258a137190c1fca64941821a15cffef6f4202f40d1ef88a89d0823e6ec). The engineering session loaded the active Project Profile and declared policy source, while the unrelated read-only session produced no Profile, policy, validation, provider or file-change activity. A changed Core tree needs new IDE acceptance. The Cursor Rule plus Skill path was independently smoke-tested only in Cursor CLI 2026.09.18 and remains profile-only in the IDE.",
     "Each adopted project still needs fresh-session verification of its own binding, Skill identity, and behavior; CLI and Cloud Agent behavior are not certified by the IDE result.",
     "A Cursor Rule can duplicate an existing AGENTS.md Core pointer; review the adoption plan and keep one Core owner."
   ]

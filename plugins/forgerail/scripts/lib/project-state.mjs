@@ -35,7 +35,7 @@ export function ownedArtifact(path) {
 export function exact(value, keys, label) {
   if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).sort().join() !== [...keys].sort().join()) throw new Error(`invalid ${label}: unknown or missing fields`);
 }
-export function readProjectFile(workspace, path, maxBytes = projectFileLimit) {
+export function readProjectFileBytes(workspace, path, maxBytes = projectFileLimit) {
   if (typeof path !== "string" || !/^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/.test(path) || path.split("/").some((s) => s === "." || s === ".." || s.endsWith(".") || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(s))) throw new Error(`unsafe project path: ${path}`);
   const root = realpathSync(workspace);
   let cursor = root;
@@ -63,8 +63,12 @@ export function readProjectFile(workspace, path, maxBytes = projectFileLimit) {
     // Recheck every ancestor following the read, including aliases and symlinks.
     let observed = root;
     for (const part of parts) { observed = resolve(observed, part); if (lstatSync(observed).isSymbolicLink()) throw new Error(`path drift: ${path}`); }
-    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes.subarray(0, count));
+    return bytes.subarray(0, count);
   } finally { closeSync(fd); }
+}
+export function readProjectFile(workspace, path, maxBytes = projectFileLimit) {
+  const bytes = readProjectFileBytes(workspace, path, maxBytes);
+  return bytes === null ? null : new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
 }
 export function validateConfig(value) {
   exact(value, ["schemaVersion", "host"], "project config");

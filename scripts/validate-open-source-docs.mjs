@@ -38,7 +38,7 @@ const issueForms = [
   ".github/ISSUE_TEMPLATE/documentation.yml"
 ];
 const skills = ["$forgerail", "$forgerail-workspace-diagnosis", "$workspace-health-review", "$architecture-convergence-audit"];
-const releaseVersion = "0.1.7";
+const releaseVersion = "0.1.8";
 const releaseTag = `v${releaseVersion}`;
 const exactInstall = `npm install --global @echopath-labs/forgerail@${releaseVersion}`;
 

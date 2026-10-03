@@ -5,6 +5,7 @@ ForgeRail 帮助宿主 Agent 确定工程任务范围、遵守项目规约和审
 | 能力 | 当前职责 | 边界 |
 | --- | --- | --- |
 | Core 与 CLI | Profile/Envelope 组合、合同和回执检查、有界本地 Git 观察 | `launch` 生成合同，不启动 Agent |
+| Project Profile 与 provider 观测 | 项目自有 source/claim 组合，以及 operation 范围内的 GitHub、SSH、npm identity 预检 | 只产生只读脱敏证据；不提供凭据存储、授权、mutation probe 或执行器 |
 | Diagnosis 与 Health | 只读观察、诊断和建议 | 不自动修复，不建立监控 daemon 或项目记忆 |
 | Architecture Convergence | 可选的责任归属、工程范式与漂移评估 | 使用项目已接受规则，不强制目录布局，不自带依赖边界执行引擎 |
 | Adoption 与宿主 profile | 绑定计划、明确授权的 managed-file 写入与验证 | 当前项目 Core 目录已通过 Cursor IDE Agent 新会话发现与有边界行为验收；仅该共用 Core 路径标记支持，Rule 回退路径仍为 profile-only。这不恢复 Cursor 执行器，也不认证 Cloud Agent |
@@ -12,7 +13,7 @@ ForgeRail 帮助宿主 Agent 确定工程任务范围、遵守项目规约和审
 | Rulesets、Release Safety、Thread Closure Pack | 指引、审批及证据要求、本地 fixture 验证 | 经授权后由宿主使用项目工具执行，不内置远端执行器 |
 | 版本化控制合同 | 已发布 schema、字段和 fixture 校验 | 合同校验不等于实时 Authority、Topology、Revision 或 Provider evaluator |
 
-更完整的 Control System 架构属于暂缓设计，不表示当前已经具备持久控制账本、所有工程操作强制拦截、外部审批实时求值或 Provider 运行时。保留既有公开 schema 是兼容性决定；把它们扩展为运行时需要单独的产品取舍、真实消费者和验证证据。历史计划的未勾选任务不是默认待办。
+更完整的 Control System 架构属于暂缓设计。ForgeRail 不维护持久控制账本，不强制拦截所有工程操作，也不实时求值全部外部审批。Project Profile 的小型受评审 registry 仅执行显式 identity 预检，不是通用 Provider 运行时。保留既有公开 schema 是兼容性决定；扩展为更广运行时需要单独的产品取舍、真实消费者和验证证据。历史计划的未勾选任务不是默认待办。
 
 项目规约和规格保留原 owner。OpenSpec 管变更记录，OpenDomain 管领域语义，EchoPath 管可选连续性，RelayPact 或宿主管委派和执行。这些产品均非安装前提；引用结果不会转移其权威。
 

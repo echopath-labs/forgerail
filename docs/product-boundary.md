@@ -5,6 +5,7 @@ ForgeRail helps a host Agent scope engineering work, respect project rules and a
 | Surface | Current responsibility | Boundary |
 | --- | --- | --- |
 | Core and CLI | Profile/Envelope composition, contract and receipt checks, bounded local Git observation | `launch` produces a contract; it does not launch an Agent |
+| Project Profile and provider observation | Project-owned source/claim composition plus operation-scoped GitHub, SSH and npm identity preflight | Read-only sanitized evidence only; no credential store, authorization grant, mutation probe or executor |
 | Diagnosis and Health | Read-only observations and recommendations | No automatic repair, monitoring daemon or project memory |
 | Architecture Convergence | Optional ownership, engineering paradigm and drift assessment | Project-accepted rules; no mandatory layout or dependency-boundary engine |
 | Adoption and host profiles | Plan bindings, explicitly approved managed-file writes and verification | Cursor IDE Agent discovery and bounded behavior passed on the current project Core tree; only this shared-Core path is supported, while its Rule fallback remains profile-only. This does not restore a Cursor executor or certify Cloud Agent |
@@ -12,7 +13,7 @@ ForgeRail helps a host Agent scope engineering work, respect project rules and a
 | Rulesets, Release Safety and Thread Closure Packs | Guidance, approval/evidence requirements and local fixture validation | Host uses project tools for authorized side effects; no embedded remote executor |
 | Versioned control contracts | Published schemas and field/fixture validation | Schema validation is not a live authority, topology, revision or provider evaluator |
 
-The broader Control System architecture is deferred design. It does not mean ForgeRail currently maintains a persistent control ledger, enforces every project action, evaluates all external approvals, or supports live provider adapters. Existing public schemas remain for compatibility. Extending them into a runtime requires a separately scoped product decision, real consumer need and evidence; old unchecked plans are not the default backlog.
+The broader Control System architecture is deferred design. ForgeRail does not maintain a persistent control ledger, enforce every project action, or evaluate all external approvals. Project Profile's small reviewed provider registry performs only explicit identity preflight; it is not a general provider runtime. Existing public schemas remain for compatibility. Extending them into a wider runtime requires a separately scoped product decision, real consumer need and evidence; old unchecked plans are not the default backlog.
 
 Project specifications and rules retain their existing owners. OpenSpec owns change records, OpenDomain owns domain semantics, EchoPath owns optional continuity, and RelayPact or the host owns delegation and execution. These products are optional. Referencing their results does not transfer their authority or require their installation.
 

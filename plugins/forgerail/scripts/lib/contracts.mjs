@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { applicableCorePointer, applicableContractPointer } from "./instruction-pointers.mjs";
+import { providerAdapterRegistry } from "./provider-adapter-registry.mjs";
 
 export const cursorSharedCoreCoverageEvidence = "Existing AGENTS.md references the matching project-local ForgeRail Core Skill; this Cursor-only plan needs no additional Cursor Rule.";
 export const cursorSharedContractCoverageEvidence = "Existing AGENTS.md references both the matching project-local ForgeRail Core Skill and FORGERAIL.md; this shared-contract plan needs no additional Cursor Rule.";
@@ -31,6 +32,7 @@ export const contractSchemaNames = {
   profile: "effective-profile",
   "profile-candidate": "profile-change-candidate",
   "profile-explanation": "profile-explanation-v1",
+  "project-profile-declaration": "project-profile-declaration-v1",
   "provider-adapter-observation": "provider-adapter-observation-v1",
   receipt: "return-receipt",
   "review-authority-requirement": "review-authority-requirement-v1",
@@ -228,6 +230,225 @@ function validateProfile(value, errors) {
   for (const [id, pack] of profilePacks) {
     if (!["enabled", "required"].includes(pack.state)) continue;
     if (id === "agent-workflow-governance" && enabled.has("forgerail-core")) errors.push("profile has duplicate core workflow owners");
+  }
+}
+
+function containsEmbeddedUrlUserinfo(value) {
+  // Only special schemes interpret omitted/slanted separators as an authority.
+  // Scan scheme starts and authority boundaries monotonically, including when
+  // opaque identifiers precede the URL. Never parse every overlapping suffix.
+  const schemes = /(?<![A-Za-z0-9+.-])(?:https?|ftp|wss?):/gi;
+  let authorityEnd = 0, nextAt = value.indexOf("@");
+  if (nextAt === -1) return false;
+  for (let match; (match = schemes.exec(value)) !== null;) {
+    let authorityStart = schemes.lastIndex;
+    while (value[authorityStart] === "/" || value[authorityStart] === "\\") authorityStart++;
+    if (authorityStart >= authorityEnd) {
+      authorityEnd = authorityStart;
+      while (authorityEnd < value.length && !"/\\?#".includes(value[authorityEnd])) authorityEnd++;
+    }
+    while (nextAt !== -1 && nextAt < authorityStart) nextAt = value.indexOf("@", nextAt + 1);
+    if (nextAt === -1) return false;
+    if (nextAt >= authorityEnd) continue;
+    try {
+      const url = new URL(value.slice(match.index, authorityEnd));
+      if (url.username || url.password) return true;
+    } catch {
+      // Preserve the textual guard's conservative treatment of userinfo even
+      // when surrounding non-URL text makes the authority invalid.
+      return true;
+    }
+    // An empty userinfo authority can itself contain another scheme. Keep the
+    // regex cursor at its match end; the next match advances nextAt past the
+    // empty userinfo marker instead of reparsing overlapping authority suffixes.
+  }
+  return false;
+}
+
+export function containsInlineSecret(value) {
+  if (typeof value === "string") {
+    // Use the same URL semantics as provider consumers, including special-scheme
+    // spellings and percent-decoded query keys. Text screening below also covers
+    // credential material embedded in non-URL strings.
+    try {
+      const url = new URL(value);
+      if (url.username || url.password) return true;
+      for (const key of url.searchParams.keys()) if (/^(?:_authToken|token|access_token|api_key|password|cookie|secret)$/i.test(key)) return true;
+    } catch {}
+
+    // WHATWG removes these controls throughout a URL, including its scheme and
+    // query keys. Normalize once before inspecting URLs within opaque selectors.
+    value = value.replace(/[\t\r\n]/g, "");
+    if (containsEmbeddedUrlUserinfo(value)) return true;
+    if (/:\/\/[^/?#\s@]*@/.test(value)) return true;
+    // URL query names are ASCII; screen their percent-decoded representation too.
+    value = value.replace(/%([0-9a-f]{2})/gi, (_match, hex) => String.fromCharCode(parseInt(hex, 16)));
+    return /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(value)
+      || /(?:gh[pousr]_|github_pat_|npm_)[A-Za-z0-9_]{16,}/i.test(value)
+      || /(?:^|[\s,{?&#"'])(?:_authToken|token|access_token|api_key|password|cookie|secret)\s*[:=]/i.test(value)
+      || /:\/\/[^/?#\s@]*@/.test(value)
+      || /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/.test(value);
+  }
+  if (Array.isArray(value)) return value.some(containsInlineSecret);
+  if (object(value)) return Object.entries(value).some(([key, item]) => containsInlineSecret(key) || containsInlineSecret(item));
+  return false;
+}
+
+function containsSecretField(value) {
+  if (Array.isArray(value)) return value.some(containsSecretField);
+  if (!object(value)) return false;
+  return Object.entries(value).some(([key, nested]) => /^(?:_authToken|token|secret|password|cookie|privateKey|credentialValue)$/i.test(key) || containsSecretField(nested));
+}
+
+function containsExecutableFragment(value) {
+  return typeof value === "string" && (
+    /[\r\n`;$|]/.test(value)
+    || /\$\(|\|\||&&/.test(value)
+    || /(?:^|\s)(?:curl|wget|bash|sh\s+-c|powershell|cmd\.exe)(?:\s|$)/i.test(value)
+  );
+}
+
+function validateSourcePointer(value, label, errors) {
+  if (!object(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  if (value.kind === "markdown-heading") {
+    if (!exactKeys(value, ["kind", "heading"], [], label, errors)) return;
+    string(value.heading, `${label}.heading`, errors, /^#{1,6} [^\r\n]{1,200}$/);
+  } else if (value.kind === "json-pointer") {
+    if (!exactKeys(value, ["kind", "pointer"], [], label, errors)) return;
+    string(value.pointer, `${label}.pointer`, errors, /^(?:\/(?:[^~/]|~[01])*)+$/);
+    if (typeof value.pointer === "string" && value.pointer.length > 500) errors.push(`${label}.pointer must not exceed 500 characters`);
+  } else errors.push(`${label}.kind is unsupported`);
+}
+
+function validateProjectProfileLocator(value, binding, relationships, errors, label) {
+  if (!object(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  if (value.kind === "workspace-file") {
+    if (!exactKeys(value, ["kind", "path"], [], label, errors)) return;
+    string(value.path, `${label}.path`, errors, portableHostPathPattern);
+  } else if (value.kind === "related-workspace-file") {
+    if (!exactKeys(value, ["kind", "workspaceRelationshipId", "workspaceIdentityId", "rootEnvironmentVariable", "path"], [], label, errors)) return;
+    string(value.workspaceRelationshipId, `${label}.workspaceRelationshipId`, errors, taskIdPattern);
+    string(value.workspaceIdentityId, `${label}.workspaceIdentityId`, errors, taskIdPattern);
+    string(value.rootEnvironmentVariable, `${label}.rootEnvironmentVariable`, errors, /^[A-Za-z_][A-Za-z0-9_]{0,127}$/);
+    string(value.path, `${label}.path`, errors, portableHostPathPattern);
+    if (!relationships.has(value.workspaceRelationshipId)) errors.push(`${label} references an undeclared Workspace Relationship`);
+    if (value.workspaceIdentityId === binding.ownerWorkspaceIdentityId) errors.push(`${label} related Workspace Identity must differ from the owner`);
+  } else if (value.kind === "environment-variable") {
+    if (!exactKeys(value, ["kind", "name"], [], label, errors)) return;
+    string(value.name, `${label}.name`, errors, /^[A-Za-z_][A-Za-z0-9_]{0,127}$/);
+  } else if (value.kind === "provider-native") {
+    if (!exactKeys(value, ["kind", "providerId", "coordinates"], [], label, errors)) return;
+    string(value.providerId, `${label}.providerId`, errors, idPattern);
+    if (value.providerId !== binding.providerId) errors.push(`${label}.providerId must match the resource binding provider`);
+    if (!object(value.coordinates) || Object.keys(value.coordinates).length < 1 || Object.keys(value.coordinates).length > 8) errors.push(`${label}.coordinates must contain 1-8 non-secret values`);
+    else for (const [key, coordinate] of Object.entries(value.coordinates)) {
+      string(key, `${label}.coordinates key`, errors, /^[a-z][a-zA-Z0-9-]+$/);
+      string(coordinate, `${label}.coordinates.${key}`, errors);
+      if (typeof coordinate === "string" && coordinate.length > 300) errors.push(`${label}.coordinates.${key} must not exceed 300 characters`);
+      if (/(?:token|secret|password|cookie|private.?key|credential|auth)/i.test(key)) errors.push(`${label}.coordinates.${key} cannot carry credential material`);
+      if (containsInlineSecret(coordinate)) errors.push(`${label}.coordinates.${key} contains credential material`);
+      if (containsExecutableFragment(coordinate)) errors.push(`${label}.coordinates.${key} contains executable content`);
+    }
+  } else errors.push(`${label}.kind is unsupported`);
+}
+
+function validateProjectProfileDeclaration(value, errors) {
+  // Screen all declaration text before diagnostics can interpolate identifiers.
+  if (containsInlineSecret(value)) {
+    errors.push("projectProfileDeclaration contains credential material");
+    return;
+  }
+  const keys = ["schemaVersion", "profileId", "workspaceIdentityId", "workspaceRelationshipIds", "sources", "claims", "resourceBindings"];
+  if (!exactKeys(value, keys, [], "projectProfileDeclaration", errors)) return;
+  contractVersion(value.schemaVersion, "1.0", "projectProfileDeclaration", errors);
+  string(value.profileId, "projectProfileDeclaration.profileId", errors, taskIdPattern);
+  string(value.workspaceIdentityId, "projectProfileDeclaration.workspaceIdentityId", errors, taskIdPattern);
+  strings(value.workspaceRelationshipIds, "projectProfileDeclaration.workspaceRelationshipIds", errors, { pattern: taskIdPattern, unique: true });
+  if (Array.isArray(value.workspaceRelationshipIds) && value.workspaceRelationshipIds.length > 128) errors.push("projectProfileDeclaration.workspaceRelationshipIds must contain at most 128 items");
+  const relationships = new Set(Array.isArray(value.workspaceRelationshipIds) ? value.workspaceRelationshipIds : []);
+
+  if (!Array.isArray(value.sources) || value.sources.length < 1 || value.sources.length > 128) errors.push("projectProfileDeclaration.sources must contain 1-128 items");
+  else value.sources.forEach((source, index) => {
+    const label = `projectProfileDeclaration.sources[${index}]`;
+    if (!exactKeys(source, ["sourceId", "sourceKind", "locator", "requiredness", "expectedSha256"], [], label, errors)) return;
+    string(source.sourceId, `${label}.sourceId`, errors, taskIdPattern);
+    if (!["instructions", "ownership", "platform-policy", "ci", "script", "specification", "decision-record", "structured-profile", "other"].includes(source.sourceKind)) errors.push(`${label}.sourceKind is invalid`);
+    string(source.locator, `${label}.locator`, errors, portableHostPathPattern);
+    if (!["required", "optional"].includes(source.requiredness)) errors.push(`${label}.requiredness is invalid`);
+    if (source.expectedSha256 !== null) string(source.expectedSha256, `${label}.expectedSha256`, errors, digestPattern);
+  });
+
+  if (!Array.isArray(value.claims) || value.claims.length < 1 || value.claims.length > 512) errors.push("projectProfileDeclaration.claims must contain 1-512 items");
+  else value.claims.forEach((claim, index) => {
+    const label = `projectProfileDeclaration.claims[${index}]`;
+    if (!exactKeys(claim, ["claimId", "sourceId", "sourcePointer", "ruleKey", "normalizedValue", "operationIds"], [], label, errors)) return;
+    string(claim.claimId, `${label}.claimId`, errors, taskIdPattern);
+    string(claim.sourceId, `${label}.sourceId`, errors, taskIdPattern);
+    validateSourcePointer(claim.sourcePointer, `${label}.sourcePointer`, errors);
+    string(claim.ruleKey, `${label}.ruleKey`, errors, ruleIdPattern);
+    strings(claim.operationIds, `${label}.operationIds`, errors, { min: 1, pattern: ruleIdPattern, unique: true });
+    if (Array.isArray(claim.operationIds) && claim.operationIds.length > 64) errors.push(`${label}.operationIds must contain at most 64 items`);
+    if (containsInlineSecret(claim.normalizedValue) || containsSecretField(claim.normalizedValue)) errors.push(`${label}.normalizedValue contains credential material`);
+  });
+
+  if (!Array.isArray(value.resourceBindings) || value.resourceBindings.length > 128) errors.push("projectProfileDeclaration.resourceBindings must be an array of at most 128 items");
+  else value.resourceBindings.forEach((binding, index) => {
+    const label = `projectProfileDeclaration.resourceBindings[${index}]`;
+    if (!exactKeys(binding, ["bindingId", "providerId", "purpose", "operationIds", "adapterId", "locator", "expectedIdentityClaimIds", "requiredness"], [], label, errors)) return;
+    string(binding.bindingId, `${label}.bindingId`, errors, taskIdPattern);
+    string(binding.providerId, `${label}.providerId`, errors, idPattern);
+    string(binding.purpose, `${label}.purpose`, errors);
+    if (typeof binding.purpose === "string" && binding.purpose.length > 300) errors.push(`${label}.purpose must not exceed 300 characters`);
+    if (containsInlineSecret(binding.purpose)) errors.push(`${label}.purpose contains credential material`);
+    strings(binding.operationIds, `${label}.operationIds`, errors, { min: 1, pattern: ruleIdPattern, unique: true });
+    if (Array.isArray(binding.operationIds) && binding.operationIds.length > 64) errors.push(`${label}.operationIds must contain at most 64 items`);
+    if (!["github-cli-api", "git-ssh", "npm-registry"].includes(binding.adapterId)) errors.push(`${label}.adapterId is unsupported`);
+    strings(binding.expectedIdentityClaimIds, `${label}.expectedIdentityClaimIds`, errors, { min: 1, pattern: taskIdPattern, unique: true });
+    if (Array.isArray(binding.expectedIdentityClaimIds) && binding.expectedIdentityClaimIds.length > 16) errors.push(`${label}.expectedIdentityClaimIds must contain at most 16 items`);
+    if (!["required", "optional"].includes(binding.requiredness)) errors.push(`${label}.requiredness is invalid`);
+    validateProjectProfileLocator(binding.locator, { providerId: binding.providerId, ownerWorkspaceIdentityId: value.workspaceIdentityId }, relationships, errors, `${label}.locator`);
+    if (binding.locator?.kind === "provider-native") {
+      const coordinate = { "github-cli-api": "host", "git-ssh": "hostAlias", "npm-registry": "registry" }[binding.adapterId];
+      if (coordinate) exactKeys(binding.locator.coordinates, [coordinate], [], `${label}.locator.coordinates`, errors);
+    }
+    const compatibility = providerAdapterRegistry[binding.adapterId];
+    if (compatibility && binding.providerId !== compatibility.providerId) errors.push(`${label}.providerId is incompatible with ${binding.adapterId}`);
+    if (compatibility && !compatibility.locatorKinds.includes(binding.locator?.kind)) errors.push(`${label}.locator is incompatible with ${binding.adapterId}`);
+    if (compatibility) for (const operationId of Array.isArray(binding.operationIds) ? binding.operationIds : []) {
+      if (!compatibility.operations.includes(operationId)) errors.push(`${label}.operationIds contains an operation unsupported by ${binding.adapterId}: ${operationId}`);
+    }
+  });
+
+  const sourceItems = Array.isArray(value.sources) ? value.sources.filter(object) : [];
+  const claimItems = Array.isArray(value.claims) ? value.claims.filter(object) : [];
+  const bindingItems = Array.isArray(value.resourceBindings) ? value.resourceBindings.filter(object) : [];
+  const sourceIds = sourceItems.map((source) => source.sourceId).filter((id) => typeof id === "string");
+  const claimIds = claimItems.map((claim) => claim.claimId).filter((id) => typeof id === "string");
+  const bindingIds = bindingItems.map((binding) => binding.bindingId).filter((id) => typeof id === "string");
+  if (new Set(sourceIds).size !== sourceIds.length) errors.push("projectProfileDeclaration.sources contains duplicate identities");
+  if (new Set(claimIds).size !== claimIds.length) errors.push("projectProfileDeclaration.claims contains duplicate identities");
+  if (new Set(bindingIds).size !== bindingIds.length) errors.push("projectProfileDeclaration.resourceBindings contains duplicate identities");
+  const sourceSet = new Set(sourceIds), claimSet = new Set(claimIds), claimById = new Map(claimItems.map((claim) => [claim.claimId, claim]));
+  for (const claim of claimItems) if (typeof claim.sourceId === "string" && !sourceSet.has(claim.sourceId)) errors.push(`projectProfileDeclaration claim references an unknown source: ${claim.claimId ?? "unknown"}`);
+  for (const binding of bindingItems) {
+    const expectations = (Array.isArray(binding.expectedIdentityClaimIds) ? binding.expectedIdentityClaimIds : [])
+      .map((id) => claimById.get(id)?.normalizedValue);
+    if (expectations.some((value) => typeof value !== "string") || new Set(expectations).size > 1) {
+      errors.push("projectProfileDeclaration resource binding requires consistent string identity expectations");
+    }
+  }
+  for (const binding of bindingItems) for (const claimId of Array.isArray(binding.expectedIdentityClaimIds) ? binding.expectedIdentityClaimIds : []) {
+    if (!claimSet.has(claimId)) errors.push(`projectProfileDeclaration resource binding references an unknown identity claim: ${binding.bindingId ?? "unknown"}`);
+    else if (Array.isArray(binding.operationIds) && Array.isArray(claimById.get(claimId)?.operationIds)) {
+      const missing = binding.operationIds.filter((operationId) => !claimById.get(claimId).operationIds.includes(operationId));
+      if (missing.length) errors.push(`projectProfileDeclaration identity claim ${claimId} does not apply to binding operations: ${missing.join(", ")}`);
+    }
   }
 }
 
@@ -1586,10 +1807,14 @@ function validateCrossWorkspacePackComposition(value, errors) {
 export function validateContract(type, payload) {
   const errors = [];
   if (!contractTypes.includes(type)) return { valid: false, errors: [`unknown contract type: ${type}`] };
+  if (["workspace-identity", "workspace-relationship", "execution-context-identity"].includes(type) && containsInlineSecret(payload)) {
+    return { valid: false, errors: [`${type} contains credential material`] };
+  }
   ({
     pack: validatePack,
     profile: validateProfile,
     "profile-candidate": validateProfileCandidate,
+    "project-profile-declaration": validateProjectProfileDeclaration,
     envelope: validateEnvelope,
     launch: validateLaunch,
     receipt: validateReceipt,

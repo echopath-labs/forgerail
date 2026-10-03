@@ -1,6 +1,6 @@
-# Project adoption lifecycle (0.1.7)
+# Project adoption lifecycle (0.1.8)
 
-This guide targets 0.1.7. Consult npm and the versioned GitHub Release for publication status. Published 0.1.4 lacks these commands. Existing workspace snapshots require an explicit update; installing the CLI does not migrate them.
+This guide targets 0.1.8. Consult npm and the versioned GitHub Release for publication status. Published 0.1.4 lacks these commands. Existing workspace snapshots require an explicit update; installing the CLI does not migrate them.
 
 ForgeRail manages its own Codex project Skills and a bounded AGENTS block.
 The target project needs no package.json, dependency installation or Node project.
@@ -142,6 +142,17 @@ baseline if the full legacy lock must remain recoverable after completion.
 Custom AGENTS prose is preserved and displayed for review; an old v1 managed
 binding requires explicit reconciliation before lifecycle init. Migration cannot
 silently remove bespoke instructions or combine a format migration with upgrade.
+
+## Workspace-owned Project Profile
+
+Project Profile has its own explicit `project-profile-set` and
+`project-profile-remove` actions, but reuses this lifecycle's lock, approval
+digest, journal, writer and recovery path. Its fixed entry is never included in
+the installation manifest. Consequently, package `init`, `update`, and `remove`
+do not create, replace, or delete it. See [Project Profile](project-profile-contract.md)
+for candidate review, inspection, resource bindings, and credential handling.
+
+Profile readiness does not authorize project adoption or any provider effect.
 
 ## Verification boundary
 

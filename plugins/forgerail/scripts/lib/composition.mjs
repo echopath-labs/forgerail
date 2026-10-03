@@ -4,6 +4,8 @@ import { dirname, resolve } from "node:path";
 import { accessSync, constants, lstatSync, realpathSync, statSync } from "node:fs";
 import { validateContract } from "./contracts.mjs";
 
+const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
+
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
   if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalValue(value[key])]));
@@ -118,6 +120,195 @@ export function resolveProfile(input, packManifests = []) {
   };
   const contract = validateContract("profile", profile);
   return { profile, activePacks: [...active].sort(), valid: contract.valid && profile.conflicts.length === 0, errors: [...contract.errors, ...profile.conflicts] };
+}
+
+const v2Precedence = new Map([
+  ["platform-enforced", 0],
+  ["workspace-instructions", 1],
+  ["project-automation", 2],
+  ["project-record", 3],
+  ["documentation", 4],
+]);
+
+function overlappingScopes(left, right) {
+  const rightScopes = new Set(right.applicabilityScope ?? []);
+  return (left.applicabilityScope ?? []).some((scope) => rightScopes.has(scope));
+}
+
+function v2Rank(claim) {
+  return v2Precedence.get(claim.precedenceClass) ?? Number.MAX_SAFE_INTEGER;
+}
+
+export function resolveEffectiveProfileV2({
+  profileId,
+  profileRevisionId,
+  workspaceIdentityId,
+  workspaceRelationshipIds = [],
+  governanceSources = [],
+  ruleClaims = [],
+  sourceRequiredness = {},
+  dependencyEdges = [],
+  applicablePackIds = [],
+  computedAt = new Date().toISOString(),
+}) {
+  const errors = [];
+  if (!Array.isArray(governanceSources)) errors.push("governanceSources must be an array");
+  if (!Array.isArray(ruleClaims)) errors.push("ruleClaims must be an array");
+  if (!Array.isArray(dependencyEdges)) errors.push("dependencyEdges must be an array");
+  for (const [label, values] of [["workspaceRelationshipIds", workspaceRelationshipIds], ["applicablePackIds", applicablePackIds]]) {
+    if (!Array.isArray(values) || values.some((value) => typeof value !== "string")) errors.push(`${label} must be an array of strings`);
+  }
+  if (!sourceRequiredness || typeof sourceRequiredness !== "object" || Array.isArray(sourceRequiredness)
+      || Object.values(sourceRequiredness).some((value) => !["required", "optional"].includes(value))) errors.push("sourceRequiredness must be a required/optional map");
+  if (errors.length) return { profile: null, explanation: null, valid: false, errors };
+
+  // Validate collections before sorting or dereferencing any caller input.
+  for (const [type, items] of [["governance-source", governanceSources], ["rule-claim", ruleClaims], ["source-dependency-edge", dependencyEdges]]) {
+    items.forEach((item, index) => {
+      const validation = validateContract(type, item);
+      errors.push(...validation.errors.map((error) => `${type}[${index}]: ${error}`));
+    });
+  }
+  if (errors.length) return { profile: null, explanation: null, valid: false, errors };
+  const sources = governanceSources.slice().sort((left, right) => compareText(left.sourceId, right.sourceId));
+  const claims = ruleClaims.slice().sort((left, right) => compareText(left.claimId, right.claimId));
+  const sourceIdList = sources.map((source) => source.sourceId);
+  const sourceIds = new Set(sourceIdList);
+  if (sourceIds.size !== sourceIdList.length) errors.push("governanceSources contain duplicate source identities");
+  const sourceById = new Map(sources.map((source) => [source.sourceId, source]));
+  const edgeById = new Map(dependencyEdges.map((edge) => [edge.edgeId, edge]));
+  for (const source of sources) for (const edgeId of source.dependencyEdgeIds) {
+    if (edgeById.get(edgeId)?.declaringSourceId !== source.sourceId) errors.push(`${source.sourceId}: dependency inventory does not match its declared edge`);
+  }
+  for (const edge of dependencyEdges) {
+    if (!sourceById.get(edge.declaringSourceId)?.dependencyEdgeIds.includes(edge.edgeId)) errors.push(`${edge.edgeId}: declaring source does not inventory this dependency`);
+  }
+  const claimById = new Map(claims.map((claim) => [claim.claimId, claim]));
+  for (const claim of claims) for (const edgeId of claim.dependencyEdgeIds) {
+    if (!edgeById.get(edgeId)?.affectedClaimIds.includes(claim.claimId)) errors.push(`${claim.claimId}: dependency inventory does not match its affected edge`);
+  }
+  for (const edge of dependencyEdges) for (const claimId of edge.affectedClaimIds) {
+    if (!claimById.get(claimId)?.dependencyEdgeIds.includes(edge.edgeId)) errors.push(`${edge.edgeId}: affected claim does not inventory this dependency`);
+  }
+  for (const source of sources) if (source.workspaceIdentityId !== workspaceIdentityId) errors.push(`${source.sourceId}: Workspace Identity does not match the v2 Profile owner`);
+  for (const claim of claims) {
+    const source = sourceById.get(claim.sourceId);
+    if (!source) errors.push(`${claim.claimId}: source is not inventoried`);
+    else {
+      if (claim.precedenceClass !== source.precedenceClass) errors.push(`${claim.claimId}: precedence must come from its Governance Source`);
+      if (!source.ruleClaimIds.includes(claim.claimId)) errors.push(`${claim.claimId}: Governance Source does not declare this claim`);
+    }
+  }
+  if (errors.length) return { profile: null, explanation: null, valid: false, errors };
+
+  const conflicts = [];
+  const conflictedClaims = new Set();
+  for (const [index, left] of claims.entries()) {
+    for (const right of claims.slice(index + 1)) {
+      if (left.ruleKey !== right.ruleKey || !overlappingScopes(left, right) || v2Rank(left) !== v2Rank(right) || equalValue(left.normalizedValue, right.normalizedValue)) continue;
+      const claimIds = [left.claimId, right.claimId].sort();
+      const conflictId = `conflict:${digest({ ruleKey: left.ruleKey, claimIds }).slice(0, 24)}`;
+      conflicts.push({ conflictId, claimIds, status: "unresolved", limitedReason: `equal-precedence claims disagree for ${left.ruleKey}` });
+      claimIds.forEach((claimId) => conflictedClaims.add(claimId));
+    }
+  }
+
+  const uniqueConflicts = [...new Map(conflicts.map((conflict) => [conflict.conflictId, conflict])).values()]
+    .sort((left, right) => compareText(left.conflictId, right.conflictId));
+  const blockedClaims = new Set(dependencyEdges.filter((edge) => edge.requiredness === "required" && edge.observationStatus !== "available").flatMap((edge) => edge.affectedClaimIds));
+  const effectiveClaims = new Map();
+  const claimDecisions = claims.map((claim) => {
+    const higherClaims = claims.filter((candidate) => candidate.ruleKey === claim.ruleKey && v2Rank(candidate) < v2Rank(claim));
+    // Whole-claim shadowing requires coverage of every scope; partial coverage
+    // leaves this claim active for its remaining operations.
+    const higher = claim.applicabilityScope.every((scope) => higherClaims.some((candidate) => candidate.applicabilityScope.includes(scope)));
+    const partiallyShadowed = !higher && higherClaims.some((candidate) => overlappingScopes(candidate, claim));
+    const remainingScopes = claim.applicabilityScope.filter((scope) => !higherClaims.some((candidate) => candidate.applicabilityScope.includes(scope)));
+    const effective = partiallyShadowed ? { ...claim, applicabilityScope: remainingScopes } : claim;
+    effectiveClaims.set(claim.claimId, blockedClaims.has(claim.claimId) ? { ...effective, enforcement: "unresolved", limitedReason: "required claim dependency is not available" } : effective);
+    const unresolved = blockedClaims.has(claim.claimId) || conflictedClaims.has(claim.claimId) || claim.enforcement === "unresolved";
+    return {
+      claimId: claim.claimId,
+      sourceId: claim.sourceId,
+      disposition: unresolved ? "unresolved" : higher ? "shadowed" : "active",
+      reasonCode: unresolved ? "unresolved-source-or-conflict" : higher ? "higher-precedence-claim" : partiallyShadowed ? "highest-precedence-for-remaining-scopes" : "highest-applicable-precedence",
+      dependencyEdgeIds: [...claim.dependencyEdgeIds].sort(),
+    };
+  });
+
+  const limitedReasons = [];
+  let requiredUnavailable = false;
+  let optionalUnavailable = false;
+  for (const source of sources) {
+    if (source.observationStatus === "observed") continue;
+    const required = sourceRequiredness[source.sourceId] !== "optional";
+    requiredUnavailable ||= required;
+    optionalUnavailable ||= !required;
+    limitedReasons.push(source.limitedReason ?? `source ${source.sourceId} is not observed`);
+  }
+  for (const edge of dependencyEdges) {
+    if (edge.observationStatus === "available") continue;
+    requiredUnavailable ||= edge.requiredness === "required";
+    optionalUnavailable ||= edge.requiredness === "optional";
+    limitedReasons.push(edge.limitedReason ?? `dependency ${edge.edgeId} is not available`);
+  }
+  for (const conflict of uniqueConflicts) limitedReasons.push(conflict.limitedReason);
+  for (const claim of claims) if (claim.enforcement === "unresolved" && claim.limitedReason) limitedReasons.push(claim.limitedReason);
+  const normalizedLimitedReasons = [...new Set(limitedReasons)].sort();
+  const unresolved = requiredUnavailable || uniqueConflicts.length > 0 || claims.some((claim) => claim.enforcement === "unresolved");
+  const completeness = unresolved ? "unresolved" : optionalUnavailable ? "degraded" : "complete";
+  const explanationId = `explanation:${profileRevisionId}`;
+
+  const profile = {
+    schemaVersion: "2.0",
+    profileId,
+    revisionId: profileRevisionId,
+    workspaceIdentityId,
+    computed: true,
+    computedAt,
+    completeness,
+    sourceIds: [...sourceIds].sort(),
+    workspaceRelationshipIds: [...workspaceRelationshipIds].sort(),
+    ruleClaims: claims.map((claim) => effectiveClaims.get(claim.claimId)),
+    dependencyEdges: dependencyEdges.slice().sort((left, right) => compareText(left.edgeId, right.edgeId)),
+    applicablePackIds: [...applicablePackIds].sort(),
+    conflicts: uniqueConflicts,
+    explanationId,
+    limitedReasons: normalizedLimitedReasons,
+  };
+  const explanation = {
+    schemaVersion: "1.0",
+    explanationId,
+    profileId,
+    profileRevisionId,
+    workspaceIdentityId,
+    generatedAt: computedAt,
+    completeness,
+    sourceSummaries: sources.map((source) => ({
+      sourceId: source.sourceId,
+      status: source.observationStatus,
+      claimIds: [...source.ruleClaimIds].sort(),
+      limitedReason: source.limitedReason,
+    })),
+    claimDecisions,
+    conflicts: uniqueConflicts.map((conflict) => ({
+      conflictId: conflict.conflictId,
+      claimIds: conflict.claimIds,
+      limitedReason: conflict.limitedReason,
+      confirmationRequired: true,
+    })),
+    confirmationNeeds: [...effectiveClaims.values()].filter((claim) => claim.enforcement === "unresolved" && !conflictedClaims.has(claim.claimId)).map((claim) => ({
+      needId: `confirmation:${claim.claimId}`,
+      claimIds: [claim.claimId],
+      reasonCode: blockedClaims.has(claim.claimId) ? "required-dependency-unavailable" : "source-not-confirmed",
+      prompt: `Review source, declaration and dependencies for ${claim.claimId}.`,
+    })),
+    limitedReasons: normalizedLimitedReasons,
+  };
+  const profileValidation = validateContract("effective-profile-v2", profile);
+  const explanationValidation = validateContract("profile-explanation", explanation);
+  errors.push(...profileValidation.errors, ...explanationValidation.errors);
+  return { profile, explanation, valid: errors.length === 0, errors };
 }
 
 export function createLaunchContract(profile, envelope, hostAgent, packManifests = []) {

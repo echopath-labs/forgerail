@@ -11,9 +11,9 @@ import { validateProductSurface } from "./lib/product-surface.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export function validateRelease() {
   const expectedPackageName = "@echopath-labs/forgerail";
-  const expectedVersion = "0.1.7";
+  const expectedVersion = "0.1.8";
   const expectedTag = `v${expectedVersion}`;
-  const expectedDate = "2026-09-26";
+  const expectedDate = "2026-10-03";
   const expectedPlugins = [
     "forgerail",
     "forgerail-cross-workspace-orchestration",
@@ -224,8 +224,8 @@ export function validateRelease() {
   record("project-lifecycle-publication", ["scripts/lib/project-adoption.mjs", "scripts/lib/project-state.mjs", "scripts/project-adoption.test.mjs"].every((path) => packageJson.files.includes(path)) && packageJson.scripts.test.includes("npm run test:project-adoption"), "explicit lifecycle modules and installed regression suite");
   record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-  const releaseEnglish = read("docs/release-0.1.7.md");
-  const releaseChinese = read("docs/release-0.1.7.zh-CN.md");
+  const releaseEnglish = read("docs/release-0.1.8.md");
+  const releaseChinese = read("docs/release-0.1.8.zh-CN.md");
   const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
   const currentRunbookEnglish = read("docs/release.md");
   const currentRunbookChinese = read("docs/release.zh-CN.md");
@@ -240,7 +240,7 @@ export function validateRelease() {
     expectedVersion,
     expectedTag,
     "Node.js 22 and 24",
-    "release/0.1.7",
+    "release/0.1.8",
     "Do not unpublish",
     "AGW",
     "Host Binding Receipt",

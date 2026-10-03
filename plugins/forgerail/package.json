@@ -1,6 +1,6 @@
 {
   "name": "@echopath-labs/forgerail",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
   "license": "Apache-2.0",
   "type": "module",
@@ -56,13 +56,18 @@
     "TERMS.md",
     "scripts/lib/project-state.mjs",
     "scripts/lib/project-adoption.mjs",
-    "scripts/project-adoption.test.mjs"
+    "scripts/lib/project-profile.mjs",
+    "scripts/lib/provider-adapter-registry.mjs",
+    "scripts/lib/provider-adapters.mjs",
+    "scripts/project-adoption.test.mjs",
+    "scripts/project-profile.test.mjs",
+    "scripts/provider-adapters.test.mjs"
   ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures --scope core && node scripts/forgerail.mjs validate-adoption && npm run test:replacement && npm run test:boundary && npm run test:scope && npm run test:adoption && npm run test:reliability && npm run test:project-adoption",
+    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures --scope core && node scripts/forgerail.mjs validate-adoption && npm run test:replacement && npm run test:boundary && npm run test:scope && npm run test:adoption && npm run test:reliability && npm run test:project-adoption && npm run test:project-profile",
     "test:integrity": "node scripts/integrity-regressions.mjs",
     "test:docs": "node scripts/validate-open-source-docs.mjs",
     "test:consumer": "node scripts/disposable-consumer.mjs",
@@ -78,7 +83,8 @@
     "test:adoption": "node --test scripts/adoption-closeout-regressions.mjs",
     "test:reliability": "node --test scripts/reliability-regressions.mjs scripts/adoption-reliability-regressions.mjs scripts/local-observation-regressions.mjs",
     "test:boundary": "node --test scripts/product-boundary.test.mjs",
-    "test:project-adoption": "node --test scripts/project-adoption.test.mjs"
+    "test:project-adoption": "node --test scripts/project-adoption.test.mjs",
+    "test:project-profile": "node --test scripts/project-profile.test.mjs scripts/provider-adapters.test.mjs"
   },
   "repository": {
     "type": "git",

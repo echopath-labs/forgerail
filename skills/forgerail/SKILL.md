@@ -17,6 +17,20 @@ Skip the engineering checklist for casual conversation, pure read-only questions
 simple command output, and exploration that changes no project state. An explicit
 read-only diagnosis remains available without starting implementation governance.
 
+After Core activation for applicable engineering work, check the exact owner root
+for `.forgerail/project-profile.json`. When it exists, read that active declaration
+and only the declared sources and claims applicable to the intended operation before
+composing the effective Profile. Do not discover candidate files, search parent or
+sibling workspaces, or load the Project Profile merely because a casual, simple, or
+unrelated read-only task is being answered. Absence keeps the ordinary Core workflow
+unchanged. Invalid or unresolved required declarations are evidence to explain and
+route through reviewed rebind or Profile lifecycle work; do not silently substitute
+another source or write a replacement.
+
+A resolved Project Profile, matching provider identity, or successful read-only
+preflight is governance evidence only. It never grants task authorization, approval
+for a provider side effect, or permission to reveal or persist credential material.
+
 The main Plugin contains the portable AGW baseline. Do not load legacy AGW files
 to complete it. Use the nearest project-specific rules as named extensions and
 keep one owner for each equivalent workflow.
