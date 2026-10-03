@@ -574,7 +574,7 @@ test("inspection CLI rejects embedded URL userinfo without emitting the sentinel
   chmodSync(resolve(root, "bin/gh"), 0o755);
   const sentinel = "SYNTHETICSENTINEL123456";
   const run = (targetId) => spawnSync(process.execPath, [resolve(plugin, "scripts/forgerail.mjs"), "project-profile-inspect", "--workspace", root, "--workspace-identity", identityPath, "--operation", "git.push", "--target", targetId], { encoding: "utf8", env: { PATH: resolve(root, "bin") } });
-  for (const targetId of [`repo:https:/${sentinel}@registry.example/`, `workspace:repo:h\tt\rt\nps:\t//%53YNTHETICSENTINEL123456@registry.example/`]) {
+  for (const targetId of [`repo:https:/${sentinel}@registry.example/`, `repo:https:@https:/${sentinel}@registry.example/`, `workspace:repo:h\tt\rt\nps:\t//%53YNTHETICSENTINEL123456@registry.example/`]) {
     const result = run(targetId);
     assert.equal(result.status, 1);
     assert.match(result.stdout, /credential-like material/);

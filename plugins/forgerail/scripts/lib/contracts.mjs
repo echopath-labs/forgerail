@@ -258,7 +258,9 @@ function containsEmbeddedUrlUserinfo(value) {
       // when surrounding non-URL text makes the authority invalid.
       return true;
     }
-    schemes.lastIndex = authorityEnd;
+    // An empty userinfo authority can itself contain another scheme. Keep the
+    // regex cursor at its match end; the next match advances nextAt past the
+    // empty userinfo marker instead of reparsing overlapping authority suffixes.
   }
   return false;
 }

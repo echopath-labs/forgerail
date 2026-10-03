@@ -320,6 +320,7 @@ test("embedded URL credentials are rejected through nested identifiers before pr
     `h\tt\rt\nps:\t//${sentinel}@registry.example/`,
     `https:/%53YNTHETICSENTINEL123456:pa%73s@registry.example/`,
     `https:/user:http:@registry.example/`,
+    `https:@https:/${sentinel}@registry.example/`,
     `https:ignored https:/${sentinel}@registry.example/`,
     `https:/${sentinel}@registry.example trailing-text`,
     `https:/registry.example/?to%6ben=${sentinel}`,
@@ -343,7 +344,7 @@ test("embedded URL credentials are rejected through nested identifiers before pr
 });
 
 test("embedded URL screening preserves ordinary identifiers and scans long inputs without recursion", () => {
-  for (const targetId of ["repo:owner/name", "workspace:foo", "workspace:repo:owner/name", "repo:https:/registry.example/path", "repo:https://registry.example/@scope/name", "repo:https:/registry.example/?custom=value", "repo:owner/name@revision"]) {
+  for (const targetId of ["repo:owner/name", "workspace:foo", "workspace:repo:owner/name", "repo:https:/registry.example/path", "repo:https://registry.example/@scope/name", "repo:https:/registry.example/?custom=value", "repo:owner/name@revision", "repo:https:@registry.example/", "repo:https:@https:/registry.example/"]) {
     assert.equal(containsInlineSecret(targetId), false);
   }
   const prefixes = "workspace:".repeat(10000);
@@ -352,6 +353,9 @@ test("embedded URL screening preserves ordinary identifiers and scans long input
   const schemes = "repo:https:".repeat(10000);
   assert.equal(containsInlineSecret(schemes + "/registry.example/"), false);
   assert.equal(containsInlineSecret(schemes + "/SYNTHETICSENTINEL123456@registry.example/"), true);
+  const emptyUserinfo = "repo:" + "https:@registry.example/".repeat(10000);
+  assert.equal(containsInlineSecret(emptyUserinfo), false);
+  assert.equal(containsInlineSecret(emptyUserinfo + "https:@https:/SYNTHETICSENTINEL123456@registry.example/"), true);
 });
 
 test("SSH observation requires completed GitHub authentication, not a buffered greeting", () => {
