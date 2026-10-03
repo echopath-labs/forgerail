@@ -13,7 +13,7 @@ export function validateRelease() {
   const expectedPackageName = "@echopath-labs/forgerail";
   const expectedVersion = "0.1.8";
   const expectedTag = `v${expectedVersion}`;
-  const expectedDate = "2026-09-30";
+  const expectedDate = "2026-10-03";
   const expectedPlugins = [
     "forgerail",
     "forgerail-cross-workspace-orchestration",
