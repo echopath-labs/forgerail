@@ -11,7 +11,7 @@ No shipping changes yet.
 - Preserve no-Profile behavior, package installation ownership, and existing authorization boundaries. Provider identity matches never grant permission to push, merge or publish.
 - Verify representative Profile consumption in fresh Codex and Cursor IDE shared-Core sessions; other Cursor routes, Cline and real-consumer activation remain outside this evidence.
 
-This candidate is not published. See the [Project Profile contract](docs/project-profile-contract.md).
+Publication status is recorded by npm and the versioned GitHub Release. See the [Project Profile contract](docs/project-profile-contract.md).
 
 ## 0.1.7 - 2026-09-26
 

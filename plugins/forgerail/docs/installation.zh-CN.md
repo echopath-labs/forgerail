@@ -51,7 +51,7 @@ npm exec --yes --package=@echopath-labs/forgerail@0.1.8 -- forgerail doctor --wo
 
 若已接入旧版本，按[项目接入与恢复](project-adoption.zh-CN.md)先核对既有安装身份，选择适用的 `update` 或旧快照迁移路径，不把 `init` 失败当成允许覆盖的理由。`init` 默认只产生计划；`--apply` 使用刚取得的计划摘要，摘要约束内容但不代替授权。成功接入后，项目内会有固定版本的 `.agents/skills/` 受管 Skill、`AGENTS.md` 受管块和 `.forgerail/` 安装记录；这不等于启用了持久化治理。CLI 可安装在工具环境，目标项目不必成为 Node 项目。
 
-尚未发布的 0.1.8 候选提供显式评审、由工作区拥有的 [Project Profile](project-profile-contract.zh-CN.md)。其固定入口不属于 package installation：ForgeRail 的接入、更新或移除不会创建、替换或删除 Profile。只使用精确安装包实际文档化的命令；已发布的 0.1.7 不含 Project Profile 生命周期与 inspect 命令。
+0.1.8 实现提供显式评审、由工作区拥有的 [Project Profile](project-profile-contract.zh-CN.md)。其固定入口不属于 package installation：ForgeRail 的接入、更新或移除不会创建、替换或删除 Profile。只使用精确安装包实际文档化的命令；已发布的 0.1.7 不含 Project Profile 生命周期与 inspect 命令。
 
 **触发测试分三层，不能互相代替：**
 

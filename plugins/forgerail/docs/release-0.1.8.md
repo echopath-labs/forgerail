@@ -1,6 +1,6 @@
-# ForgeRail 0.1.8 candidate
+# ForgeRail 0.1.8
 
-This version is not published. npm and the versioned GitHub Release are the publication authorities.
+npm and the versioned GitHub Release are the publication authorities.
 
 - Add optional workspace-owned `.forgerail/project-profile.json`, bounded source/claim loading and reuse of the existing Profile resolver.
 - Activate or remove declarations through existing plans, locks, writes and recovery. Package upgrade/removal never owns the project Profile.
@@ -36,4 +36,4 @@ Request an actual Agent bot review before merge, preferring Codex and otherwise 
 
 `remote_integration_approval` covers the concrete public PR and merge; `release_approval` covers the exact tag, npm package/channel and GitHub release. Record the owner's current authorization before those actions; one explicit request may cover both gates without separate prompts. `lifecycle_change_approval` is separate: this release does not retire AGW or migrate active consumer projects. Do not unpublish an existing version or move an immutable release tag. Use a separately approved corrective release if necessary.
 
-This unpublished candidate adds optional Project Profile activation/removal and read-only identity preflight. Referenced identity/source/owner changes require fresh checks; conflicting applicable observations block activation. Existing projects without a Profile retain their behavior.
+ForgeRail 0.1.8 adds optional Project Profile activation/removal and read-only identity preflight. Referenced identity/source/owner changes require fresh checks; conflicting applicable observations block activation. Existing projects without a Profile retain their behavior.

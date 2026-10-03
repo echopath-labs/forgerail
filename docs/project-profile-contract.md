@@ -1,6 +1,6 @@
 # Project Profile declaration contract
 
-The Project Profile declaration is a ForgeRail candidate capability for a project-owned, runtime-discoverable description of authoritative sources, structured claims, and safe resource locators. This development candidate includes its bounded lifecycle, inspection path, and read-only provider observations. The released ForgeRail 0.1.7 package does not contain these commands.
+The Project Profile declaration is an optional ForgeRail 0.1.8 capability for a project-owned, runtime-discoverable description of authoritative sources, structured claims, and safe resource locators. Version 0.1.8 includes its bounded lifecycle, inspection path, and read-only provider observations. The released ForgeRail 0.1.7 package does not contain these commands.
 
 ## Fixed entry and ownership
 

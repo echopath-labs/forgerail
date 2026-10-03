@@ -1,6 +1,6 @@
-# ForgeRail 0.1.8 候选
+# ForgeRail 0.1.8
 
-本版尚未发布；npm 和版本化 GitHub Release 是实际发行依据。
+npm 和版本化 GitHub Release 是实际发行依据。
 
 - 新增可选项目自有 `.forgerail/project-profile.json`，有界加载来源和声明，复用既有 Profile 解析器。
 - 通过既有计划、锁、写入及恢复流程显式激活或移除，包升级/移除不接管项目 Profile。
@@ -36,4 +36,4 @@ forgerail init --workspace .
 
 执行前记录 owner 对具体 PR/合并的 `remote_integration_approval`，以及具体 tag、npm 包/通道和 GitHub Release 的 `release_approval`。同一明确请求可覆盖前两个门禁，无需逐阶段重复确认。`lifecycle_change_approval` 单独处理：本版不授权旧 AGW 退役或活跃项目迁移。不撤回既有发布或移动不可变 tag，必要时单独批准修正版。
 
-本候选尚未发布，新增可选 Project Profile 激活/移除与只读身份预检。引用的身份、来源或归属变化须重新核验；相互矛盾的适用观测阻止激活。无 Profile 项目保持既有行为。
+ForgeRail 0.1.8 新增可选 Project Profile 激活/移除与只读身份预检。引用的身份、来源或归属变化须重新核验；相互矛盾的适用观测阻止激活。无 Profile 项目保持既有行为。

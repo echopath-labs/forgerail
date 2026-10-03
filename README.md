@@ -1,6 +1,6 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
-0.1.8 is an unpublished candidate adding optional Project Profile activation/removal and read-only identity preflight. The current public stable version is 0.1.7; existing projects do not upgrade automatically.
+ForgeRail 0.1.8 adds optional Project Profile activation/removal and read-only identity preflight. Verify publication through npm and the versioned GitHub Release; existing projects do not upgrade automatically.
 
 </p>
 
@@ -16,7 +16,7 @@
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Release line:** `0.1.8` candidate for optional Project Profile and read-only identity preflight. Check the versioned GitHub Release and npm registry for publication status before installing; native Plugin activation and experimental integrations remain outside the stable support boundary.
+> **Release line:** `0.1.8` documentation for optional Project Profile and read-only identity preflight. Check the versioned GitHub Release and npm registry for publication status before installing; native Plugin activation and experimental integrations remain outside the stable support boundary.
 
 > **0.1.8 scope:** Add project-owned Profile sources, claims and resource bindings with explicit activation/removal. The exact shared `AGENTS.md` plus matching project Core route is supported for Cursor IDE Agent. The Cursor Rule fallback stays `profile-only`; broad Cursor CLI behavior and Cloud Agent are unverified. Existing Core guidance covers repeated-failure escalation, non-critical uncertainty and resumable human gates. See the [release notes](docs/release-0.1.8.md) and [project replacement requirements](docs/agw-replacement.md).
 
@@ -189,6 +189,6 @@ ForgeRail is licensed under [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) 
 
 Version 0.1.5 introduced an opt-in Codex project lifecycle, retained in 0.1.8; older 0.1.4 installations do not include these commands. See [project adoption and recovery](docs/project-adoption.md). Existing read-only assessment and explicit source loading remain available.
 
-## Unreleased Project Profile candidate
+## Optional Project Profile
 
-The source candidate adds an optional workspace-owned `.forgerail/project-profile.json`, explicit activation/removal and read-only provider identity preflight. Published 0.1.7 does not include these commands. Identity observations do not authorize external operations. See the [Project Profile contract](docs/project-profile-contract.md) for lifecycle and supported-host evidence.
+ForgeRail 0.1.8 adds an optional workspace-owned `.forgerail/project-profile.json`, explicit activation/removal and read-only provider identity preflight. Published 0.1.7 does not include these commands. Identity observations do not authorize external operations. See the [Project Profile contract](docs/project-profile-contract.md) for lifecycle and supported-host evidence.

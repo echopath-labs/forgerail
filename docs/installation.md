@@ -51,7 +51,7 @@ npm exec --yes --package=@echopath-labs/forgerail@0.1.8 -- forgerail doctor --wo
 
 If an older version is already adopted, follow [project adoption and recovery](project-adoption.md) to inspect its identity and choose the appropriate `update` or legacy migration path. A failed `init` is not permission to overwrite it. `init` returns a read-only plan by default; `--apply` binds the current plan but does not grant permission. A successful adoption places pinned project Skills, a managed `AGENTS.md` block, and installation records under `.forgerail/`. The latter do not enable persisted governance. The CLI can live in a tools environment; the target does not become a Node project.
 
-The unpublished 0.1.8 candidate adds an explicitly reviewed, workspace-owned [Project Profile](project-profile-contract.md). Its fixed entry is outside package installation ownership: adopting, updating, or removing ForgeRail does not create, replace, or delete that Profile. Use only commands documented by the exact installed package; published 0.1.7 does not contain the Project Profile lifecycle or inspect commands.
+The 0.1.8 implementation adds an explicitly reviewed, workspace-owned [Project Profile](project-profile-contract.md). Its fixed entry is outside package installation ownership: adopting, updating, or removing ForgeRail does not create, replace, or delete that Profile. Use only commands documented by the exact installed package; published 0.1.7 does not contain the Project Profile lifecycle or inspect commands.
 
 **Test three distinct layers:**
 

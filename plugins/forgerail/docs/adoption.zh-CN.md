@@ -70,7 +70,7 @@ npx --yes @echopath-labs/forgerail@0.1.8 adoption-plan --workspace . --selection
 | --- | --- | --- | --- |
 | Codex | `AGENTS.md` | `supported` | 保留 registry 支持状态；原生 Plugin 激活未验证。须在新任务核对实际加载方式及获批绑定 |
 | Claude Code | `CLAUDE.md` | `profile-only` | 已建模目标与薄绑定，不声称端到端激活已验证 |
-| Cursor IDE Agent | 共用 `AGENTS.md` 与 `.agents/skills/forgerail/SKILL.md`；`.cursor/rules/forgerail.mdc` 回退路径 | 精确测试过的共用 Core 目录为 `supported`；Rule 回退路径仍为 `profile-only` | 已发布的 0.1.7 使用 2026-09-26 Cursor Desktop Agents 3.22.7 验收与 Core 摘要 `00f8af0e805cd66a4fc034a35fc76ce9b0c4d1d235d511a12e49cb3b167574fc`。尚未发布的 0.1.8 候选于 2026-09-30 通过两个独立 Cursor IDE Agent 3.22.12 会话续验：工程任务读取活动 Project Profile 与其声明的策略来源，只修改允许文件；无关只读任务没有 Profile、策略、验证、provider 或文件变更活动。新摘要为 `297b42258a137190c1fca64941821a15cffef6f4202f40d1ef88a89d0823e6ec`。Cursor Rule-only IDE 行为仍未验证。每个接入项目仍须在新会话验收；Cloud Agent 与 CLI 完整工程行为未验证 |
+| Cursor IDE Agent | 共用 `AGENTS.md` 与 `.agents/skills/forgerail/SKILL.md`；`.cursor/rules/forgerail.mdc` 回退路径 | 精确测试过的共用 Core 目录为 `supported`；Rule 回退路径仍为 `profile-only` | 已发布的 0.1.7 使用 2026-09-26 Cursor Desktop Agents 3.22.7 验收与 Core 摘要 `00f8af0e805cd66a4fc034a35fc76ce9b0c4d1d235d511a12e49cb3b167574fc`。0.1.8 实现于 2026-09-30 通过两个独立 Cursor IDE Agent 3.22.12 会话续验：工程任务读取活动 Project Profile 与其声明的策略来源，只修改允许文件；无关只读任务没有 Profile、策略、验证、provider 或文件变更活动。新摘要为 `297b42258a137190c1fca64941821a15cffef6f4202f40d1ef88a89d0823e6ec`。Cursor Rule-only IDE 行为仍未验证。每个接入项目仍须在新会话验收；Cloud Agent 与 CLI 完整工程行为未验证 |
 
 默认 `all-detected` 规划会在共用 `AGENTS.md`/Core 路径匹配时纳入 Cursor，即使没有 `.cursor` 目录。收到的计划只有在多宿主契约省略 Cursor Rule 时才能携带共用 Cursor 覆盖摘要；契约写入须在首位，受覆盖的 `AGENTS.md` 更新须在末位。
 

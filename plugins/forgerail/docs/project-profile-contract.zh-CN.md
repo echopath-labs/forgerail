@@ -1,6 +1,6 @@
 # Project Profile 声明合同
 
-Project Profile 声明是 ForgeRail 的候选能力，用于让项目拥有一份可被运行时发现的权威来源、结构化 claim 与安全资源定位描述。当前开发候选已经包含有界生命周期、inspect 路径与只读 provider 观测；已发布的 ForgeRail 0.1.7 package 不包含这些命令。
+Project Profile 声明是 ForgeRail 0.1.8 的可选能力，用于让项目拥有一份可被运行时发现的权威来源、结构化 claim 与安全资源定位描述。0.1.8 已经包含有界生命周期、inspect 路径与只读 provider 观测；已发布的 ForgeRail 0.1.7 package 不包含这些命令。
 
 ## 固定入口与归属
 

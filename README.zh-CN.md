@@ -1,6 +1,6 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
-0.1.8 尚未发布：本候选增加可选 Project Profile、显式激活/移除和只读身份预检。当前公开稳定版为 0.1.7，既有项目不会自动升级。
+ForgeRail 0.1.8 增加可选 Project Profile、显式激活/移除和只读身份预检。发布状态以 npm 与版本化 GitHub Release 为准，既有项目不会自动升级。
 
 </p>
 
@@ -16,7 +16,7 @@
   <a href="CHANGELOG.md">变更记录</a>
 </p>
 
-> **版本：** `0.1.8` 候选，新增可选 Project Profile 与只读身份预检；安装前先核对版本化 GitHub Release 和 npm registry。原生 Plugin 激活和实验性集成不属于稳定支持范围。
+> **版本：** `0.1.8` 版本说明，新增可选 Project Profile 与只读身份预检；安装前先核对版本化 GitHub Release 和 npm registry。原生 Plugin 激活和实验性集成不属于稳定支持范围。
 
 > **0.1.8 范围：** 新增项目自有来源、声明与资源绑定，以及显式激活/移除。Cursor IDE Agent 仅支持共用 `AGENTS.md` 加匹配项目 Core 的精确路径；Cursor Rule 回退仍为 `profile-only`，广义 CLI 行为与 Cloud Agent 未验证。既有 Core 指引保留同类失败升级、非关键不确定性和可恢复人类门禁。见[发布说明](docs/release-0.1.8.zh-CN.md)和[项目替代要求](docs/agw-replacement.zh-CN.md)。
 
@@ -189,6 +189,6 @@ ForgeRail 使用 [Apache License 2.0](LICENSE)，署名信息见 [NOTICE](NOTICE
 
 0.1.5 引入的可选 Codex 项目接入闭环保留在 0.1.8；旧版 0.1.4 尚不包含这些命令。见 [项目接入与恢复](docs/project-adoption.zh-CN.md)。原有只读评估与显式 Skill 加载继续可用。
 
-## 尚未发布的 Project Profile 候选
+## 可选 Project Profile
 
-源码候选新增可选的项目自有 `.forgerail/project-profile.json`、显式激活/移除及只读 provider 身份预检。已发布 0.1.7 不包含这些命令；身份匹配不产生外部操作授权。生命周期和宿主验证范围见 [Project Profile 契约](docs/project-profile-contract.zh-CN.md)。
+ForgeRail 0.1.8 新增可选的项目自有 `.forgerail/project-profile.json`、显式激活/移除及只读 provider 身份预检。已发布 0.1.7 不包含这些命令；身份匹配不产生外部操作授权。生命周期和宿主验证范围见 [Project Profile 契约](docs/project-profile-contract.zh-CN.md)。
