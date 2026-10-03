@@ -222,7 +222,7 @@ export function loadProjectProfile({ workspace, workspaceIdentity, computedAt = 
     }
   }
 
-  const profileRevisionId = revisionId(discovery.declaration, workspaceIdentity, confirmedSourceDigests);
+  const profileRevisionId = revisionId(discovery.declaration, { ...workspaceIdentity, canonicalRootLocator: requestedRoot }, confirmedSourceDigests);
   const resolved = resolveEffectiveProfileV2({
     profileId: discovery.declaration.profileId,
     profileRevisionId,

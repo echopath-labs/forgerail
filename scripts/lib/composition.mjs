@@ -183,6 +183,13 @@ export function resolveEffectiveProfileV2({
   for (const edge of dependencyEdges) {
     if (!sourceById.get(edge.declaringSourceId)?.dependencyEdgeIds.includes(edge.edgeId)) errors.push(`${edge.edgeId}: declaring source does not inventory this dependency`);
   }
+  const claimById = new Map(claims.map((claim) => [claim.claimId, claim]));
+  for (const claim of claims) for (const edgeId of claim.dependencyEdgeIds) {
+    if (!edgeById.get(edgeId)?.affectedClaimIds.includes(claim.claimId)) errors.push(`${claim.claimId}: dependency inventory does not match its affected edge`);
+  }
+  for (const edge of dependencyEdges) for (const claimId of edge.affectedClaimIds) {
+    if (!claimById.get(claimId)?.dependencyEdgeIds.includes(edge.edgeId)) errors.push(`${edge.edgeId}: affected claim does not inventory this dependency`);
+  }
   for (const source of sources) if (source.workspaceIdentityId !== workspaceIdentityId) errors.push(`${source.sourceId}: Workspace Identity does not match the v2 Profile owner`);
   for (const claim of claims) {
     const source = sourceById.get(claim.sourceId);
@@ -208,13 +215,18 @@ export function resolveEffectiveProfileV2({
 
   const uniqueConflicts = [...new Map(conflicts.map((conflict) => [conflict.conflictId, conflict])).values()]
     .sort((left, right) => compareText(left.conflictId, right.conflictId));
+  const blockedClaims = new Set(dependencyEdges.filter((edge) => edge.requiredness === "required" && edge.observationStatus !== "available").flatMap((edge) => edge.affectedClaimIds));
+  const effectiveClaims = new Map();
   const claimDecisions = claims.map((claim) => {
     const higherClaims = claims.filter((candidate) => candidate.ruleKey === claim.ruleKey && v2Rank(candidate) < v2Rank(claim));
     // Whole-claim shadowing requires coverage of every scope; partial coverage
     // leaves this claim active for its remaining operations.
     const higher = claim.applicabilityScope.every((scope) => higherClaims.some((candidate) => candidate.applicabilityScope.includes(scope)));
     const partiallyShadowed = !higher && higherClaims.some((candidate) => overlappingScopes(candidate, claim));
-    const unresolved = conflictedClaims.has(claim.claimId) || claim.enforcement === "unresolved";
+    const remainingScopes = claim.applicabilityScope.filter((scope) => !higherClaims.some((candidate) => candidate.applicabilityScope.includes(scope)));
+    const effective = partiallyShadowed ? { ...claim, applicabilityScope: remainingScopes } : claim;
+    effectiveClaims.set(claim.claimId, blockedClaims.has(claim.claimId) ? { ...effective, enforcement: "unresolved", limitedReason: "required claim dependency is not available" } : effective);
+    const unresolved = blockedClaims.has(claim.claimId) || conflictedClaims.has(claim.claimId) || claim.enforcement === "unresolved";
     return {
       claimId: claim.claimId,
       sourceId: claim.sourceId,
@@ -257,7 +269,7 @@ export function resolveEffectiveProfileV2({
     completeness,
     sourceIds: [...sourceIds].sort(),
     workspaceRelationshipIds: [...workspaceRelationshipIds].sort(),
-    ruleClaims: claims,
+    ruleClaims: claims.map((claim) => effectiveClaims.get(claim.claimId)),
     dependencyEdges: dependencyEdges.slice().sort((left, right) => compareText(left.edgeId, right.edgeId)),
     applicablePackIds: [...applicablePackIds].sort(),
     conflicts: uniqueConflicts,
@@ -285,11 +297,11 @@ export function resolveEffectiveProfileV2({
       limitedReason: conflict.limitedReason,
       confirmationRequired: true,
     })),
-    confirmationNeeds: claims.filter((claim) => claim.enforcement === "unresolved" && !conflictedClaims.has(claim.claimId)).map((claim) => ({
+    confirmationNeeds: [...effectiveClaims.values()].filter((claim) => claim.enforcement === "unresolved" && !conflictedClaims.has(claim.claimId)).map((claim) => ({
       needId: `confirmation:${claim.claimId}`,
       claimIds: [claim.claimId],
-      reasonCode: "source-not-confirmed",
-      prompt: `Review source and declaration for ${claim.claimId}.`,
+      reasonCode: blockedClaims.has(claim.claimId) ? "required-dependency-unavailable" : "source-not-confirmed",
+      prompt: `Review source, declaration and dependencies for ${claim.claimId}.`,
     })),
     limitedReasons: normalizedLimitedReasons,
   };

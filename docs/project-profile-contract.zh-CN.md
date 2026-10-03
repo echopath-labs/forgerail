@@ -114,3 +114,5 @@ node scripts/forgerail.mjs validate-contract \
 Project Profile 来源读取除单文件 4 MiB 上限外，还有 16 MiB 总字节预算。按 source ID 确定顺序读取，超出预算的来源不予确认。原生 provider 坐标必须精确匹配：GitHub API 使用 `host`，Git SSH 使用 `hostAlias`，npm 使用 `registry`。独立提供的工作区、关系和执行上下文证据也须在使用或输出前筛查凭据内容。
 
 Profile规范化和总预算顺序不依赖宿主语言环境。关联工作区凭据根必须解析为不同于owner的规范目录；仅更换身份标签不会产生新的文件系统边界。
+
+计算后的 Profile 会将部分被覆盖声明的操作范围缩减为实际剩余范围；加载器的原始 `ruleClaims` 保留观察到的范围。必需依赖不可用时，受影响声明为 unresolved，边与声明的依赖清单须一致。版本摘要采用已验证的真实 owner 路径。新增无关关系 ID 不会使未变更的资源绑定预检失效。CLI 显式身份和关系证据在解析前受单文件 256 KiB、单次调用合计 16 MiB 限制。

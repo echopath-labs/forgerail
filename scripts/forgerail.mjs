@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { closeSync, constants, existsSync, fstatSync, openSync, readSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadHostAdapters, planAdoption } from "./lib/adoption.mjs";
@@ -36,11 +36,30 @@ function args(name) {
   return optionValues(name);
 }
 
+let evidenceBytesRemaining = 16 * 1024 * 1024;
+function boundedEvidence(path) {
+  const limit = Math.min(256 * 1024, evidenceBytesRemaining);
+  const fd = openSync(resolve(path), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  try {
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || stat.size > limit) throw new Error("evidence exceeds its byte bound");
+    const bytes = Buffer.alloc(limit + 1);
+    let count = 0;
+    while (count < bytes.length) {
+      const read = readSync(fd, bytes, count, bytes.length - count, null);
+      if (!read) break;
+      count += read;
+    }
+    if (count > limit) throw new Error("evidence exceeds its byte bound");
+    evidenceBytesRemaining -= count;
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, count)));
+  } finally { closeSync(fd); }
+}
 function contractEvidence(paths, type, identityKey) {
   const seen = new Set();
   return paths.map((path) => {
     let value;
-    try { value = readJson(resolve(path)); } catch { throw new Error(`${type} evidence is unreadable: ${path}`); }
+    try { value = boundedEvidence(path); } catch { throw new Error(`${type} evidence is unreadable: ${path}`); }
     const validation = validateContract(type, value);
     if (!validation.valid) throw new Error(`invalid ${type} evidence: ${validation.errors.join("; ")}`);
     if (seen.has(value[identityKey])) throw new Error(`duplicate ${type} evidence: ${value[identityKey]}`);

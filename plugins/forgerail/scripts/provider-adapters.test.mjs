@@ -89,14 +89,16 @@ for (const signalName of ["SIGINT", "SIGTERM", "SIGHUP"]) test(`npm temporary cr
   const marker = resolve(root, "config-path.txt");
   const childScript = resolve(root, "signal-observer.mjs");
   const moduleUrl = new URL("./lib/provider-adapters.mjs", import.meta.url).href;
-  writeFileSync(childScript, `import { writeFileSync } from "node:fs";\nimport { spawnSync } from "node:child_process";\nimport { observeProjectProfileBindings } from ${JSON.stringify(moduleUrl)};\nconst observedAt = ${JSON.stringify(observedAt)};\nconst root = ${JSON.stringify(root)};\nconst marker = ${JSON.stringify(marker)};\nconst declaration = ${JSON.stringify(declaration({ ...base, providerId: "npm", adapterId: "npm-registry", operationIds: ["package.publish"], locator: { kind: "environment-variable", name: "FORGERAIL_TEST_NPM_TOKEN" } }))};\nconst executionContextIdentity = ${JSON.stringify(context(root))};\nobserveProjectProfileBindings({ workspace: root, declaration, operationId: "package.publish", targetId: "package:@scope/name", executionContextIdentity, environment: { FORGERAIL_TEST_NPM_TOKEN: "npm_SIGNAL_SENTINEL_12345678901234567890" }, observedAt, run(_command, _args, options) { writeFileSync(marker, options.env.NPM_CONFIG_USERCONFIG); spawnSync(process.execPath, ["-e", "setTimeout(() => {}, 1000)"]); return { status: 0, stdout: "expected-user\\n", stderr: "" }; } });\n`);
+  writeFileSync(childScript, `import { writeFileSync } from "node:fs";\nimport { spawnSync } from "node:child_process";\nimport { observeProjectProfileBindings } from ${JSON.stringify(moduleUrl)};\nconst observedAt = ${JSON.stringify(observedAt)};\nconst root = ${JSON.stringify(root)};\nconst marker = ${JSON.stringify(marker)};\nconst declaration = ${JSON.stringify(declaration({ ...base, providerId: "npm", adapterId: "npm-registry", operationIds: ["package.publish"], locator: { kind: "environment-variable", name: "FORGERAIL_TEST_NPM_TOKEN" } }))};\nconst executionContextIdentity = ${JSON.stringify(context(root))};\nobserveProjectProfileBindings({ workspace: root, declaration, operationId: "package.publish", targetId: "package:@scope/name", executionContextIdentity, environment: { FORGERAIL_TEST_NPM_TOKEN: "npm_SIGNAL_SENTINEL_12345678901234567890" }, observedAt, run(_command, _args, options) { writeFileSync(marker, options.env.NPM_CONFIG_USERCONFIG); spawnSync(process.execPath, ["-e", ${JSON.stringify("const fs = require('node:fs'); const timer = setInterval(() => { if (fs.existsSync(process.argv[1])) clearInterval(timer); }, 10)")}, marker + ".release"]); return { status: 0, stdout: "expected-user\\n", stderr: "" }; } });\n`);
   const child = spawn(process.execPath, [childScript], { stdio: "ignore" });
   for (let attempt = 0; attempt < 200 && !existsSync(marker); attempt++) await new Promise((resolveWait) => setTimeout(resolveWait, 10));
   assert.equal(existsSync(marker), true);
   const configPath = readFileSync(marker, "utf8");
   assert.equal(existsSync(configPath), true);
+  const exit = new Promise((resolveExit) => child.once("exit", (code, signal) => resolveExit({ code, signal })));
   child.kill(signalName);
-  const result = await new Promise((resolveExit) => child.once("exit", (code, signal) => resolveExit({ code, signal })));
+  writeFileSync(marker + ".release", "signaled");
+  const result = await exit;
   assert.equal(result.signal, signalName);
   assert.equal(existsSync(configPath), false);
 });

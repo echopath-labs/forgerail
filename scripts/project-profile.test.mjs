@@ -477,6 +477,8 @@ test("preflight ignores semantic reordering but detects a changed expected actor
   const reverseKeys = (v) => Array.isArray(v) ? v.map(reverseKeys).reverse() : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).reverse().map(([k, item]) => [k, reverseKeys(item)])) : v;
   const reordered = reverseKeys(value);
   assert.deepEqual(projectProfilePreflightBindingIds(JSON.stringify(value), JSON.stringify(reordered)), []);
+  reordered.workspaceRelationshipIds.push("relationship:unused");
+  assert.deepEqual(projectProfilePreflightBindingIds(JSON.stringify(value), JSON.stringify(reordered)), []);
   reordered.claims.forEach((c) => c.normalizedValue = "other-owner");
   assert.deepEqual(projectProfilePreflightBindingIds(JSON.stringify(value), JSON.stringify(reordered)), ["binding:github"]);
 });
@@ -497,11 +499,17 @@ test("unavailable dependencies determine required and optional Profile completen
   const loaded = loadProjectProfile({ workspace: root, workspaceIdentity: identity(root), computedAt: observedAt });
   for (const requiredness of ["required", "optional"]) {
     const edge = { schemaVersion: "1.0", edgeId: "edge:skill", workspaceIdentityId: "workspace:test", declaringSourceId: "source:policy", target: { kind: "skill", locator: "skills/missing/SKILL.md", identity: "skill:missing" }, requiredness, applicabilityScope: ["git.push"], provenanceStatus: "structured", observationStatus: "unavailable", affectedClaimIds: ["claim:actor"], observedAt, limitedReason: "Skill is unavailable" };
-    const result = resolveEffectiveProfileV2({ profileId: loaded.profile.profileId, profileRevisionId: loaded.profile.revisionId, workspaceIdentityId: "workspace:test", governanceSources: loaded.governanceSources.map((source) => ({ ...source, dependencyEdgeIds: [edge.edgeId] })), ruleClaims: loaded.ruleClaims, dependencyEdges: [edge], computedAt: observedAt });
+    const result = resolveEffectiveProfileV2({ profileId: loaded.profile.profileId, profileRevisionId: loaded.profile.revisionId, workspaceIdentityId: "workspace:test", governanceSources: loaded.governanceSources.map((source) => ({ ...source, dependencyEdgeIds: [edge.edgeId] })), ruleClaims: loaded.ruleClaims.map((claim) => ({ ...claim, dependencyEdgeIds: [edge.edgeId] })), dependencyEdges: [edge], computedAt: observedAt });
     assert.equal(result.valid, true, result.errors.join("\n"));
     assert.equal(result.profile.completeness, requiredness === "required" ? "unresolved" : "degraded");
     assert.ok(result.profile.limitedReasons.includes("Skill is unavailable"));
     assert.equal(result.explanation.completeness, result.profile.completeness);
+    assert.equal(result.explanation.claimDecisions[0].disposition, requiredness === "required" ? "unresolved" : "active");
+    assert.equal(result.profile.ruleClaims[0].enforcement, requiredness === "required" ? "unresolved" : "enforceable");
+    assert.equal(result.explanation.confirmationNeeds.length, requiredness === "required" ? 1 : 0);
+    const inconsistent = resolveEffectiveProfileV2({ profileId: loaded.profile.profileId, profileRevisionId: loaded.profile.revisionId, workspaceIdentityId: "workspace:test", governanceSources: loaded.governanceSources.map((source) => ({ ...source, dependencyEdgeIds: [edge.edgeId] })), ruleClaims: loaded.ruleClaims, dependencyEdges: [edge], computedAt: observedAt });
+    assert.equal(inconsistent.valid, false);
+
     const input = { profileId: loaded.profile.profileId, profileRevisionId: loaded.profile.revisionId, workspaceIdentityId: "workspace:test", governanceSources: loaded.governanceSources, ruleClaims: loaded.ruleClaims, dependencyEdges: [edge], computedAt: observedAt };
     assert.equal(resolveEffectiveProfileV2(input).valid, false);
     const orphaned = resolveEffectiveProfileV2({ ...input, dependencyEdges: [], governanceSources: loaded.governanceSources.map((source) => ({ ...source, dependencyEdgeIds: [edge.edgeId] })) });
@@ -528,6 +536,10 @@ test("partial higher-precedence coverage preserves remaining claim operations", 
   assert.equal(result.status, "resolved");
   assert.equal(result.explanation.claimDecisions.find((c)=>c.claimId==="claim:lower").disposition, "active");
   assert.equal(result.explanation.claimDecisions.find((c)=>c.claimId==="claim:lower").reasonCode, "highest-precedence-for-remaining-scopes");
+  assert.deepEqual(result.profile.ruleClaims.find((c) => c.claimId === "claim:lower").applicabilityScope, ["git.fetch"]);
+  assert.deepEqual(result.ruleClaims.find((c) => c.claimId === "claim:lower").applicabilityScope, ["git.fetch", "git.push"]);
+  const absolute = loadProjectProfile({ workspace: root, workspaceIdentity: { ...identity(root), canonicalRootLocator: root }, computedAt: observedAt });
+  assert.equal(absolute.profile.revisionId, result.profile.revisionId);
   lower.operationIds = ["git.push"];
   install(root, declaration([source("source:higher", "AGENTS.md", policy), source("source:lower", "policy.md", policy, "other")], [claim("claim:higher", "source:higher", "git.actor", "higher"), lower]));
   result = loadProjectProfile({workspace:root, workspaceIdentity:identity(root), computedAt:observedAt});
@@ -584,4 +596,17 @@ test("workspace evidence credentials never enter Profile results or CLI output",
   const evidencePath=resolve(root,"identity.json");writeFileSync(evidencePath,JSON.stringify(evidence));
   const cli=spawnSync(process.execPath,[resolve(plugin,"scripts/forgerail.mjs"),"project-profile-inspect","--workspace",root,"--workspace-identity",evidencePath],{encoding:"utf8",env:{PATH:""}});
   assert.equal(cli.status,1);assert.match(cli.stdout,/credential material/);assert.equal((cli.stdout+cli.stderr).includes(secret),false);
+});
+
+
+test("inspection bounds explicit identity evidence before JSON parsing", () => {
+  const root = workspace(); const policy = "## Policy\n";
+  write(root, "AGENTS.md", policy);
+  install(root, declaration([source("source:policy", "AGENTS.md", policy)], [claim("claim:actor", "source:policy", "git.actor", "owner")]));
+  const evidence = resolve(root, "oversized identity.json");
+  writeFileSync(evidence, JSON.stringify({ ...absoluteIdentity(root), padding: "x".repeat(256 * 1024) }));
+  const result = spawnSync(process.execPath, [resolve(plugin, "scripts/forgerail.mjs"), "project-profile-inspect", "--workspace", root, "--workspace-identity", evidence], { encoding: "utf8", env: { PATH: "" } });
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /evidence is unreadable/);
+  assert.equal(result.stdout.includes("execution-context:"), false);
 });

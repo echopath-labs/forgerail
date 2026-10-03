@@ -65,7 +65,6 @@ export function projectProfilePreflightBindingIds(before, after) {
   // misses changes to the identity itself or its declared source and owner.
   const inputs = (declaration, binding) => ({
     workspaceIdentityId: declaration.workspaceIdentityId,
-    workspaceRelationshipIds: [...declaration.workspaceRelationshipIds].sort(),
     binding,
     claims: [...binding.expectedIdentityClaimIds].sort().map((id) => {
       const claim = declaration.claims.find((entry) => entry.claimId === id);
