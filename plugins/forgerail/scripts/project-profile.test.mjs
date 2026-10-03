@@ -504,3 +504,42 @@ test("unavailable dependencies determine required and optional Profile completen
     assert.equal(result.explanation.completeness, result.profile.completeness);
   }
 });
+
+test("v2 resolver returns field errors for malformed input collections", () => {
+  for (const key of ["dependencyEdges", "governanceSources", "ruleClaims"]) for (const invalid of [null, {}]) {
+    const result = resolveEffectiveProfileV2({ profileId: "profile:test", profileRevisionId: "revision:test", workspaceIdentityId: "workspace:test", [key]: [invalid] });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.length > 0);
+    assert.equal(result.profile, null);
+  }
+});
+
+test("partial higher-precedence coverage preserves remaining claim operations", () => {
+  const root = workspace(); const policy = "## Policy\n";
+  write(root, "AGENTS.md", policy); write(root, "policy.md", policy);
+  const lower = {...claim("claim:lower", "source:lower", "git.actor", "lower"), operationIds:["git.fetch", "git.push"]};
+  install(root, declaration([source("source:higher", "AGENTS.md", policy), source("source:lower", "policy.md", policy, "other")], [claim("claim:higher", "source:higher", "git.actor", "higher"), lower]));
+  let result = loadProjectProfile({workspace:root, workspaceIdentity:identity(root), computedAt:observedAt});
+  assert.equal(result.status, "resolved");
+  assert.equal(result.explanation.claimDecisions.find((c)=>c.claimId==="claim:lower").disposition, "active");
+  assert.equal(result.explanation.claimDecisions.find((c)=>c.claimId==="claim:lower").reasonCode, "highest-precedence-for-remaining-scopes");
+  lower.operationIds = ["git.push"];
+  install(root, declaration([source("source:higher", "AGENTS.md", policy), source("source:lower", "policy.md", policy, "other")], [claim("claim:higher", "source:higher", "git.actor", "higher"), lower]));
+  result = loadProjectProfile({workspace:root, workspaceIdentity:identity(root), computedAt:observedAt});
+  assert.equal(result.explanation.claimDecisions.find((c)=>c.claimId==="claim:lower").disposition, "shadowed");
+});
+
+test("inspection CLI refuses secret selectors without emitting or hashing them", () => {
+  const root = workspace(); const policy = "## Policy\n";
+  write(root, "AGENTS.md", policy);
+  install(root, declaration([source("source:policy", "AGENTS.md", policy)], [claim("claim:actor", "source:policy", "git.actor", "owner")]));
+  const identityPath = resolve(root,"identity.json"); writeFileSync(identityPath,JSON.stringify(absoluteIdentity(root)));
+  for (const option of ["--operation", "--target"]) {
+    const secret = "https://user:password@example.test";
+    const result=spawnSync(process.execPath,[resolve(plugin,"scripts/forgerail.mjs"),"project-profile-inspect","--workspace",root,"--workspace-identity",identityPath,"--operation",option==="--operation"?secret:"git.push","--target",option==="--target"?secret:"repo:test"],{encoding:"utf8",env:{PATH:""}});
+    assert.equal(result.status,1);
+    assert.equal((result.stdout+result.stderr).includes(secret),false);
+    assert.match(result.stdout,/credential-like material/);
+    assert.equal(result.stdout.includes("execution-context:"),false);
+  }
+});

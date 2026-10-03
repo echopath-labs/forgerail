@@ -11,6 +11,7 @@
     "workspaceIdentityId": { "$ref": "#/$defs/identity" },
     "workspaceRelationshipIds": {
       "type": "array",
+      "maxItems": 128,
       "items": { "$ref": "#/$defs/identity" },
       "uniqueItems": true
     },

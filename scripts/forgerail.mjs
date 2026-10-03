@@ -10,7 +10,7 @@ import { contractSchemaNames, contractTypes, readJson, validateContract } from "
 import { planProject, doctorProject, applyProject, planRecovery, recoverProject, releaseInterruptedLock, projectProfilePreflightBindingIds } from "./lib/project-adoption.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
 import { discoverProjectProfile, loadProjectProfile, verifyProjectWorkspaceIdentity, projectProfilePath } from "./lib/project-profile.mjs";
-import { classifyProjectProfileInspection, observeProjectProfileBindings } from "./lib/provider-adapters.mjs";
+import { classifyProjectProfileInspection, observeProjectProfileBindings, validateObservationSelectors } from "./lib/provider-adapters.mjs";
 import { readProjectFile } from "./lib/project-state.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -58,6 +58,7 @@ function ownerWorkspaceIdentity(path, workspace, expectedWorkspaceIdentityId) {
 }
 
 function executionContextIdentity(workspaceIdentity, operationId, targetId, observedAt, entrypointCommand = "project-profile-inspect") {
+  validateObservationSelectors(operationId, targetId);
   return { schemaVersion: "1.0", executionContextIdentityId: `execution-context:${createHash("sha256").update(`${workspaceIdentity.canonicalRootLocator}\n${entrypointCommand}\n${operationId ?? "local-only"}\n${targetId ?? ""}\n${observedAt}\n`).digest("hex").slice(0, 24)}`, workspaceIdentityId: workspaceIdentity.workspaceIdentityId, subjectId: `workspace-subject:${createHash("sha256").update(`${workspaceIdentity.canonicalRootLocator}\n${targetId ?? ""}`).digest("hex").slice(0, 24)}`, entrypoint: { entrypointId: `entrypoint:${entrypointCommand}`, kind: "local-command", locator: `forgerail ${entrypointCommand}`, digest: null }, invocationRoot: workspaceIdentity.canonicalRootLocator, executor: { executorId: "forgerail", kind: "local-process" }, runner: { runnerId: "local", trustClass: "local-observed" }, toolIdentities: [`forgerail:${JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")).version}`], providerIdentities: [], dependencies: [], observedAt, sanitized: true };
 }
 

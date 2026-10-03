@@ -155,16 +155,16 @@ export function resolveEffectiveProfileV2({
   if (!Array.isArray(dependencyEdges)) errors.push("dependencyEdges must be an array");
   if (errors.length) return { profile: null, explanation: null, valid: false, errors };
 
+  // Validate collections before sorting or dereferencing any caller input.
+  for (const [type, items] of [["governance-source", governanceSources], ["rule-claim", ruleClaims], ["source-dependency-edge", dependencyEdges]]) {
+    items.forEach((item, index) => {
+      const validation = validateContract(type, item);
+      errors.push(...validation.errors.map((error) => `${type}[${index}]: ${error}`));
+    });
+  }
+  if (errors.length) return { profile: null, explanation: null, valid: false, errors };
   const sources = governanceSources.slice().sort((left, right) => left.sourceId.localeCompare(right.sourceId));
   const claims = ruleClaims.slice().sort((left, right) => left.claimId.localeCompare(right.claimId));
-  for (const source of sources) {
-    const validation = validateContract("governance-source", source);
-    errors.push(...validation.errors.map((error) => `${source.sourceId}: ${error}`));
-  }
-  for (const claim of claims) {
-    const validation = validateContract("rule-claim", claim);
-    errors.push(...validation.errors.map((error) => `${claim.claimId}: ${error}`));
-  }
   const sourceIdList = sources.map((source) => source.sourceId);
   const sourceIds = new Set(sourceIdList);
   if (sourceIds.size !== sourceIdList.length) errors.push("governanceSources contain duplicate source identities");
@@ -195,15 +195,17 @@ export function resolveEffectiveProfileV2({
   const uniqueConflicts = [...new Map(conflicts.map((conflict) => [conflict.conflictId, conflict])).values()]
     .sort((left, right) => left.conflictId.localeCompare(right.conflictId));
   const claimDecisions = claims.map((claim) => {
-    const higher = claims.some((candidate) => candidate.ruleKey === claim.ruleKey
-      && overlappingScopes(candidate, claim)
-      && v2Rank(candidate) < v2Rank(claim));
+    const higherClaims = claims.filter((candidate) => candidate.ruleKey === claim.ruleKey && v2Rank(candidate) < v2Rank(claim));
+    // Whole-claim shadowing requires coverage of every scope; partial coverage
+    // leaves this claim active for its remaining operations.
+    const higher = claim.applicabilityScope.every((scope) => higherClaims.some((candidate) => candidate.applicabilityScope.includes(scope)));
+    const partiallyShadowed = !higher && higherClaims.some((candidate) => overlappingScopes(candidate, claim));
     const unresolved = conflictedClaims.has(claim.claimId) || claim.enforcement === "unresolved";
     return {
       claimId: claim.claimId,
       sourceId: claim.sourceId,
       disposition: unresolved ? "unresolved" : higher ? "shadowed" : "active",
-      reasonCode: unresolved ? "unresolved-source-or-conflict" : higher ? "higher-precedence-claim" : "highest-applicable-precedence",
+      reasonCode: unresolved ? "unresolved-source-or-conflict" : higher ? "higher-precedence-claim" : partiallyShadowed ? "highest-precedence-for-remaining-scopes" : "highest-applicable-precedence",
       dependencyEdgeIds: [...claim.dependencyEdgeIds].sort(),
     };
   });

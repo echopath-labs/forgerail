@@ -108,3 +108,5 @@ node scripts/forgerail.mjs validate-contract \
 This validation checks schema identity, bounded fields, collection identities, source and claim references, stable operation IDs, locator and adapter compatibility, secret-like material, and executable content. The loader and assembler are in `scripts/lib/project-profile.mjs`; provider observation is in `scripts/lib/provider-adapters.mjs`.
 
 Activation preflight also covers changes to referenced expected identity claims, their declared sources and workspace ownership. Every supplied applicable observation must match; one successful observation cannot hide a failed observation for the same binding. Unrelated claims do not trigger revalidation.
+
+Relationship inventories are limited to 128 IDs. Inspection and activation preflight reject credential-like operation and target selectors before deriving context IDs. Provider evidence IDs include the exact operation, target and execution context. A claim is wholly shadowed only when higher-precedence claims cover all its operations; partial coverage preserves its remaining scopes.

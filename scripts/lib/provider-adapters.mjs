@@ -3,7 +3,7 @@ import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
-import { validateContract } from "./contracts.mjs";
+import { validateContract, containsInlineSecret } from "./contracts.mjs";
 import { readProjectFileBytes } from "./project-state.mjs";
 import { providerAdapterRegistry } from "./provider-adapter-registry.mjs";
 export { providerAdapterRegistry } from "./provider-adapter-registry.mjs";
@@ -33,7 +33,15 @@ function retainSignalCleanup(cleanup) {
     });
   };
 }
-const evidenceId = (binding, observedAt) => `evidence:${sha256(`${binding.bindingId}\n${observedAt}\n`).slice(0, 32)}`;
+export function validateObservationSelectors(operationId, targetId) {
+  if ((operationId === null) !== (targetId === null)) throw new Error("provider observation requires operation and target together");
+  for (const [label, value] of [["operation", operationId], ["target", targetId]]) {
+    if (value !== null && (typeof value !== "string" || !value.length || value.length > 300 || /[\r\n]/.test(value) || containsInlineSecret(value))) {
+      throw new Error(`${label} identity is unsafe or contains credential-like material`);
+    }
+  }
+}
+
 function sanitizedActor(value) {
   if (typeof value !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value)) return null;
   if (/^(?:gh[pousr]_|github_pat_|npm_)/i.test(value)) return null;
@@ -132,8 +140,7 @@ export function observeProjectProfileBindings({ workspace, declaration, operatio
   const validation = validateContract("project-profile-declaration", declaration);
   if (!validation.valid) throw new Error(`invalid Project Profile declaration: ${validation.errors.join("; ")}`);
   const root = realpathSync(workspace);
-  if ((operationId === null) !== (targetId === null)) throw new Error("provider observation requires operation and target together");
-  if (targetId !== null && (typeof targetId !== "string" || targetId.length > 300 || /[\r\n]/.test(targetId) || /(?:gh[pousr]_|github_pat_|npm_)[A-Za-z0-9_]{16,}/i.test(targetId))) throw new Error("target identity is unsafe or contains credential-like material");
+  validateObservationSelectors(operationId, targetId);
   if (executionContextIdentity !== null) {
     const contextValidation = validateContract("execution-context-identity", executionContextIdentity);
     if (!contextValidation.valid || executionContextIdentity.workspaceIdentityId !== declaration.workspaceIdentityId || realpathSync(executionContextIdentity.invocationRoot) !== root) throw new Error("Execution Context Identity does not match the exact workspace");
@@ -146,19 +153,20 @@ export function observeProjectProfileBindings({ workspace, declaration, operatio
     if (!binding.operationIds.includes(operationId)) { bindings.push({ bindingId: binding.bindingId, operationIds: binding.operationIds, requiredness: binding.requiredness, status: "not-applicable" }); continue; }
     const adapter = providerAdapterRegistry[binding.adapterId];
     if (!adapter || !adapter.operations.includes(operationId) || !adapter.locatorKinds.includes(binding.locator.kind)) { bindings.push({ bindingId: binding.bindingId, operationIds: binding.operationIds, requiredness: binding.requiredness, status: "unsupported" }); continue; }
+    const observationId = `provider-observation:${sha256(JSON.stringify([declaration.workspaceIdentityId, executionContextIdentity.executionContextIdentityId, binding.bindingId, operationId, targetId, observedAt])).slice(0, 32)}`;
     let actorId = null, limitedReason = null, resultEvidence = [];
     try {
       const credentials = credentialBytes(binding, { workspace: root, declaration, workspaceRelationships, relatedWorkspaceIdentities, environment });
       const command = commandFor(binding, { workspace: root, environment }, credentials);
       try { const result = run(command.command, command.args, { cwd: command.cwd ?? root, env: command.env }); providerCalls += 1; actorId = sanitizedActor(command.parse(result)); }
       finally { command.cleanup?.(); }
-      if (actorId) resultEvidence = [evidenceId(binding, observedAt)];
+      if (actorId) resultEvidence = [`evidence:${sha256(observationId).slice(0, 32)}`];
       else limitedReason = reason(binding, observedAt, "unauthenticated-provider", "unavailable", "Provider identity could not be authenticated.");
     } catch {
       limitedReason = reason(binding, observedAt, "unavailable-provider", "unavailable", "Provider observation prerequisites are unavailable or do not match the declared boundary.");
     }
     const identity = actorId ? { state: "authenticated", actorId, evidenceIdentityIds: resultEvidence, limitedReason: null } : { state: "unavailable", actorId: null, evidenceIdentityIds: [], limitedReason };
-    const observation = { schemaVersion: "1.0", observationId: `provider-observation:${binding.bindingId}:${sha256(`${operationId}\n${targetId ?? ""}\n${observedAt}`).slice(0, 20)}`, adapterId: binding.adapterId, adapterVersion: adapter.version, providerId: binding.providerId, workspaceIdentityId: declaration.workspaceIdentityId, sourceIdentityId: binding.bindingId, scopeKind: "workspace", taskId: null, subjectId: null, controlRevisionId: null, identity, authorizationClaim: false, capabilities: capability(binding, Boolean(actorId), resultEvidence, observedAt), observedAt, sanitized: true };
+    const observation = { schemaVersion: "1.0", observationId, adapterId: binding.adapterId, adapterVersion: adapter.version, providerId: binding.providerId, workspaceIdentityId: declaration.workspaceIdentityId, sourceIdentityId: binding.bindingId, scopeKind: "workspace", taskId: null, subjectId: null, controlRevisionId: null, identity, authorizationClaim: false, capabilities: capability(binding, Boolean(actorId), resultEvidence, observedAt), observedAt, sanitized: true };
     const observationValidation = validateContract("provider-adapter-observation", observation);
     if (!observationValidation.valid) throw new Error(`invalid sanitized provider observation: ${observationValidation.errors.join("; ")}`);
     const expected = binding.expectedIdentityClaimIds.map((id) => declaration.claims.find((claim) => claim.claimId === id)?.normalizedValue).filter((value) => typeof value === "string");

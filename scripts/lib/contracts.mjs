@@ -233,10 +233,10 @@ function validateProfile(value, errors) {
   }
 }
 
-function containsInlineSecret(value) {
+export function containsInlineSecret(value) {
   if (typeof value === "string") {
     return /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(value)
-      || /(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|npm_[A-Za-z0-9]{20,})/.test(value)
+      || /(?:gh[pousr]_|github_pat_|npm_)[A-Za-z0-9_]{16,}/i.test(value)
       || /(?:^|[\s,{])(?:_authToken|password|cookie|secret)\s*[:=]/i.test(value)
       || /:\/\/[^/\s:@]+:[^/\s@]+@/.test(value)
       || /(?:^|\s)eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}(?:\s|$)/.test(value);
@@ -322,6 +322,7 @@ function validateProjectProfileDeclaration(value, errors) {
   string(value.profileId, "projectProfileDeclaration.profileId", errors, taskIdPattern);
   string(value.workspaceIdentityId, "projectProfileDeclaration.workspaceIdentityId", errors, taskIdPattern);
   strings(value.workspaceRelationshipIds, "projectProfileDeclaration.workspaceRelationshipIds", errors, { pattern: taskIdPattern, unique: true });
+  if (Array.isArray(value.workspaceRelationshipIds) && value.workspaceRelationshipIds.length > 128) errors.push("projectProfileDeclaration.workspaceRelationshipIds must contain at most 128 items");
   const relationships = new Set(Array.isArray(value.workspaceRelationshipIds) ? value.workspaceRelationshipIds : []);
 
   if (!Array.isArray(value.sources) || value.sources.length < 1 || value.sources.length > 128) errors.push("projectProfileDeclaration.sources must contain 1-128 items");

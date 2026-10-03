@@ -108,3 +108,5 @@ node scripts/forgerail.mjs validate-contract \
 该验证检查 schema identity、有界字段、集合 identity、source 与 claim 引用、稳定 operation ID、locator 与 adapter 兼容性、疑似凭据内容和可执行内容。loader 与 assembler 位于 `scripts/lib/project-profile.mjs`；provider 观测位于 `scripts/lib/provider-adapters.mjs`。
 
 激活预检也覆盖绑定引用的预期身份声明、声明来源及工作区归属变化。同次请求提供的每项适用观测均须匹配；一次成功不能掩盖同一绑定的失败。无关声明变化不触发重新核验；仅调整对象键或按身份组织的集合顺序，也不触发预检。
+
+工作区关系清单最多包含 128 个 ID。检查和激活预检在计算上下文 ID 前拒绝疑似凭据的 operation/target 参数。Provider 证据 ID 区分操作、目标及执行上下文。只有全部操作范围都被更高优先级声明覆盖时，claim 才整体标记为 shadowed；部分覆盖保留剩余范围。

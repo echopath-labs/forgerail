@@ -218,3 +218,30 @@ test("credential-like identifiers and unknown keys are rejected without echoing 
     assert.equal(JSON.stringify(result).includes(secret), false);
   }
 });
+
+test("inspection selectors reject all declaration-grade credentials before provider calls", () => {
+  const root = workspace(); let calls = 0;
+  const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  for (const secret of ["npm_" + "A".repeat(30), "https://user:password@example.test", "eyJ" + "a".repeat(12) + "." + "b".repeat(12) + "." + "c".repeat(12)]) {
+    for (const field of ["operationId", "targetId"]) {
+      assert.throws(() => observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", [field]: secret, executionContextIdentity: context(root), observedAt, run() { calls++; } }), (error) => /credential-like material/.test(error.message) && !error.message.includes(secret));
+    }
+  }
+  assert.equal(calls, 0);
+});
+
+test("observation and evidence identities distinguish targets and execution contexts", () => {
+  const root = workspace();
+  const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  const results = [["repo:one", "execution:one"], ["repo:two", "execution:one"], ["repo:one", "execution:two"]].map(([targetId, executionId]) => observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId, executionContextIdentity: context(root, executionId), observedAt, run() { return { status: 0, stdout: "expected-user", stderr: "" }; } }));
+  assert.equal(new Set(results.map((r) => r.observations[0].observationId)).size, 3);
+  assert.equal(new Set(results.map((r) => r.observations[0].identity.evidenceIdentityIds[0])).size, 3);
+});
+
+test("workspace relationship declarations enforce the shared 128 item limit", () => {
+  const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  value.workspaceRelationshipIds = Array.from({length:128}, (_, i) => `relationship:${i}`);
+  assert.equal(validateContract("project-profile-declaration", value).valid, true);
+  value.workspaceRelationshipIds.push("relationship:overflow");
+  assert.match(validateContract("project-profile-declaration", value).errors.join("\n"), /at most 128/);
+});
