@@ -60,7 +60,7 @@ test("GitHub API and Git SSH identities stay independent and wrong actors remain
     { ...base, bindingId: "binding:ssh", providerId: "git", adapterId: "git-ssh", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "git", coordinates: { hostAlias: "github-work" } } },
   ];
   const value = declaration(bindings[0]); value.resourceBindings.push({ ...bindings[1], expectedIdentityClaimIds: ["claim:actor"], requiredness: "required" });
-  const result = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:one", executionContextIdentity: context(root), observedAt, run(command, args) { calls.push([command, ...args]); return command === "gh" ? { status: 0, stdout: "expected-user\n", stderr: "" } : { status: 1, stdout: "", stderr: "Hi other-user! Authentication succeeded.\n" }; } });
+  const result = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:one", executionContextIdentity: context(root), observedAt, run(command, args) { calls.push([command, ...args]); return command === "gh" ? { status: 0, stdout: "expected-user\n", stderr: "" } : { status: 1, stdout: "", stderr: "Hi other-user! You've successfully authenticated, but GitHub does not provide shell access.\n" }; } });
   assert.equal(result.providerCalls, 2); assert.equal(result.bindings[0].status, "matched"); assert.equal(result.bindings[1].status, "wrong-actor");
   assert.equal(result.observations[0].identity.actorId, "expected-user"); assert.equal(result.observations[1].identity.actorId, "other-user");
   assert.deepEqual(calls[0], ["gh", "api", "user", "--hostname", "github.com", "--jq", ".login"]); assert.deepEqual(calls[1], ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-T", "git@github-work"]);
@@ -286,12 +286,33 @@ test("URL credential query parameters are refused before observation", () => {
 
 
 test("npm refuses non-TLS and non-registry URL components before invoking a provider", () => {
-  for (const registry of ["http://registry.example/", "ftp://registry.example/", "https://user@registry.example/", "https://registry.example/?custom=value", "https://registry.example/#fragment"]) {
+  for (const registry of ["http://registry.example/", "ftp://registry.example/", "https://registry.example/?custom=value", "https://registry.example/#fragment"]) {
     const value = declaration({ ...base, providerId: "npm", adapterId: "npm-registry", operationIds: ["package.publish"], locator: { kind: "provider-native", providerId: "npm", coordinates: { registry } } });
     let calls = 0;
     const root = workspace();
     const result = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "package.publish", targetId: "package:@scope/name", executionContextIdentity: context(root), observedAt, run() { calls++; return { status: 0, stdout: "expected-user", stderr: "" }; } });
     assert.equal(calls, 0);
     assert.equal(result.bindings[0].status, "unresolved");
+  }
+});
+
+
+test("URL userinfo is rejected before persistence or selector observation", () => {
+  for (const registry of ["https://SUPERSECRETTOKENVALUE123456@registry.example/", "https://SUPERSECRETTOKENVALUE123456:@registry.example/", "https://user%2Fname:pass@registry.example/"]) {
+    const value = declaration({ ...base, providerId: "npm", adapterId: "npm-registry", operationIds: ["package.publish"], locator: { kind: "provider-native", providerId: "npm", coordinates: { registry } } });
+    const validation = validateContract("project-profile-declaration", value);
+    assert.equal(validation.valid, false);
+    assert.equal(JSON.stringify(validation).includes("SUPERSECRET"), false);
+    assert.throws(() => observeProjectProfileBindings({ workspace: workspace(), declaration: value, operationId: "package.publish", targetId: registry, observedAt, run() { assert.fail("provider must not run"); } }), /credential/);
+  }
+});
+
+test("SSH observation requires completed GitHub authentication, not a buffered greeting", () => {
+  const root = workspace();
+  const value = declaration({ ...base, providerId: "git", adapterId: "git-ssh", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "git", coordinates: { hostAlias: "github-work" } } });
+  const greeting = "Hi expected-user! You've successfully authenticated, but GitHub does not provide shell access.\n";
+  for (const result of [{ status: null, errorCode: "ETIMEDOUT", stderr: greeting }, { status: 255, stderr: greeting }, { status: 1, stderr: "Hi expected-user!\n" }, { status: 1, errorCode: "ECONNRESET", stderr: greeting }, { status: 1, stderr: greeting }]) {
+    const observation = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", executionContextIdentity: context(root), observedAt, run() { return { stdout: "", ...result }; } });
+    assert.equal(observation.bindings[0].status, result.status === 1 && !result.errorCode && result.stderr === greeting ? "matched" : "unresolved");
   }
 });

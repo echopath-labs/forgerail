@@ -99,7 +99,7 @@ function commandFor(binding, context, credentials) {
   }
   if (binding.adapterId === "git-ssh") {
     if (!coordinates.hostAlias) throw new Error("Git SSH hostAlias coordinate is required");
-    return { command: "ssh", args: ["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-T", `git@${coordinates.hostAlias}`], env: context.environment, parse: (result) => /Hi ([^!\s]+)!/.exec(`${result.stdout}\n${result.stderr}`)?.[1] ?? null };
+    return { command: "ssh", args: ["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes", "-T", `git@${coordinates.hostAlias}`], env: context.environment, parse: (result) => result.errorCode || result.status !== 1 ? null : /(?:^|\n)Hi ([^!\s]+)! You\'ve successfully authenticated, but GitHub does not provide shell access\.(?:\r?\n|$)/.exec(`${result.stdout}\n${result.stderr}`)?.[1] ?? null };
   }
   const registry = coordinates.registry ?? "https://registry.npmjs.org";
   let temporaryRoot = null;
