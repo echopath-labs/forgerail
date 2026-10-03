@@ -44,7 +44,7 @@ export function validateObservationSelectors(operationId, targetId) {
 
 function sanitizedActor(value) {
   if (typeof value !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value)) return null;
-  if (/^(?:gh[pousr]_|github_pat_|npm_)/i.test(value)) return null;
+  if (containsInlineSecret(value) || /^(?:gh[pousr]_|github_pat_|npm_)/i.test(value)) return null;
   return value;
 }
 

@@ -228,6 +228,10 @@ test("inspection selectors reject all declaration-grade credentials before provi
     }
   }
   assert.equal(calls, 0);
+  const jwt = "eyJ" + "a".repeat(12) + "." + "b".repeat(12) + "." + "c".repeat(12);
+  const result = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", executionContextIdentity: context(root), observedAt, run() { return { status: 0, stdout: jwt, stderr: "" }; } });
+  assert.equal(result.bindings[0].status, "unresolved");
+  assert.equal(JSON.stringify(result).includes(jwt), false);
 });
 
 test("observation and evidence identities distinguish targets and execution contexts", () => {
