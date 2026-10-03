@@ -4,6 +4,8 @@ import { dirname, resolve } from "node:path";
 import { accessSync, constants, lstatSync, realpathSync, statSync } from "node:fs";
 import { validateContract } from "./contracts.mjs";
 
+const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
+
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
   if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalValue(value[key])]));
@@ -168,12 +170,19 @@ export function resolveEffectiveProfileV2({
     });
   }
   if (errors.length) return { profile: null, explanation: null, valid: false, errors };
-  const sources = governanceSources.slice().sort((left, right) => left.sourceId.localeCompare(right.sourceId));
-  const claims = ruleClaims.slice().sort((left, right) => left.claimId.localeCompare(right.claimId));
+  const sources = governanceSources.slice().sort((left, right) => compareText(left.sourceId, right.sourceId));
+  const claims = ruleClaims.slice().sort((left, right) => compareText(left.claimId, right.claimId));
   const sourceIdList = sources.map((source) => source.sourceId);
   const sourceIds = new Set(sourceIdList);
   if (sourceIds.size !== sourceIdList.length) errors.push("governanceSources contain duplicate source identities");
   const sourceById = new Map(sources.map((source) => [source.sourceId, source]));
+  const edgeById = new Map(dependencyEdges.map((edge) => [edge.edgeId, edge]));
+  for (const source of sources) for (const edgeId of source.dependencyEdgeIds) {
+    if (edgeById.get(edgeId)?.declaringSourceId !== source.sourceId) errors.push(`${source.sourceId}: dependency inventory does not match its declared edge`);
+  }
+  for (const edge of dependencyEdges) {
+    if (!sourceById.get(edge.declaringSourceId)?.dependencyEdgeIds.includes(edge.edgeId)) errors.push(`${edge.edgeId}: declaring source does not inventory this dependency`);
+  }
   for (const source of sources) if (source.workspaceIdentityId !== workspaceIdentityId) errors.push(`${source.sourceId}: Workspace Identity does not match the v2 Profile owner`);
   for (const claim of claims) {
     const source = sourceById.get(claim.sourceId);
@@ -198,7 +207,7 @@ export function resolveEffectiveProfileV2({
   }
 
   const uniqueConflicts = [...new Map(conflicts.map((conflict) => [conflict.conflictId, conflict])).values()]
-    .sort((left, right) => left.conflictId.localeCompare(right.conflictId));
+    .sort((left, right) => compareText(left.conflictId, right.conflictId));
   const claimDecisions = claims.map((claim) => {
     const higherClaims = claims.filter((candidate) => candidate.ruleKey === claim.ruleKey && v2Rank(candidate) < v2Rank(claim));
     // Whole-claim shadowing requires coverage of every scope; partial coverage
@@ -249,7 +258,7 @@ export function resolveEffectiveProfileV2({
     sourceIds: [...sourceIds].sort(),
     workspaceRelationshipIds: [...workspaceRelationshipIds].sort(),
     ruleClaims: claims,
-    dependencyEdges: dependencyEdges.slice().sort((left, right) => left.edgeId.localeCompare(right.edgeId)),
+    dependencyEdges: dependencyEdges.slice().sort((left, right) => compareText(left.edgeId, right.edgeId)),
     applicablePackIds: [...applicablePackIds].sort(),
     conflicts: uniqueConflicts,
     explanationId,

@@ -5,6 +5,8 @@ import { resolveEffectiveProfileV2 } from "./composition.mjs";
 import { validateContract } from "./contracts.mjs";
 import { readProjectFileBytes, projectFileLimit } from "./project-state.mjs";
 
+const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
+
 export const projectProfilePath = ".forgerail/project-profile.json";
 export const projectProfileResolverVersion = "project-profile-resolver-v1";
 
@@ -31,13 +33,13 @@ export function semanticDeclaration(declaration) {
   return canonicalValue({
     ...declaration,
     workspaceRelationshipIds: [...declaration.workspaceRelationshipIds].sort(),
-    sources: declaration.sources.map((source) => canonicalValue(source)).sort((left, right) => left.sourceId.localeCompare(right.sourceId)),
-    claims: declaration.claims.map((claim) => canonicalValue({ ...claim, operationIds: [...claim.operationIds].sort() })).sort((left, right) => left.claimId.localeCompare(right.claimId)),
+    sources: declaration.sources.map((source) => canonicalValue(source)).sort((left, right) => compareText(left.sourceId, right.sourceId)),
+    claims: declaration.claims.map((claim) => canonicalValue({ ...claim, operationIds: [...claim.operationIds].sort() })).sort((left, right) => compareText(left.claimId, right.claimId)),
     resourceBindings: declaration.resourceBindings.map((binding) => canonicalValue({
       ...binding,
       operationIds: [...binding.operationIds].sort(),
       expectedIdentityClaimIds: [...binding.expectedIdentityClaimIds].sort(),
-    })).sort((left, right) => left.bindingId.localeCompare(right.bindingId)),
+    })).sort((left, right) => compareText(left.bindingId, right.bindingId)),
   });
 }
 
@@ -47,7 +49,7 @@ function semanticWorkspaceIdentity(identity) {
     workspaceIdentityId: identity.workspaceIdentityId,
     canonicalRootLocator: identity.canonicalRootLocator,
     boundaryClaims: identity.boundaryClaims.map(({ observedAt: _observedAt, ...claim }) => canonicalValue(claim))
-      .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
+      .sort((left, right) => compareText(JSON.stringify(left), JSON.stringify(right))),
   });
 }
 
@@ -59,7 +61,7 @@ function revisionId(declaration, workspaceIdentity, confirmedSourceDigests) {
   const semanticInput = canonicalValue({
     declaration: semanticDeclaration(declaration),
     workspaceIdentity: semanticWorkspaceIdentity(workspaceIdentity),
-    confirmedSourceDigests: Object.fromEntries(Object.entries(confirmedSourceDigests).sort(([left], [right]) => left.localeCompare(right))),
+    confirmedSourceDigests: Object.fromEntries(Object.entries(confirmedSourceDigests).sort(([left], [right]) => compareText(left, right))),
     resolverVersion: projectProfileResolverVersion,
   });
   return `profile-revision:${sha256(`${JSON.stringify(semanticInput)}\n`)}`;
@@ -132,7 +134,7 @@ export function loadProjectProfile({ workspace, workspaceIdentity, computedAt = 
   const claimsBySource = new Map(discovery.declaration.sources.map((source) => [source.sourceId, []]));
   for (const claim of discovery.declaration.claims) claimsBySource.get(claim.sourceId).push(claim);
 
-  for (const source of [...discovery.declaration.sources].sort((left, right) => left.sourceId.localeCompare(right.sourceId))) {
+  for (const source of [...discovery.declaration.sources].sort((left, right) => compareText(left.sourceId, right.sourceId))) {
     let text = null;
     let bytes = null;
     let limitedReason = null;
@@ -163,9 +165,9 @@ export function loadProjectProfile({ workspace, workspaceIdentity, computedAt = 
   const governanceSources = [];
   const ruleClaims = [];
   const sourceRequiredness = {};
-  for (const source of discovery.declaration.sources.slice().sort((left, right) => left.sourceId.localeCompare(right.sourceId))) {
+  for (const source of discovery.declaration.sources.slice().sort((left, right) => compareText(left.sourceId, right.sourceId))) {
     const state = sourceState.get(source.sourceId);
-    const declaredClaims = claimsBySource.get(source.sourceId).slice().sort((left, right) => left.claimId.localeCompare(right.claimId));
+    const declaredClaims = claimsBySource.get(source.sourceId).slice().sort((left, right) => compareText(left.claimId, right.claimId));
     const evaluatedClaims = declaredClaims.map((claim) => {
       const pointer = state.text === null ? { valid: false, observationPoint: claim.sourcePointer.kind === "markdown-heading" ? claim.sourcePointer.heading : claim.sourcePointer.pointer, valueMatches: false } : pointerResult(state.text, claim.sourcePointer);
       const structuredValueMatches = claim.sourcePointer.kind !== "json-pointer" || equalValue(pointer.value, claim.normalizedValue);

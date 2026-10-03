@@ -497,11 +497,16 @@ test("unavailable dependencies determine required and optional Profile completen
   const loaded = loadProjectProfile({ workspace: root, workspaceIdentity: identity(root), computedAt: observedAt });
   for (const requiredness of ["required", "optional"]) {
     const edge = { schemaVersion: "1.0", edgeId: "edge:skill", workspaceIdentityId: "workspace:test", declaringSourceId: "source:policy", target: { kind: "skill", locator: "skills/missing/SKILL.md", identity: "skill:missing" }, requiredness, applicabilityScope: ["git.push"], provenanceStatus: "structured", observationStatus: "unavailable", affectedClaimIds: ["claim:actor"], observedAt, limitedReason: "Skill is unavailable" };
-    const result = resolveEffectiveProfileV2({ profileId: loaded.profile.profileId, profileRevisionId: loaded.profile.revisionId, workspaceIdentityId: "workspace:test", governanceSources: loaded.governanceSources, ruleClaims: loaded.ruleClaims, dependencyEdges: [edge], computedAt: observedAt });
+    const result = resolveEffectiveProfileV2({ profileId: loaded.profile.profileId, profileRevisionId: loaded.profile.revisionId, workspaceIdentityId: "workspace:test", governanceSources: loaded.governanceSources.map((source) => ({ ...source, dependencyEdgeIds: [edge.edgeId] })), ruleClaims: loaded.ruleClaims, dependencyEdges: [edge], computedAt: observedAt });
     assert.equal(result.valid, true, result.errors.join("\n"));
     assert.equal(result.profile.completeness, requiredness === "required" ? "unresolved" : "degraded");
     assert.ok(result.profile.limitedReasons.includes("Skill is unavailable"));
     assert.equal(result.explanation.completeness, result.profile.completeness);
+    const input = { profileId: loaded.profile.profileId, profileRevisionId: loaded.profile.revisionId, workspaceIdentityId: "workspace:test", governanceSources: loaded.governanceSources, ruleClaims: loaded.ruleClaims, dependencyEdges: [edge], computedAt: observedAt };
+    assert.equal(resolveEffectiveProfileV2(input).valid, false);
+    const orphaned = resolveEffectiveProfileV2({ ...input, dependencyEdges: [], governanceSources: loaded.governanceSources.map((source) => ({ ...source, dependencyEdgeIds: [edge.edgeId] })) });
+    assert.equal(orphaned.valid, false);
+    assert.match(orphaned.errors.join("\n"), /dependency inventory/);
   }
 });
 
@@ -556,14 +561,14 @@ test("resolver rejects every malformed auxiliary collection before use", () => {
 test("aggregate source content is bounded and independent of declaration ordering", () => {
   const root=workspace(); const content="## Policy\n"+"x".repeat(4*1024*1024-10);
   write(root,"large.md",content);
-  const sources=Array.from({length:5},(_,i)=>source(`source:${i}`,"large.md",content));
+  const sources=["Z","a","_","z","I"].map((id)=>source(`source:${id}`,"large.md",content));
   const claims=sources.map((s,i)=>claim(`claim:${i}`,s.sourceId,"git.actor","owner"));
   install(root,declaration(sources,claims));
   const first=loadProjectProfile({workspace:root,workspaceIdentity:identity(root),computedAt:observedAt});
   assert.equal(first.status,"resolved");
   assert.equal(first.profile.completeness,"unresolved");
-  assert.equal(first.governanceSources.filter((s)=>s.observationStatus==="observed").length,4);
-  assert.match(first.governanceSources.find((s)=>s.sourceId==="source:4").limitedReason,/aggregate source byte budget/);
+  assert.deepEqual(first.governanceSources.filter((s)=>s.observationStatus==="observed").map((s)=>s.sourceId).sort(),["source:I","source:Z","source:_","source:a"]);
+  assert.match(first.governanceSources.find((s)=>s.sourceId==="source:z").limitedReason,/aggregate source byte budget/);
   install(root,declaration(sources.reverse(),claims.reverse()));
   const second=loadProjectProfile({workspace:root,workspaceIdentity:identity(root),computedAt:observedAt});
   assert.deepEqual(second.profile,first.profile);

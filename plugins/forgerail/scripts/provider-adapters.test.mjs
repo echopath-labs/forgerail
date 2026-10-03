@@ -168,6 +168,12 @@ test("related-workspace credentials require valid confirmed relationship and ide
   const unconfirmed = observeProjectProfileBindings({ workspace: owner, declaration: value, operationId: "package.publish", targetId: "package:@scope/name", executionContextIdentity: context(owner), workspaceRelationships: [{ ...relationship, provenanceStatus: "inferred" }], relatedWorkspaceIdentities: [relatedIdentity], environment: { RELATED_ROOT: related }, observedAt, run() { calls++; } });
   assert.equal(calls, 1);
   assert.equal(unconfirmed.bindings[0].status, "unresolved");
+  write(owner, "token", "npm_OWNER_SENTINEL_12345678901234567890");
+  for (const alias of [owner, `${owner}/.`]) {
+    const aliased = observeProjectProfileBindings({ workspace: owner, declaration: value, operationId: "package.publish", targetId: "package:@scope/name", executionContextIdentity: context(owner), workspaceRelationships: [relationship], relatedWorkspaceIdentities: [{ ...relatedIdentity, canonicalRootLocator: alias }], environment: { RELATED_ROOT: alias }, observedAt, run() { calls++; return { status: 0, stdout: "expected-user", stderr: "" }; } });
+    assert.equal(aliased.bindings[0].status, "unresolved");
+    assert.equal(calls, 1);
+  }
 });
 
 test("inspection classification blocks required wrong actors and degrades optional failures", () => {

@@ -83,6 +83,7 @@ function credentialBytes(binding, context) {
     || relationship.targetWorkspaceIdentityId !== locator.workspaceIdentityId
     || relationship.authorityTransfer !== false) throw new Error("related workspace relationship mismatch");
   const root = realpathSync(declaredRoot);
+  if (root === context.workspace) throw new Error("related workspace root aliases the owner workspace");
   const identityRoot = realpathSync(isAbsolute(relatedIdentity.canonicalRootLocator) ? relatedIdentity.canonicalRootLocator : resolve(root, relatedIdentity.canonicalRootLocator));
   if (root !== identityRoot) throw new Error("related workspace identity mismatch");
   const value = readProjectFileBytes(root, locator.path, 64 * 1024);
