@@ -4,6 +4,7 @@ import { realpathSync } from "node:fs";
 import { resolveEffectiveProfileV2 } from "./composition.mjs";
 import { validateContract } from "./contracts.mjs";
 import { readProjectFileBytes, projectFileLimit } from "./project-state.mjs";
+import { markdownHeadingCounts } from "./instruction-pointers.mjs";
 
 const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
 
@@ -67,9 +68,9 @@ function revisionId(declaration, workspaceIdentity, confirmedSourceDigests) {
   return `profile-revision:${sha256(`${JSON.stringify(semanticInput)}\n`)}`;
 }
 
-function pointerResult(text, pointer) {
+function pointerResult(text, pointer, headingCounts) {
   if (pointer.kind === "markdown-heading") {
-    const count = text.split(/\r?\n/).filter((line) => line === pointer.heading).length;
+    const count = headingCounts.get(pointer.heading);
     return { valid: count === 1, observationPoint: pointer.heading, valueMatches: true };
   }
   let value;
@@ -80,6 +81,23 @@ function pointerResult(text, pointer) {
     value = value[token];
   }
   return { valid: true, observationPoint: pointer.pointer, value };
+}
+
+// Reuse the source loader for exactly the claims used by changed bindings. An
+// unrelated unresolved source must not turn this identity check into full adoption.
+export function confirmProjectProfileBindingSources({ workspace, workspaceIdentity, declaration, bindingIds }) {
+  const root = realpathSync(resolve(workspace));
+  const selectedBindings = declaration.resourceBindings.filter((binding) => bindingIds.includes(binding.bindingId));
+  const claimIds = new Set(selectedBindings.flatMap((binding) => binding.expectedIdentityClaimIds));
+  const claims = declaration.claims.filter((claim) => claimIds.has(claim.claimId));
+  const sourceIds = new Set(claims.map((claim) => claim.sourceId));
+  const selected = { ...declaration, resourceBindings: selectedBindings, claims, sources: declaration.sources.filter((source) => sourceIds.has(source.sourceId)) };
+  const profile = loadProjectProfile({ workspace: root, workspaceIdentity, discoverySnapshot: { status: "discovered", workspace: root, declaration: selected, errors: [] } });
+  const confirmed = new Set(profile.ruleClaims.filter((claim) => claim.status === "confirmed").map((claim) => claim.claimId));
+  if (profile.status !== "resolved" || bindingIds.length !== selectedBindings.length || [...claimIds].some((id) => !confirmed.has(id))) {
+    throw new Error("Project Profile binding identity sources or claims are not confirmed; active declaration unchanged");
+  }
+  return profile;
 }
 
 function equalValue(left, right) {
@@ -168,8 +186,12 @@ export function loadProjectProfile({ workspace, workspaceIdentity, computedAt = 
   for (const source of discovery.declaration.sources.slice().sort((left, right) => compareText(left.sourceId, right.sourceId))) {
     const state = sourceState.get(source.sourceId);
     const declaredClaims = claimsBySource.get(source.sourceId).slice().sort((left, right) => compareText(left.claimId, right.claimId));
+    // Cache only requested headings for this source snapshot/load, never all
+    // headings or results across later file changes. Claims share one scan.
+    const requestedHeadings = new Set(declaredClaims.filter((claim) => claim.sourcePointer.kind === "markdown-heading").map((claim) => claim.sourcePointer.heading));
+    const headingCounts = state.text === null ? null : markdownHeadingCounts(state.text, requestedHeadings);
     const evaluatedClaims = declaredClaims.map((claim) => {
-      const pointer = state.text === null ? { valid: false, observationPoint: claim.sourcePointer.kind === "markdown-heading" ? claim.sourcePointer.heading : claim.sourcePointer.pointer, valueMatches: false } : pointerResult(state.text, claim.sourcePointer);
+      const pointer = state.text === null ? { valid: false, observationPoint: claim.sourcePointer.kind === "markdown-heading" ? claim.sourcePointer.heading : claim.sourcePointer.pointer, valueMatches: false } : pointerResult(state.text, claim.sourcePointer, headingCounts);
       const structuredValueMatches = claim.sourcePointer.kind !== "json-pointer" || equalValue(pointer.value, claim.normalizedValue);
       const confirmed = state.observed && pointer.valid && structuredValueMatches;
       const limitedReason = confirmed

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync, cpSync, symlinkSync, renameSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync, rmSync, cpSync, symlinkSync, renameSync, chmodSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,6 +9,8 @@ import { planProject, applyProject, doctorProject, planRecovery, recoverProject,
 import { projectDirectoryEntryLimit, residualWriteEvidence, hash, json, CONFIG, MANIFEST, JOURNAL, LOCK, readProjectFile } from "./lib/project-state.mjs";
 import { planAdoption, observeAdoptionLevel, applyApprovedAdoptionWrite, adoptionWriteApprovalDigest, adoptionWorkspaceIdentity, applyProjectFile } from "./lib/adoption.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
+import { managedBlock, assertMarkdownInsertion, framing } from "./lib/project-state.mjs";
+import { applicableCorePointer } from "./lib/instruction-pointers.mjs";
 const plugin = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 function fixture(t) { const path = mkdtempSync(resolve(tmpdir(), "forgerail-project-")); t.after(() => rmSync(path, { recursive: true, force: true })); return path; }
 function write(root, path, content) { mkdirSync(dirname(resolve(root, path)), { recursive: true }); writeFileSync(resolve(root, path), content); }
@@ -433,4 +435,205 @@ test("rollback rechecks restored identities before metadata and cleanup", (t) =>
     }), /recovered target identity or content changed/);
     assert.notEqual(readProjectFile(root, JOURNAL), null); assert.equal(readProjectFile(root, restored.path), restored.after);
   }
+});
+
+for (const direction of ["present-to-absent", "absent-to-present"]) test(`mode capture ${direction} drift refuses before journal or project writes`, (t) => {
+  const root = fixture(t), target = "AGENTS.md";
+  write(root, "notes.txt", "Unrelated user content\n");
+  if (direction === "present-to-absent") write(root, target, "Original user instructions\n");
+  const plan = planProject(plugin, root, "init"), targetIndex = plan.operations.findIndex((op) => op.path === target);
+  assert.ok(targetIndex > 0, "capture drift must occur after earlier operations were planned");
+  let expected, started = 0;
+  assert.throws(() => applyProject(plugin, root, "init", plan.planSha256, {}, {
+    beforeModeCapture(index) {
+      if (index !== targetIndex) return;
+      if (direction === "present-to-absent") rmSync(resolve(root, target));
+      else write(root, target, "Externally created user instructions\n");
+      expected = snapshot(root); delete expected[LOCK];
+    },
+    beforeOperation() { started++; }
+  }), /mode capture presence changed: AGENTS\.md/);
+  assert.ok(expected); assert.equal(started, 0);
+  assert.equal(readProjectFile(root, JOURNAL), null); assert.equal(readProjectFile(root, LOCK), null);
+  assert.deepEqual(snapshot(root), expected);
+});
+test("confidential journal and every journal temporary copy stay private under both umasks", (t) => {
+  for (const umask of [0o022, 0o077]) {
+    const root = fixture(t), previous = process.umask(umask);
+    try {
+      write(root, "AGENTS.md", "PRIVATE SENTINEL\n"); chmodSync(resolve(root, "AGENTS.md"), 0o600);
+      const plan = planProject(plugin, root, "init");
+      assert.throws(() => applyProject(plugin, root, "init", plan.planSha256, {}, { beforeOperation(i) { if (i === 0) throw new Error("stop"); } }), /recovery/);
+      assert.equal(statSync(resolve(root, JOURNAL)).mode & 0o777, 0o600);
+      assert.ok(readProjectFile(root, JOURNAL).includes("PRIVATE SENTINEL"));
+      applyProjectFile(root, JOURNAL, readProjectFile(root, JOURNAL), "private replacement", {
+        beforeInstall() { for (const file of readdirSync(root).filter((name) => name.endsWith(".tmp"))) assert.equal(statSync(resolve(root, file)).mode & 0o777, 0o600); },
+        beforeReplace() { for (const file of readdirSync(root).filter((name) => /\.(tmp|bak|source)$/.test(name))) assert.equal(statSync(resolve(root, file)).mode & 0o777, 0o600); }
+      }, adoptionWorkspaceIdentity(root), undefined, { purpose: "journal" });
+      assert.equal(statSync(resolve(root, JOURNAL)).mode & 0o777, 0o600);
+    } finally { process.umask(previous); }
+  }
+});
+test("partial deletion recovery restores recorded private and executable permission modes", (t) => {
+  for (const mode of [0o600, 0o700, 0o640]) {
+    const root = fixture(t); adopt(root); let plan = planProject(plugin, root, "remove");
+    const target = plan.operations.find((op) => op.after === null && op.before !== null).path;
+    chmodSync(resolve(root, target), mode); plan = planProject(plugin, root, "remove");
+    const index = plan.operations.findIndex((op) => op.path === target);
+    assert.throws(() => applyProject(plugin, root, "remove", plan.planSha256, {}, { beforeOperation(i) { if (i === index + 1) throw new Error("stop"); } }), /recovery/);
+    assert.equal(readProjectFile(root, target), null);
+    const journal = JSON.parse(readProjectFile(root, JOURNAL)); assert.equal(journal.originalModes[index], mode);
+    recoverProject(root, planRecovery(root).planSha256);
+    assert.equal(statSync(resolve(root, target)).mode & 0o777, mode); assert.equal(doctorProject(plugin, root).status, "ready");
+  }
+});
+test("legacy receipt journals recover provable creates but refuse deleted permission guesses", (t) => {
+  for (const action of ["init", "remove"]) {
+    const root = fixture(t); if (action === "remove") adopt(root);
+    const plan = planProject(plugin, root, action);
+    assert.throws(() => applyProject(plugin, root, action, plan.planSha256, {}, { beforeOperation(i) { if (i === 1) throw new Error("stop"); } }), /recovery/);
+    const journal = JSON.parse(readProjectFile(root, JOURNAL)); journal.schemaVersion = "1.1"; delete journal.originalModes; write(root, JOURNAL, json(journal));
+    if (action === "init") { recoverProject(root, planRecovery(root).planSha256); assert.equal(readProjectFile(root, JOURNAL), null); }
+    else { const before = snapshot(root); assert.throws(() => planRecovery(root), /missing original permissions.*manual/); assert.deepEqual(snapshot(root), before); }
+  }
+});
+test("legacy replacement journals cannot infer original permissions from the completed file", (t) => {
+  const root = fixture(t), source = fixture(t); cpSync(plugin, source, { recursive: true }); adopt(root);
+  const target = ".agents/skills/forgerail/SKILL.md";
+  chmodSync(resolve(root, target), 0o750);
+  write(source, "skills/forgerail/SKILL.md", `${readFileSync(resolve(source, "skills/forgerail/SKILL.md"), "utf8")}\nReplacement fixture\n`);
+  const plan = planProject(source, root, "update"), index = plan.operations.findIndex((op) => op.path === target);
+  assert.throws(() => applyProject(source, root, "update", plan.planSha256, {}, { beforeOperation(i) { if (i === index + 1) throw new Error("stop"); } }), /recovery/);
+  const journal = JSON.parse(readProjectFile(root, JOURNAL));
+  assert.equal(journal.progress[index].state, "completed"); assert.equal(statSync(resolve(root, target)).mode & 0o7777, 0o750);
+  // A 1.1 writer could have produced these bytes and mode from 02750: its
+  // completed identity proves the replacement, never the original special bits.
+  journal.schemaVersion = "1.1"; delete journal.originalModes; write(root, JOURNAL, json(journal));
+  const before = snapshot(root);
+  assert.throws(() => planRecovery(root), /missing original permissions for replaced target.*manual/);
+  assert.deepEqual(snapshot(root), before); assert.equal(statSync(resolve(root, target)).mode & 0o7777, 0o750);
+});
+test("permission drift before a delete is retained and prevents writes", (t) => {
+  const root = fixture(t); adopt(root); const plan = planProject(plugin, root, "remove");
+  const target = plan.operations[0].path;
+  assert.throws(() => applyProject(plugin, root, "remove", plan.planSha256, {}, { beforeOperation(i) { if (i === 0) chmodSync(resolve(root, target), 0o600); } }), /permissions changed/);
+  assert.equal(readProjectFile(root, target), plan.operations[0].before); assert.equal(statSync(resolve(root, target)).mode & 0o777, 0o600);
+  write(root, "private.txt", "known"); chmodSync(resolve(root, "private.txt"), 0o600);
+  assert.throws(() => applyProjectFile(root, "private.txt", "known", null, { beforeRemove() { chmodSync(resolve(root, "private.txt"), 0o640); } }), /permission drift/);
+  assert.equal(readProjectFile(root, "private.txt"), "known"); assert.equal(statSync(resolve(root, "private.txt")).mode & 0o777, 0o640);
+});
+test("managed framing separates valid Markdown tails and preserves exact user bytes", (t) => {
+  for (const text of ["```text\nexample\n```", "~~~text\r\nexample\r\n~~~", "User rules", "<!-- complete -->", "> quote", "- list item", "", "\ufeffRules\r\n", "Inline `<!--` example"]) {
+    const root = fixture(t); write(root, "AGENTS.md", text);
+    for (let cycle = 0; cycle < 2; cycle++) {
+      adopt(root); const adopted = readProjectFile(root, "AGENTS.md"), block = managedBlock(adopted);
+      assert.ok(block.startsWith("\n\n<!--")); assert.ok(block.includes(framing)); assert.ok(block.endsWith("-->\n"));
+      assertMarkdownInsertion(adopted.slice(0, adopted.indexOf(block)));
+      assert.equal(applicableCorePointer(adopted), true, `active Core pointer after ${JSON.stringify(text)}`);
+      const plan = planProject(plugin, root, "remove"); applyProject(plugin, root, "remove", plan.planSha256);
+      assert.equal(readProjectFile(root, "AGENTS.md"), text);
+    }
+  }
+});
+test("legacy plain managed blocks remain removable and update to owned framing", (t) => {
+  for (const action of ["update", "remove"]) {
+    const root = fixture(t); adopt(root);
+    const current = managedBlock(readProjectFile(root, "AGENTS.md"));
+    const plain = current.slice(2, -1).replace(`${framing}\n`, "");
+    write(root, "AGENTS.md", `Legacy user\n${plain}Suffix`);
+    const manifest = JSON.parse(readProjectFile(root, MANIFEST)); manifest.artifacts.find((artifact) => artifact.path === "AGENTS.md").sha256 = hash(plain); write(root, MANIFEST, json(manifest));
+    assert.equal(doctorProject(plugin, root).status, "ready");
+    let plan = planProject(plugin, root, action); applyProject(plugin, root, action, plan.planSha256);
+    if (action === "update") { assert.ok(managedBlock(readProjectFile(root, "AGENTS.md")).includes(framing)); plan = planProject(plugin, root, "remove"); applyProject(plugin, root, "remove", plan.planSha256); }
+    assert.equal(readProjectFile(root, "AGENTS.md"), "Legacy user\nSuffix");
+  }
+});
+test("unsafe unclosed user Markdown refuses during read-only plan", (t) => {
+  for (const text of ["```text\nexample", "~~~\nexample", "<!-- unfinished", "Text\n<!-- unfinished\n```\n"]) {
+    const root = fixture(t); write(root, "AGENTS.md", text); const before = snapshot(root);
+    assert.throws(() => planProject(plugin, root, "init"), /unsafe Markdown insertion/); assert.deepEqual(snapshot(root), before);
+  }
+});
+test("raw HTML containers must close before inserting governance", (t) => {
+  for (const tag of ["script", "pre", "style", "textarea"]) {
+    const root = fixture(t); write(root, "AGENTS.md", `<${tag}>\nexample`); const before = snapshot(root);
+    assert.throws(() => planProject(plugin, root, "init"), new RegExp(`unclosed HTML ${tag} container`)); assert.deepEqual(snapshot(root), before);
+    write(root, "AGENTS.md", `<${tag}>\nexample\n</${tag} >`); assert.throws(() => planProject(plugin, root, "init"), /unclosed HTML/);
+    for (const text of [`<${tag}>\nexample\n</${tag}>`, `<${tag.toUpperCase()}>text</${tag.toUpperCase()}>`, `\`\`\`html\n<${tag}>\n\`\`\``, `<!--\n<${tag}>\n-->`]) {
+      write(root, "AGENTS.md", text); const plan = planProject(plugin, root, "init"); const agents = plan.operations.find((op) => op.path === "AGENTS.md").after;
+      assert.equal(applicableCorePointer(agents), true);
+    }
+  }
+});
+test("unclosed processing instructions declarations and CDATA refuse insertion", (t) => {
+  for (const [open, end, label] of [["<?processing", "?>", "processing instruction"], ["<!DECL", ">", "declaration"], ["<![CDATA[", "]]>", "CDATA"]]) {
+    for (const text of [open, `   ${open}`, `${open}\nunfinished`, `${open}\n\`\`\`\n<!-- unfinished`, `<pre>closed</pre>${open}`, `<?closed?>${open}`]) {
+      const root = fixture(t); write(root, "AGENTS.md", text); const before = snapshot(root);
+      assert.throws(() => planProject(plugin, root, "init"), new RegExp(`unclosed HTML ${label}`)); assert.deepEqual(snapshot(root), before);
+    }
+    for (const text of [`${open}closed${end}`, `${open}\nclosed\n${end}`, `   ${open}closed${end}`, `${open}\n<!--\n<pre>\n\`\n${end}`, `<pre>closed</pre>${open}closed${end}`]) {
+      assert.doesNotThrow(() => assertMarkdownInsertion(text), JSON.stringify(text));
+    }
+    for (const text of [`\`\`\`html\n${open}\n\`\`\``, `\`${open}\``, `    ${open}`, `\\${open}`, `<!--\n${open}\n-->`, `<pre>${open}</pre>`]) {
+      assert.doesNotThrow(() => assertMarkdownInsertion(text), JSON.stringify(text));
+    }
+    assert.throws(() => assertMarkdownInsertion(`${open}closed${end}<!-- unfinished`), /unclosed HTML comment/);
+    assert.throws(() => assertMarkdownInsertion(`${open}closed${end}<pre>unfinished`), /unclosed HTML pre container/);
+  }
+  for (const prefix of ["<pre>closed</pre><!lowercase>", "<pre>closed</pre><![cdata[ignored]]>"]) {
+    assert.doesNotThrow(() => assertMarkdownInsertion(prefix));
+    assert.throws(() => assertMarkdownInsertion(`${prefix}<!-- unfinished`), /unclosed HTML comment/);
+    assert.throws(() => assertMarkdownInsertion(`${prefix}<?unfinished`), /unclosed HTML processing instruction/);
+  }
+});
+test("raw HTML closing tags do not hide unsafe trailing comments or containers", (t) => {
+  for (const tag of ["script", "pre", "style", "textarea"]) {
+    for (const prefix of [`<${tag}>text</${tag}>`, `<${tag}>\ntext\n</${tag}>`]) {
+      for (const tail of ["<!-- unfinished", "<!-- closed --><!-- unfinished", "<pre>unfinished", "<!-- closed --><textarea>unfinished", "`<!--`", "\\`<!--\\`"]) {
+        const root = fixture(t); write(root, "AGENTS.md", `${prefix}${tail}`); const before = snapshot(root);
+        assert.throws(() => planProject(plugin, root, "init"), /unsafe Markdown insertion/); assert.deepEqual(snapshot(root), before);
+      }
+      for (const tail of ["<!-- closed -->", "<!-- <pre> -->", "<pre>closed</pre>", "<!-- closed --><textarea>closed</textarea>"]) {
+        assert.doesNotThrow(() => assertMarkdownInsertion(`${prefix}${tail}`));
+      }
+    }
+  }
+});
+test("escaped backtick openers cannot hide real unclosed HTML comments", (t) => {
+  for (const text of ["\\`<!--\\`", "\\```<!--\\```", "\\\\\\`<!--`", "<!-- closed --> \\`<!--\\`", "`<!--` \\`<!--\\`"]) {
+    const root = fixture(t); write(root, "AGENTS.md", text); const before = snapshot(root);
+    assert.throws(() => planProject(plugin, root, "init"), /unclosed HTML comment/); assert.deepEqual(snapshot(root), before);
+  }
+  for (const text of ["`<!--`", "\\\\`<!--`", "`<!--\\`", "`` <!-- ` ``", "\\`<!-- complete -->\\`", "<!-- ` --> `<!--`"]) {
+    assert.doesNotThrow(() => assertMarkdownInsertion(text), JSON.stringify(text));
+  }
+});
+test("multiline code span closing ticks cannot conceal following real comments", (t) => {
+  for (const text of ["`open\n`<!--`", "`open\r\n`<!--`", "`open\r`<!--`", "``open\n``<!--``", "\ufeff`open\n`<!--`", "`open\ncontinued\n`<!--`", "`open\n\\`<!--`", "`open\n`<!-- closed --><!-- unfinished`", "`unmatched\n\n`<!--` real <!-- unfinished", "`open\n<!--`", "``open\n<!--``", "`open\r\n<!--`", "`open\r<!--`", "\ufeff`open\n<!--`", "> prose `open\n<!-- `"]) {
+    const root = fixture(t); write(root, "AGENTS.md", text); const before = snapshot(root);
+    assert.throws(() => planProject(plugin, root, "init"), /unclosed HTML comment/, JSON.stringify(text)); assert.deepEqual(snapshot(root), before);
+  }
+  // Line-start <!-- is an interrupting HTML block, not a multiline code
+  // literal. Prefix prose to retain a genuine inline-code positive case.
+  for (const text of ["`open\ncontinued text <!--`", "``open\ncontinued text <!--``", "`open\r\ncontinued text <!--`", "`open\rcontinued text <!--`", "\ufeff`open\ncontinued text <!--`", "`open\n`<!-- closed -->`", "\\`open\n`<!--`", "`unmatched\n\n`<!--`", "`unmatched\n\n`<!--` <!-- closed -->"]) {
+    assert.doesNotThrow(() => assertMarkdownInsertion(text), JSON.stringify(text));
+  }
+});
+test("code spans respect block boundaries before insertion checks", (t) => {
+  for (const text of ["`unmatched\n<pre>`", "`unmatched\n<?processing `", "`unmatched\n<![CDATA[ `"]) {
+    const root = fixture(t); write(root, "AGENTS.md", text); const before = snapshot(root);
+    assert.throws(() => planProject(plugin, root, "init"), /unclosed HTML/, JSON.stringify(text)); assert.deepEqual(snapshot(root), before);
+  }
+  for (const text of ["`unmatched\n\n`<!--`", "`unmatched\n---\n`<!--`", "`unmatched\n# Heading\n`<!--`", "`unmatched\n```example\n`<!--\n```\n`<!--`", "`unmatched\n<pre>`</pre>\n\n`<!--`"]) {
+    assert.doesNotThrow(() => assertMarkdownInsertion(text), JSON.stringify(text));
+  }
+});
+test("framing ownership detects edits and preserves independent prefix and suffix edits", (t) => {
+  const root = fixture(t); write(root, "AGENTS.md", "original"); adopt(root);
+  const original = readProjectFile(root, "AGENTS.md"); write(root, "AGENTS.md", `Prefix\n${original}Suffix\n`);
+  let plan = planProject(plugin, root, "update"); applyProject(plugin, root, "update", plan.planSha256);
+  plan = planProject(plugin, root, "remove"); applyProject(plugin, root, "remove", plan.planSha256);
+  assert.equal(readProjectFile(root, "AGENTS.md"), "Prefix\noriginalSuffix\n");
+  adopt(root); const content = readProjectFile(root, "AGENTS.md"); write(root, "AGENTS.md", content.replace("\n\n<!-- forgerail:project", "\nX\n<!-- forgerail:project"));
+  assert.throws(() => planProject(plugin, root, "remove"), /framing/);
 });

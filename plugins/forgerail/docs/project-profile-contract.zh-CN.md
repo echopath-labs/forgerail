@@ -34,7 +34,7 @@ Project Profile 声明是 ForgeRail 0.1.8 的可选能力，用于让项目拥�
 
 loader 接收精确的 owner 工作区和独立提供的 Workspace Identity。公开 inspect CLI 通过 `--workspace-identity` 接收该证据；其 canonical root locator 必须是绝对路径并解析到精确 owner，identity 也必须与声明一致。声明不能为自身制造这份证据。loader 只以 regular-file、no-follow、UTF-8 和四兆字节上限读取固定入口，绝不搜索父、子或兄弟工作区。入口不存在时返回 `not-adopted`，现有 alpha resolver 与任务行为保持不变。
 
-每个声明 source 都通过同一项目相对边界读取。Markdown claim 必须匹配唯一一行精确 heading；结构化 claim 使用 RFC 6901 JSON Pointer，并且值必须与声明的 normalized value 相等。整文件 SHA-256 不匹配、缺少 digest、heading 缺失或重复、JSON Pointer 无效、路径穿越、符号链接、特殊文件或超限 source 都不能得到确认。required source 失败会使 v2 Profile 进入 unresolved；optional source、pointer 或值校验失败时只降级，并且不会激活其 claim。
+每个声明 source 都通过同一项目相对边界读取。Markdown claim 必须匹配唯一一行精确结构性 ATX heading，围栏代码、缩进代码、内联代码和 HTML 注释中的标题不参与确认；结构化 claim 使用 RFC 6901 JSON Pointer，并且值必须与声明的 normalized value 相等。整文件 SHA-256 不匹配、缺少 digest、heading 缺失或重复、JSON Pointer 无效、路径穿越、符号链接、特殊文件或超限 source 都不能得到确认。required source 失败会使 v2 Profile 进入 unresolved；optional source、pointer 或值校验失败时只降级，并且不会激活其 claim。
 
 loader 将确认后的输入投影到既有 Workspace Identity、Governance Source、Rule Claim、Effective Profile v2 与 Profile Explanation 合同。同一规则和 operation 上的同级 claim 如果值不一致，会形成显式 unresolved conflict。`profileRevisionId` 根据规范化声明内容、Workspace Identity 语义、已确认 source digest 与 resolver 版本确定性计算；时间戳、声明排列顺序、provider 观测和凭据值不参与计算。
 
@@ -108,6 +108,10 @@ node scripts/forgerail.mjs validate-contract \
 该验证检查 schema identity、有界字段、集合 identity、source 与 claim 引用、稳定 operation ID、locator 与 adapter 兼容性、疑似凭据内容和可执行内容。loader 与 assembler 位于 `scripts/lib/project-profile.mjs`；provider 观测位于 `scripts/lib/provider-adapters.mjs`。
 
 激活预检也覆盖绑定引用的预期身份声明、声明来源及工作区归属变化。同次请求提供的每项适用观测均须匹配；一次成功不能掩盖同一绑定的失败。无关声明变化不触发重新核验；仅调整对象键或按身份组织的集合顺序，也不触发预检。
+
+0.1.9 可靠性修复在调用 provider 前，通过现有 source loader 确认变更 binding 引用的身份 claim，包括实际来源摘要、结构性 pointer 和结构化值。只读取相关 source 与 claim，无关来源故障不会阻断这次身份预检。provider 观测完成后，在现有 activation lock 内、写入声明前再次确认相关来源；观测期间漂移将拒绝激活。
+
+同一次 provider 请求的所有 binding 和激活 operation/target 组合共享最多 128 次调用及 15 秒单调时间 deadline。子进程 timeout 使用剩余预算，超时使用 SIGKILL 终止直接子进程，避免忽略 SIGTERM 延长等待；超过 deadline 的响应不能证明匹配。重复 operation/target 组合在 provider 调用前拒绝。required binding 身份失败停止后续 binding 观测；激活中任何适用观测失败都会停止后续 selector 并拒绝激活，剩余项不再观测。预算限定 provider 调用，来源加载与文件操作仍有额外开销，子进程 timeout 不保证终止恶意进程树。测试仅使用本地假 provider，不使用真实凭据或网络。
 
 工作区关系清单最多包含 128 个 ID。检查和激活预检在计算上下文 ID 前拒绝疑似凭据的 operation/target 参数。Provider 证据 ID 区分操作、目标及执行上下文。只有全部操作范围都被更高优先级声明覆盖时，claim 才整体标记为 shadowed；部分覆盖保留剩余范围。
 

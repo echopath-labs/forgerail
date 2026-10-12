@@ -2,7 +2,7 @@
 
 The baseline receipt, Profile and adoption-write fixes shipped in 0.1.1 and are absent from the immutable 0.1.0 npm archive. Publication is confirmed by npm and the versioned GitHub Release.
 
-The additional observation and Envelope safeguards below are included in the **0.1.2 candidate**; they are not present in the published 0.1.1 archive.
+The additional observation and Envelope safeguards below are shipped in **0.1.2**; they are not present in the published 0.1.1 archive.
 
 ## Local receipt verification
 
@@ -24,7 +24,13 @@ This is a bounded local check using a trusted Git executable. Configuration, att
 
 ## Profile resolution and errors
 
-0.1.3 candidate: bare-layout hints combine filesystem types, not just names.
+The 0.1.9 reliability patch checks every public `validateContract` input
+before recursive scans: maximum depth 64 (root depth zero) and 10,000 JSON values,
+including scalars. Oversized structures return fixed invalid-input diagnostics.
+Malformed collection types return field errors before semantic array operations;
+these checks do not turn invalid inputs into accepted contracts.
+
+Since 0.1.3: bare-layout hints combine filesystem types, not just names.
 Ordinary directories named HEAD/config/objects/refs remain ordinary non-Git
 workspaces. A metadata-like file/link plus object/ref directory remains a
 conservative hint; Git must still confirm a supported worktree. The hint is not
@@ -36,7 +42,7 @@ Malformed Profile structure returns field errors before semantic access. CLI usa
 
 0.1.2: malformed `allowedOperations` / `prohibitedOperations` return field diagnostics for both Envelope and embedded Launch validation. Valid operation arrays still undergo overlap checks.
 
-0.1.3 candidate: Host Adapter `bindingModes` structure is checked before array
+Since 0.1.3: Host Adapter `bindingModes` structure is checked before array
 operations. Malformed collections return field errors through library and CLI;
 valid collections still require thin-reference and matching templates.
 
@@ -48,6 +54,6 @@ Source identity, content/version and installed content are rechecked. A detected
 
 On interruption, inspect any named .bak/.source recovery files and the per-target .lock alongside the target. Confirm no writer is active, preserve or reconcile user edits, then remove only the inspected stale lock/recovery files. Do not automatically delete these files or rerun stale approval. Ordinary successful operations remove their temporary files.
 
-Managed replacement owns only the start-to-end marker interval; the existing suffix keeps its newline. Appending preserves all prior bytes. Reapplying unchanged content with fresh approval returns unchanged=true without replacing the file. Non-UTF-8 instruction files are rejected rather than rewritten lossily.
+The legacy v1 adoption writer owns only the start-to-end marker interval; the existing suffix keeps its newline. Appending preserves all prior bytes. Reapplying unchanged content with fresh approval returns unchanged=true without replacing the file. Non-UTF-8 instruction files are rejected rather than rewritten lossily.
 
 Approved replacement content must contain exactly one ordered managed boundary, including for direct helper callers. Malformed replacement content is rejected before changing the target.

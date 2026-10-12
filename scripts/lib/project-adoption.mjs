@@ -4,6 +4,7 @@ import { adoptionWorkspaceIdentity, applyProjectFile, withProjectOperationLock }
 import { CONFIG, MANIFEST, JOURNAL, LOCK, marker, hash, json, digest, exact, ownedArtifact, versionPattern, readProjectFile, validateConfig, validateManifest, managedBlock, readInstallation, installationDrift, projectAdoptionObservation, residualWriteEvidence, projectFileLimit, projectFileIdentity, hasLegacyBinding } from "./project-state.mjs";
 import { validateContract } from "./contracts.mjs";
 import { projectProfilePath, semanticDeclaration } from "./project-profile.mjs";
+import { framing, assertMarkdownInsertion, projectFileMode } from "./project-state.mjs";
 
 function delivery(pluginRoot) {
   const adapter = JSON.parse(readProjectFile(pluginRoot, "adapters/project/codex.json"));
@@ -37,7 +38,7 @@ function sourceBundle(pluginRoot, legacyAdapter = null) {
   collect("scripts/lib");
   if (!legacyAdapter || readProjectFile(pluginRoot, "adapters/project/codex.json") !== null) collect("adapters/project/codex.json");
   const block = `<!-- ${marker}:start -->\n## ForgeRail project governance\n\nUse [ForgeRail](.agents/skills/forgerail/SKILL.md) for non-trivial engineering tasks.\nRead the installed project Skill and its applicable references. Respect existing project rules and user authorization.\nProject adoption is recorded in .forgerail/config.json and .forgerail/installation.json.\nMissing or changed managed content requires diagnosis; do not silently substitute development sources or global Skills.\nUse project-local architecture-convergence-audit, forgerail-workspace-diagnosis and workspace-health-review only at their triggers.\nCLI installation, project adoption, host discovery and behavior verification are distinct.\n<!-- ${marker}:end -->`;
-  files.set(adapter.bindingTarget, block);
+  files.set(adapter.bindingTarget, `\n\n${block.replace(`<!-- ${marker}:start -->\n`, `<!-- ${marker}:start -->\n${framing}\n`)}\n`);
   const source = { package: pkg.name, version: pkg.version, kind: "package-content", sha256: hash(json(sources)) };
   const manifest = { schemaVersion: "1.0", host: adapter.host, source, artifacts: [...files].map(([path, content]) => ({ path, ownership: path === adapter.bindingTarget ? "managed-block" : "file", sha256: hash(content) })).sort((a, b) => a.path.localeCompare(b.path, "en")) };
   validateManifest(manifest);
@@ -45,9 +46,14 @@ function sourceBundle(pluginRoot, legacyAdapter = null) {
 }
 function blockAfter(before, replacement) {
   const old = managedBlock(before);
-  if (old !== null) return before.replace(old, () => replacement ?? "");
+  if (old !== null) {
+    const offset = before.indexOf(old);
+    if (replacement !== null) assertMarkdownInsertion(before.slice(0, offset));
+    return before.slice(0, offset) + (replacement ?? "") + before.slice(offset + old.length);
+  }
   if (replacement === null) throw new Error("owned binding block missing");
-  // Every added byte is inside the managed markers; user separators stay untouched.
+  assertMarkdownInsertion(before);
+  // The fixed framing declaration claims the inserted separator bytes.
   return `${before ?? ""}${replacement}`;
 }
 function operation(path, before, after) { return { path, before, after, beforeSha256: digest(before), afterSha256: digest(after) }; }
@@ -214,7 +220,7 @@ function verifyPlan(plan) {
   } else if (plan.operations.at(-1)?.path !== MANIFEST || !seen.has(CONFIG) || seen.has(projectProfilePath)) throw new Error("metadata commit order invalid");
 }
 
-const journalVersion = "1.1";
+const journalVersion = "1.2";
 const identityKeys = ["device", "inode", "size", "mtimeNs", "ctimeNs"];
 function validateIdentity(identity) {
   if (identity === null) return;
@@ -226,7 +232,8 @@ function assertJournalCapacity(plan) {
   // Reserve enough room for every durable completion receipt before writing anything.
   const maximumIdentity = Object.fromEntries(identityKeys.map((key) => [key, "-" + "9".repeat(32)]));
   const progress = plan.operations.map(() => ({ state: "completed", identity: maximumIdentity }));
-  if (Buffer.byteLength(json({ schemaVersion: journalVersion, plan, progress }), "utf8") > projectFileLimit) throw new Error("project recovery journal exceeds 4 MiB capacity; no project files were changed");
+  const originalModes = plan.operations.map(() => 0o7777);
+  if (Buffer.byteLength(json({ schemaVersion: journalVersion, plan, progress, originalModes }), "utf8") > projectFileLimit) throw new Error("project recovery journal exceeds 4 MiB capacity; no project files were changed");
 }
 export function applyProject(pluginRoot, workspace, action, approvedDigest, options = {}, hooks = {}) {
   const root = realpathSync(workspace);
@@ -240,9 +247,15 @@ export function applyProject(pluginRoot, workspace, action, approvedDigest, opti
     if (profilePreflightBindingIds.length) {
       if (typeof hooks.verifyProfileBindings !== "function" || hooks.verifyProfileBindings(Object.freeze(profilePreflightBindingIds), JSON.parse(plan.operations[0].after)) !== true) throw new Error("Project Profile binding preflight failed; active declaration unchanged");
     }
-    const state = { schemaVersion: journalVersion, plan, progress: plan.operations.map(() => null) };
+    const originalModes = plan.operations.map((op, index) => {
+      hooks.beforeModeCapture?.(index, op);
+      const mode = projectFileMode(root, op.path);
+      if ((mode === null) !== (op.before === null)) throw new Error(`mode capture presence changed: ${op.path}; replan before apply`);
+      return mode;
+    });
+    const state = { schemaVersion: journalVersion, plan, progress: plan.operations.map(() => null), originalModes };
     let journal = json(state);
-    const write = (path, before, after, identity) => applyProjectFile(root, path, before, after, {}, plan.workspaceSha256, identity);
+    const write = (path, before, after, identity, policy = {}) => applyProjectFile(root, path, before, after, {}, plan.workspaceSha256, identity, path === JOURNAL ? { purpose: "journal" } : policy);
     write(JOURNAL, null, journal);
     function record(index, entry) {
       state.progress[index] = entry;
@@ -266,7 +279,7 @@ export function applyProject(pluginRoot, workspace, action, approvedDigest, opti
         if (readProjectFile(root, op.path) !== op.before) throw new Error(`operation baseline changed: ${op.path}`);
         if (op.before !== op.after) {
           record(index, { state: "in-flight", identity: null });
-          const result = write(op.path, op.before, op.after);
+          const result = write(op.path, op.before, op.after, undefined, state.originalModes[index] === null ? {} : { expectedMode: state.originalModes[index] });
           hooks.afterOperation?.(index, op);
           const identity = result.identity;
           validateIdentity(identity);
@@ -286,9 +299,11 @@ export function planRecovery(workspace) {
   const root = realpathSync(workspace), text = readProjectFile(root, JOURNAL);
   if (text === null) throw new Error("no recovery journal");
   const journal = JSON.parse(text);
-  if (journal?.schemaVersion !== journalVersion) throw new Error("unsupported recovery journal; ownership receipts required for automatic rollback");
-  exact(journal, ["schemaVersion", "plan", "progress"], "recovery journal");
+  if (!["1.1", journalVersion].includes(journal?.schemaVersion)) throw new Error("unsupported recovery journal; ownership receipts required for automatic rollback");
+  const legacy = journal.schemaVersion === "1.1";
+  exact(journal, legacy ? ["schemaVersion", "plan", "progress"] : ["schemaVersion", "plan", "progress", "originalModes"], "recovery journal");
   verifyPlan(journal.plan);
+  if (!legacy && (!Array.isArray(journal.originalModes) || journal.originalModes.length !== journal.plan.operations.length || journal.originalModes.some((mode, index) => journal.plan.operations[index].before === null ? mode !== null : !Number.isInteger(mode) || mode < 0 || mode > 0o7777))) throw new Error("invalid recovery permission metadata");
   if (!Array.isArray(journal.progress) || journal.progress.length !== journal.plan.operations.length) throw new Error("invalid recovery progress");
   for (const entry of journal.progress) {
     if (entry === null) continue;
@@ -299,7 +314,7 @@ export function planRecovery(workspace) {
   if (journal.plan.workspaceSha256 !== adoptionWorkspaceIdentity(root)) throw new Error("recovery workspace mismatch");
   const residual = residualWriteEvidence(root, journal.plan.operations.map((op) => op.path));
   if (residual.length) throw new Error(`inspect interrupted single-file recovery evidence before rollback: ${residual.join(", ")}`);
-  const ordered = journal.plan.operations.map((op, index) => ({ ...op, progress: journal.progress[index] })).reverse();
+  const ordered = journal.plan.operations.map((op, index) => ({ ...op, progress: journal.progress[index], originalMode: legacy ? undefined : journal.originalModes[index] })).reverse();
   const preserved = [];
   const operations = [...ordered.filter((op) => ![CONFIG, MANIFEST].includes(op.path)), ...ordered.filter((op) => op.path === CONFIG), ...ordered.filter((op) => op.path === MANIFEST)].map((op) => {
     const current = readProjectFile(root, op.path);
@@ -315,9 +330,10 @@ export function planRecovery(workspace) {
     }
     if (op.progress.state !== "completed") throw new Error(`recovery requires ownership reconciliation for interrupted write: ${op.path}`);
     if (current !== op.after) throw new Error(`recovery blocked by external edit: ${op.path}`);
+    if (legacy && op.before !== null) throw new Error(`legacy recovery missing original permissions for ${current === null ? "deleted" : "replaced"} target: ${op.path}; manual ownership and permission reconciliation required`);
     const identity = projectFileIdentity(root, op.path);
     if (JSON.stringify(identity) !== JSON.stringify(op.progress.identity)) throw new Error(`recovery blocked by external file identity change: ${op.path}`);
-    return { ...operation(op.path, current, op.before), identity };
+    return { ...operation(op.path, current, op.before), identity, restoreMode: op.before === null ? null : op.originalMode };
   });
   const plan = { schemaVersion: "1.1", action: "rollback", journalSha256: hash(text), workspaceSha256: journal.plan.workspaceSha256, operations, preserved };
   return { ...plan, planSha256: hash(json(plan)) };
@@ -339,7 +355,8 @@ export function recoverProject(workspace, approvedDigest, hooks = {}) {
       if (adoptionWorkspaceIdentity(root) !== plan.workspaceSha256) throw new Error("recovery workspace identity changed");
       if (readProjectFile(root, op.path) !== op.before) throw new Error(`recovery drift: ${op.path}`);
       if (op.before !== op.after) {
-        const result = applyProjectFile(root, op.path, op.before, op.after, {}, plan.workspaceSha256, op.identity);
+        const policy = op.after === null ? {} : { purpose: "restore", restoreMode: op.restoreMode };
+        const result = applyProjectFile(root, op.path, op.before, op.after, {}, plan.workspaceSha256, op.identity, policy);
         restored.set(op.path, { content: op.after, identity: result.identity });
         hooks.afterOperation?.(index, op);
         if (readProjectFile(root, op.path) !== op.after || JSON.stringify(projectFileIdentity(root, op.path)) !== JSON.stringify(result.identity)) throw new Error(`recovered target identity or content changed: ${op.path}`);

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
@@ -8,6 +9,8 @@ import test from "node:test";
 import { adoptionWriteApprovalDigest, applyApprovedAdoptionWrite, loadHostAdapters, planAdoption, verifyCursorNoChangePlan } from "./lib/adoption.mjs";
 import { cursorSharedContractCoverageEvidence, cursorSharedCoreCoverageEvidence, validateContract } from "./lib/contracts.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
+import { applicableContractPointer, applicableCorePointer, markdownHeadingCount } from "./lib/instruction-pointers.mjs";
+import { assertMarkdownInsertion } from "./lib/project-state.mjs";
 
 const recovery = "<!-- forgerail:portable-recovery:v1:start -->\nFixture recovery payload.\n<!-- forgerail:portable-recovery:v1:end -->\n";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -708,5 +711,332 @@ test("approved compact and all-host adoption retain recovery in owner files with
     assert.equal(block, expected);
     assert.ok(start > content.indexOf(`<!-- ${marker}:start -->`));
     assert.ok(end < content.indexOf(`<!-- ${marker}:end -->`));
+  }
+});
+
+// Historical examples are text evidence, not active host bindings.
+test("inline code comment literals cannot consume later policy", () => {
+  for (const literal of ["`<!--`", "``<!-- ` literal``", "`<!-- -->`", "`<!--` and `<!--`"]) {
+    const text = `The literal is ${literal}.\n\n## Policy\nUse .agents/skills/forgerail/SKILL.md\nFollow FORGERAIL.md\n`;
+    assert.equal(markdownHeadingCount(text, "## Policy"), 1, literal);
+    assert.equal(applicableCorePointer(text), true, literal);
+    assert.equal(applicableContractPointer(text), true, literal);
+  }
+  for (const text of [
+    "The literal is `<!--`. <!--\n## Policy\nUse .agents/skills/forgerail/SKILL.md\n",
+    "<!-- `a`\n## Policy\nUse .agents/skills/forgerail/SKILL.md\n-->\n",
+    "```md\nThe literal is `<!--`.\n## Policy\nUse .agents/skills/forgerail/SKILL.md\n```\n",
+  ]) {
+    assert.equal(markdownHeadingCount(text, "## Policy"), 0, text);
+    assert.equal(applicableCorePointer(text), false, text);
+  }
+  const afterComment = "<!-- ` unmatched --> The literal is `<!--`.\n## Policy\nUse .agents/skills/forgerail/SKILL.md\n";
+  assert.equal(markdownHeadingCount(afterComment, "## Policy"), 1);
+  assert.equal(applicableCorePointer(afterComment), true);
+  assert.equal(applicableCorePointer("`<!-- Use .agents/skills/forgerail/SKILL.md -->`"), false);
+  const repeated = `${"<!-- ` tick --> ".repeat(2048)}The literal is \`<!--\`.\n## Policy\nUse .agents/skills/forgerail/SKILL.md\n`;
+  assert.equal(markdownHeadingCount(repeated, "## Policy"), 1);
+  assert.equal(applicableCorePointer(repeated), true);
+  const lateComment = `${"\`literal\` ".repeat(2048)}<!-- hidden --> The literal is \`<!--\`.\n## Policy\nUse .agents/skills/forgerail/SKILL.md\n`;
+  assert.equal(markdownHeadingCount(lateComment, "## Policy"), 1);
+  assert.equal(applicableCorePointer(lateComment), true);
+  const escapedOpen = "The escaped tick is \\`<!--`.\n## Policy\nUse .agents/skills/forgerail/SKILL.md\n-->\n";
+  assert.equal(markdownHeadingCount(escapedOpen, "## Policy"), 0);
+  assert.equal(applicableCorePointer(escapedOpen), false);
+  for (const literal of ["\\\\`<!--`", "`<!--\\`", "``<!--\\``"]) {
+    const text = `The literal is ${literal}.\n## Policy\nUse .agents/skills/forgerail/SKILL.md\n`;
+    assert.equal(markdownHeadingCount(text, "## Policy"), 1, literal);
+    assert.equal(applicableCorePointer(text), true, literal);
+  }
+});
+
+test("quoted fences cannot consume later top-level policy", () => {
+  for (const fence of ["```", "~~~"]) {
+    const text = `> ${fence}\n> Example fenced text\n\n## Policy\nUse .agents/skills/forgerail/SKILL.md`;
+    assert.equal(markdownHeadingCount(text, "## Policy"), 1);
+    assert.equal(applicableCorePointer(text), true);
+    assert.equal(markdownHeadingCount(`${fence}\n## Policy`, "## Policy"), 0);
+  }
+});
+
+test("comments cannot promote following text into headings or fences", () => {
+  for (const text of ["<!-- note -->## Policy\n", "<!-- note\n-->## Policy\n", "<!-- note --> ## Policy\n"]) {
+    assert.equal(markdownHeadingCount(text, "## Policy"), 0, text);
+    assert.equal(markdownHeadingCount(`${text}## Policy\n`, "## Policy"), 1, text);
+  }
+  assert.equal(applicableCorePointer("<!-- note -->```md\nUse .agents/skills/forgerail/SKILL.md\n"), true);
+  assert.equal(applicableCorePointer("Use <!-- hidden .agents/skills/forgerail/SKILL.md -->another workflow\n"), false);
+});
+
+test("unquoted blank lines end quoted fences before a new quoted policy block", () => {
+  for (const fence of ["```", "~~~"]) {
+    const policy = "Use .agents/skills/forgerail/SKILL.md\n> Follow FORGERAIL.md";
+    assert.equal(applicableCorePointer(`> ${fence}\n> example\n\n> ${policy}`), true);
+    assert.equal(applicableContractPointer(`> ${fence}\n> example\n\n> ${policy}`), true);
+    assert.equal(applicableCorePointer(`> ${fence}\n> example\n>\n> ${policy}`), false);
+    assert.equal(applicableCorePointer(`${fence}\nexample\n\n${policy}`), false);
+  }
+});
+
+test("outer prose cannot activate full instructions inside inline code", () => {
+  for (const [target, pointer] of [[".agents/skills/forgerail/SKILL.md", applicableCorePointer], ["FORGERAIL.md", applicableContractPointer]]) {
+    for (const text of [
+      `Use this example: \`Do not use ${target}\``,
+      `Follow this sample: \`Read ${target}\``,
+      `Read the example \`Use ${target}\``,
+      `Use \`the old ${target}\``,
+    ]) assert.equal(pointer(text), false, text);
+    for (const path of [target, `./${target}`]) {
+      assert.equal(pointer(`Use \`${path}\``), true, path);
+      assert.equal(pointer(`Follow \`\` ${path} \`\``), true, path);
+      assert.equal(pointer(`Do not use \`${path}\``), false, path);
+    }
+    assert.equal(pointer(`Use this example: \`Do not use ${target}\`; Use ${target}`), true);
+  }
+});
+
+test("many code directives and target mentions stay within a bounded scan", () => {
+  const moduleUrl = pathToFileURL(resolve(root, "scripts/lib/instruction-pointers.mjs")).href;
+  const script = `
+    import assert from "node:assert/strict";
+    import { applicableCorePointer, applicableContractPointer } from ${JSON.stringify(moduleUrl)};
+    const examples = "\`use\` ".repeat(20000);
+    for (let repeat = 0; repeat < 32; repeat++) {
+      assert.equal(applicableCorePointer("Use " + examples + ".agents/skills/forgerail/SKILL.md"), true);
+      assert.equal(applicableContractPointer("Follow " + examples + "FORGERAIL.md"), true);
+    }
+    assert.equal(applicableCorePointer("Use .agents/skills/forgerail/SKILL.md ".repeat(20000)), true);
+    assert.equal(applicableContractPointer("Follow FORGERAIL.md ".repeat(20000)), true);
+  `;
+  const result = spawnSync(process.execPath, ["--input-type=module", "--eval", script], { encoding: "utf8", timeout: 10000 });
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("raw HTML bodies and closing-line tails cannot establish pointers or headings", () => {
+  const policy = "## Policy\nUse .agents/skills/forgerail/SKILL.md\nFollow FORGERAIL.md\n";
+  const forms = [
+    ...["pre", "script", "style", "textarea", "PrE"].map((tag) => [`<${tag}>`, `</${tag}>`]),
+    ["<?instruction", "?>"], ["<!DECL", ">"], ["<![CDATA[", "]]>"] ,
+    ["<div>", "\n"], ["<custom>", "\n"],
+  ];
+  for (const [open, close] of forms) {
+    const hidden = `${open}\n${policy}${close}\n`;
+    assert.equal(markdownHeadingCount(hidden, "## Policy"), 0, open);
+    assert.equal(applicableCorePointer(hidden), false, open);
+    assert.equal(applicableContractPointer(hidden), false, open);
+    const active = `${hidden}\n${policy}`;
+    assert.equal(markdownHeadingCount(active, "## Policy"), 1, open);
+    assert.equal(applicableCorePointer(active), true, open);
+  }
+  for (const tail of ["<!--", "<?instruction", "<!DECL", "<![CDATA[", "<script>"]) {
+    const hidden = `<pre>\n</pre>${tail}\n${policy}`;
+    assert.equal(markdownHeadingCount(hidden, "## Policy"), 0, tail);
+    assert.equal(applicableCorePointer(hidden), false, tail);
+  }
+  assert.equal(markdownHeadingCount(`<pre>\n</pre><!-- hidden\n-->\n${policy}`, "## Policy"), 1);
+  assert.equal(markdownHeadingCount(`<pre>\n</pre>## Policy\n`, "## Policy"), 0);
+  assert.equal(markdownHeadingCount("The literal is `<pre>`.\n## Policy", "## Policy"), 1);
+});
+
+test("multiline code spans preserve literal comments and hide only coded instructions", () => {
+  for (const ticks of ["`", "``"]) {
+    const text = `${ticks}literal\ncontinued text <!-- inside code\nUse .agents/skills/forgerail/SKILL.md\n${ticks}\n## Policy\nFollow FORGERAIL.md\n`;
+    assert.equal(markdownHeadingCount(text, "## Policy"), 1, ticks);
+    assert.equal(applicableCorePointer(text), false, ticks);
+    assert.equal(applicableCorePointer(`${text}Use .agents/skills/forgerail/SKILL.md\n`), true, ticks);
+    assert.equal(applicableContractPointer(text), true, ticks);
+  }
+  assert.equal(markdownHeadingCount("`literal\n<!-- real unclosed comment\n## Policy", "## Policy"), 0);
+  assert.equal(markdownHeadingCount("<!-- `ignored\n`\n## Policy\n-->\n", "## Policy"), 0);
+});
+
+test("quoted fences close only at the opening quote depth", () => {
+  for (const ticks of ["```", "~~~"]) {
+    const example = `> ${ticks}\n>> ${ticks}\n> Use .agents/skills/forgerail/SKILL.md\n> Follow FORGERAIL.md`;
+    assert.equal(applicableCorePointer(example), false, ticks);
+    assert.equal(applicableContractPointer(example), false, ticks);
+    assert.equal(applicableCorePointer(`${example}\n> ${ticks}\n> Use .agents/skills/forgerail/SKILL.md`), true, ticks);
+    assert.equal(applicableCorePointer(`${example}\n\n> Use .agents/skills/forgerail/SKILL.md`), true, ticks);
+  }
+});
+
+test("four MiB delimiter-heavy sources remain inspectable with a limited heap", () => {
+  const moduleUrl = pathToFileURL(resolve(root, "scripts/lib/instruction-pointers.mjs")).href;
+  const script = `
+    import assert from "node:assert/strict";
+    import { markdownHeadingCount, applicableCorePointer, applicableContractPointer } from ${JSON.stringify(moduleUrl)};
+    const input = "\`a".repeat(2097050) + "\\n\\n## Policy\\nUse .agents/skills/forgerail/SKILL.md\\nFollow FORGERAIL.md\\n";
+    assert.ok(Buffer.byteLength(input) <= 4 * 1024 * 1024);
+    assert.equal(markdownHeadingCount(input, "## Policy"), 1);
+    assert.equal(applicableCorePointer(input), true);
+    assert.equal(applicableContractPointer(input), true);
+  `;
+  const result = spawnSync(process.execPath, ["--max-old-space-size=256", "--input-type=module", "--eval", script], { encoding: "utf8", timeout: 10000 });
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("four MiB of short tick-free lines do not repeat prefix searches", () => {
+  const moduleUrl = pathToFileURL(resolve(root, "scripts/lib/instruction-pointers.mjs")).href;
+  const script = `
+    import assert from "node:assert/strict";
+    import { markdownHeadingCount, applicableCorePointer, applicableContractPointer } from ${JSON.stringify(moduleUrl)};
+    for (const prefix of ["", "\`literal\`\\n"]) {
+      const input = prefix + "ordinary prose with no ticks\\n".repeat(144000)
+        + "\\n## Policy\\nUse .agents/skills/forgerail/SKILL.md\\nFollow FORGERAIL.md\\n";
+      assert.ok(Buffer.byteLength(input) <= 4 * 1024 * 1024);
+      assert.equal(markdownHeadingCount(input, "## Policy"), 1);
+      assert.equal(applicableCorePointer(input), true);
+      assert.equal(applicableContractPointer(input), true);
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--max-old-space-size=256", "--input-type=module", "--eval", script], { encoding: "utf8", timeout: 10000 });
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("code spans cannot join across supported Markdown block boundaries", () => {
+  const policy = "## Policy\nUse .agents/skills/forgerail/SKILL.md\nFollow FORGERAIL.md\n";
+  for (const boundary of [
+    "\n", " \t\n", "# New block\n", "---\n", "===\n", "- new item\n",
+    "~~~\nfenced example\n~~~\n", "```md\nfenced example\n```\n",
+    "<pre>\nHTML example\n</pre>\n", "<?instruction?>\n", "<custom>\n\n",
+  ]) {
+    const text = `\`example\n${boundary}<!--\`\n${policy}`;
+    assert.equal(markdownHeadingCount(text, "## Policy"), 0, JSON.stringify(boundary));
+    assert.equal(applicableCorePointer(text), false, JSON.stringify(boundary));
+    assert.equal(applicableContractPointer(text), false, JSON.stringify(boundary));
+  }
+  assert.equal(applicableCorePointer("> `example\n>\n> <!--`\n> Use .agents/skills/forgerail/SKILL.md"), false);
+  assert.equal(markdownHeadingCount(`\`example\n~~~\nignored\n~~~\n${policy}\n\``, "## Policy"), 1);
+  assert.equal(markdownHeadingCount(`\`example\n<pre>\nignored\n</pre>\n${policy}\n\``, "## Policy"), 1);
+  for (const removed of ["~~~\nignored\n~~~", "<pre>\nignored\n</pre>"]) {
+    assert.equal(applicableCorePointer(`\`example\n${removed}\nUse .agents/skills/forgerail/SKILL.md\n\``), true, removed);
+  }
+  assert.equal(markdownHeadingCount(`\`literal\ncontinued text <!-- inside code\n\`\n${policy}`, "## Policy"), 1);
+  assert.equal(applicableCorePointer(`\`literal\ncontinued text <!-- inside code\n\`\n${policy}`), true);
+});
+
+test("comments end with their quote container while top-level comments persist", () => {
+  const policy = "## Policy\nUse .agents/skills/forgerail/SKILL.md\nFollow FORGERAIL.md\n";
+  for (const prefix of [">", ">>", "  >"]) {
+    const text = `${prefix} <!-- unclosed\n\n${policy}`;
+    assert.equal(markdownHeadingCount(text, "## Policy"), 1, prefix);
+    assert.equal(applicableCorePointer(text), true, prefix);
+    assert.equal(applicableContractPointer(text), true, prefix);
+  }
+  assert.equal(applicableCorePointer(">> <!-- unclosed\n> Use .agents/skills/forgerail/SKILL.md"), true);
+  assert.equal(applicableCorePointer("> <!-- unclosed\n> HTML body\nUse .agents/skills/forgerail/SKILL.md"), true);
+  assert.equal(applicableCorePointer("> <!-- unclosed\n>\n> Use .agents/skills/forgerail/SKILL.md"), false);
+  assert.equal(markdownHeadingCount(`<!-- unclosed\n\n${policy}`, "## Policy"), 0);
+  assert.equal(applicableCorePointer(`<!-- unclosed\n\n${policy}`), false);
+});
+
+test("lazy quoted paragraphs preserve multiline code without crossing new blocks", (t) => {
+  const workspace = temporary(t, "forgerail-lazy-quote-pointer-");
+  cpSync(resolve(root, "skills/forgerail"), resolve(workspace, ".agents/skills/forgerail"), { recursive: true });
+  for (const [target, pointer] of [[".agents/skills/forgerail/SKILL.md", applicableCorePointer], ["FORGERAIL.md", applicableContractPointer]]) {
+    for (const prefix of [">", ">>", "  >"]) {
+      for (const continuation of ["", "lazy continuation\n", "> resumed quotation\n"]) {
+        const text = `${prefix} prose \`example\n${continuation}Use ${target}\``;
+        assert.equal(pointer(text), false, JSON.stringify(text));
+        assert.doesNotThrow(() => assertMarkdownInsertion(text));
+        if (target.startsWith(".agents")) {
+          writeFileSync(resolve(workspace, "AGENTS.md"), text);
+          assert.equal(planAdoption(root, workspace, ["cursor"]).evidence.includes(cursorSharedCoreCoverageEvidence), false, text);
+        }
+      }
+    }
+    for (const boundary of ["\n", "## New block\n", "~~~\nfenced\n~~~\n", "<pre>\nHTML\n</pre>\n"]) {
+      assert.equal(pointer(`> prose \`example\n${boundary}Use ${target}\``), true, boundary);
+    }
+  }
+  assert.equal(applicableCorePointer("> prose `literal\ncontinued text <!--`\nUse .agents/skills/forgerail/SKILL.md"), true);
+  assert.doesNotThrow(() => assertMarkdownInsertion("> prose `literal\ncontinued text <!--`"));
+  assert.throws(() => assertMarkdownInsertion("> prose `literal\n<!--`"), /unclosed HTML comment/);
+  assert.throws(() => assertMarkdownInsertion("> prose `literal\n`<!--`"), /unclosed HTML comment/);
+});
+
+test("inline comments share lazy paragraph context while comment blocks interrupt code", (t) => {
+  const workspace = temporary(t, "forgerail-lazy-comment-pointer-");
+  cpSync(resolve(root, "skills/forgerail"), resolve(workspace, ".agents/skills/forgerail"), { recursive: true });
+  for (const [target, pointer] of [[".agents/skills/forgerail/SKILL.md", applicableCorePointer], ["FORGERAIL.md", applicableContractPointer]]) {
+    for (const prefix of [">", ">>", "  >"]) {
+      const text = `${prefix} prose <!-- open\nUse ${target} -->`;
+      assert.equal(pointer(text), false, text);
+      assert.equal(pointer(`${text}\nUse ${target}`), true, text);
+      assert.equal(pointer(`${prefix} prose <!-- open\n\nUse ${target}`), true, prefix);
+      assert.doesNotThrow(() => assertMarkdownInsertion(text));
+      if (target.startsWith(".agents")) {
+        writeFileSync(resolve(workspace, "AGENTS.md"), text);
+        assert.equal(planAdoption(root, workspace, ["cursor"]).evidence.includes(cursorSharedCoreCoverageEvidence), false, text);
+      }
+    }
+    assert.equal(pointer(`>> prose <!-- open\n> Use ${target} -->`), false);
+    assert.equal(pointer(`> prose <!-- open\nlazy prose\n> Use ${target} -->`), false);
+    for (const spaces of ["", " ", "   "]) {
+      const text = `> prose \`example\n${spaces}<!-- \`\nUse ${target}\n## Policy`;
+      assert.equal(pointer(text), false, text);
+      assert.equal(markdownHeadingCount(text, "## Policy"), 0, text);
+      assert.throws(() => assertMarkdownInsertion(text), /unclosed HTML comment/, text);
+    }
+  }
+});
+
+test("four MiB clause boundaries and directives stream under a 128 MiB heap", () => {
+  const moduleUrl = new URL("./lib/instruction-pointers.mjs", import.meta.url).href;
+  const script = `
+    import assert from "node:assert/strict";
+    import { applicableCorePointer, applicableContractPointer } from ${JSON.stringify(moduleUrl)};
+    for (const [target, pointer] of [[".agents/skills/forgerail/SKILL.md", applicableCorePointer], ["FORGERAIL.md", applicableContractPointer]]) {
+      assert.equal(pointer("a;".repeat(2097152)), false);
+      const prefix = "a;".repeat(2097100);
+      assert.equal(pointer(prefix + "Use " + target), true);
+      assert.equal(pointer(prefix + "Do not use " + target), false);
+      assert.equal(pointer("use ".repeat(1048500) + target), true);
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--max-old-space-size=128", "--input-type=module", "--eval", script], { encoding: "utf8", timeout: 10000 });
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("standalone HTML tags accept quoted angle brackets and valid attributes", () => {
+  const policy = "## Policy\nUse .agents/skills/forgerail/SKILL.md\nFollow FORGERAIL.md\n";
+  for (const tag of [
+    '<custom data=">">', "<custom data='>'>", '<custom data="<>">',
+    '<custom data=">" other=unquoted disabled />', "<custom data = 'x > y' :key='value'>", "</custom>",
+  ]) {
+    assert.equal(markdownHeadingCount(`${tag}\n${policy}`, "## Policy"), 0, tag);
+    assert.equal(applicableCorePointer(`${tag}\n${policy}`), false, tag);
+    assert.equal(applicableContractPointer(`${tag}\n${policy}`), false, tag);
+    assert.equal(markdownHeadingCount(`${tag}\n\n${policy}`, "## Policy"), 1, tag);
+  }
+  for (const literal of ['<custom data=">', '<custom data=>', '<custom "invalid">']) {
+    assert.equal(markdownHeadingCount(`${literal}\n${policy}`, "## Policy"), 1, literal);
+  }
+});
+
+test("instruction examples cannot suppress the Cursor fallback", (t) => {
+  const workspace = temporary(t, "forgerail-example-pointer-");
+  cpSync(resolve(root, "skills/forgerail"), resolve(workspace, ".agents/skills/forgerail"), { recursive: true });
+  for (const text of [
+    "> Historical example: Use .agents/skills/forgerail/SKILL.md",
+    "Example: `Use .agents/skills/forgerail/SKILL.md`",
+    "`Use .agents/skills/forgerail/SKILL.md`",
+    "Use this example: `Do not use .agents/skills/forgerail/SKILL.md`",
+    "> ```text\n> Use .agents/skills/forgerail/SKILL.md\n> ```",
+  ]) {
+    writeFileSync(resolve(workspace, "AGENTS.md"), text);
+    assert.equal(planAdoption(root, workspace, ["cursor"]).evidence.includes(cursorSharedCoreCoverageEvidence), false, text);
+  }
+  for (const text of [
+    "Use `.agents/skills/forgerail/SKILL.md` for engineering tasks.",
+    "> Required policy: Use .agents/skills/forgerail/SKILL.md",
+    "> ```\n> example\n\n> Use .agents/skills/forgerail/SKILL.md",
+  ]) {
+    writeFileSync(resolve(workspace, "AGENTS.md"), text);
+    assert.equal(planAdoption(root, workspace, ["cursor"]).evidence.includes(cursorSharedCoreCoverageEvidence), true, text);
   }
 });
