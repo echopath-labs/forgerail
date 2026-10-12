@@ -764,6 +764,7 @@ function validateAdoptionPlan(value, errors) {
 function validateBindingReceipt(value, errors) {
   const keys = ["schemaVersion", "planId", "workspace", "adoptionLevel", "contractPath", "hosts", "changedFiles", "validationEvidence", "discoveredSkills", "activationVerification", "confirmedNonMutations", "deviations", "closeout"];
   if (!exactKeys(value, keys, ["contractBaseSha256", "contractAppliedSha256"], "bindingReceipt", errors)) return;
+  const before = errors.length;
   schemaVersion(value.schemaVersion, "bindingReceipt", errors);
   string(value.planId, "bindingReceipt.planId", errors, taskIdPattern);
   string(value.workspace, "bindingReceipt.workspace", errors);
@@ -792,6 +793,7 @@ function validateBindingReceipt(value, errors) {
   strings(value.confirmedNonMutations, "bindingReceipt.confirmedNonMutations", errors, { min: 1, unique: true });
   strings(value.deviations, "bindingReceipt.deviations", errors, { unique: true });
   if (!["complete", "incomplete", "blocked"].includes(value.closeout)) errors.push("bindingReceipt.closeout is invalid");
+  if (errors.length !== before) return;
   if (value.closeout === "complete") {
     if (value.activationVerification?.verified !== true) errors.push("complete bindingReceipt requires verified activation discovery");
     if ((value.hosts ?? []).some((host) => host.status !== "verified")) errors.push("complete bindingReceipt requires every host binding to be verified");
@@ -814,6 +816,7 @@ function validateBindingReceipt(value, errors) {
 function validateWorkspaceIdentity(value, errors) {
   const keys = ["schemaVersion", "workspaceIdentityId", "canonicalRootLocator", "boundaryClaims", "observedAt"];
   if (!exactKeys(value, keys, [], "workspaceIdentity", errors)) return;
+  const before = errors.length;
   schemaVersion(value.schemaVersion, "workspaceIdentity", errors);
   string(value.workspaceIdentityId, "workspaceIdentity.workspaceIdentityId", errors, taskIdPattern);
   string(value.canonicalRootLocator, "workspaceIdentity.canonicalRootLocator", errors);
@@ -826,6 +829,7 @@ function validateWorkspaceIdentity(value, errors) {
     string(claim.identity, `${label}.identity`, errors);
     dateTime(claim.observedAt, `${label}.observedAt`, errors);
   });
+  if (errors.length !== before) return;
   const boundaryKeys = value.boundaryClaims?.map((claim) => `${claim.providerId}:${claim.kind}:${claim.identity}`) ?? [];
   if (new Set(boundaryKeys).size !== boundaryKeys.length) errors.push("workspaceIdentity.boundaryClaims contains duplicate identities");
   dateTime(value.observedAt, "workspaceIdentity.observedAt", errors);
@@ -915,6 +919,7 @@ function validateRuleClaim(value, errors, label = "ruleClaim") {
 function validateEffectiveProfileV2(value, errors) {
   const keys = ["schemaVersion", "profileId", "revisionId", "workspaceIdentityId", "computed", "computedAt", "completeness", "sourceIds", "workspaceRelationshipIds", "ruleClaims", "dependencyEdges", "applicablePackIds", "conflicts", "explanationId", "limitedReasons"];
   if (!exactKeys(value, keys, [], "effectiveProfileV2", errors)) return;
+  const before = errors.length;
   if (value.schemaVersion !== "2.0") errors.push("effectiveProfileV2.schemaVersion must equal 2.0");
   string(value.profileId, "effectiveProfileV2.profileId", errors, taskIdPattern);
   string(value.revisionId, "effectiveProfileV2.revisionId", errors, taskIdPattern);
@@ -945,6 +950,7 @@ function validateEffectiveProfileV2(value, errors) {
   string(value.explanationId, "effectiveProfileV2.explanationId", errors, taskIdPattern);
   strings(value.limitedReasons, "effectiveProfileV2.limitedReasons", errors, { unique: true });
 
+  if (errors.length !== before) return;
   const sourceIds = new Set(value.sourceIds ?? []);
   const claimIds = value.ruleClaims?.map((claim) => claim.claimId) ?? [];
   const edgeIds = value.dependencyEdges?.map((edge) => edge.edgeId) ?? [];
@@ -976,6 +982,7 @@ function validateEffectiveProfileV2(value, errors) {
 function validateProfileExplanation(value, errors) {
   const keys = ["schemaVersion", "explanationId", "profileId", "profileRevisionId", "workspaceIdentityId", "generatedAt", "completeness", "sourceSummaries", "claimDecisions", "conflicts", "confirmationNeeds", "limitedReasons"];
   if (!exactKeys(value, keys, [], "profileExplanation", errors)) return;
+  const before = errors.length;
   schemaVersion(value.schemaVersion, "profileExplanation", errors);
   string(value.explanationId, "profileExplanation.explanationId", errors, taskIdPattern);
   string(value.profileId, "profileExplanation.profileId", errors, taskIdPattern);
@@ -1022,6 +1029,7 @@ function validateProfileExplanation(value, errors) {
     string(need.prompt, `${label}.prompt`, errors);
   });
   strings(value.limitedReasons, "profileExplanation.limitedReasons", errors, { unique: true });
+  if (errors.length !== before) return;
   const sourceIds = value.sourceSummaries?.map((source) => source.sourceId) ?? [];
   const claimIds = value.claimDecisions?.map((decision) => decision.claimId) ?? [];
   const conflictIds = value.conflicts?.map((conflict) => conflict.conflictId) ?? [];
@@ -1065,7 +1073,7 @@ function validatePhaseSliceCorrelation(value, errors, label = "phaseSliceCorrela
   string(value.executionAttemptId, `${label}.executionAttemptId`, errors, taskIdPattern);
   string(value.ownerWorkspaceIdentityId, `${label}.ownerWorkspaceIdentityId`, errors, taskIdPattern);
   strings(value.requiredSliceIds, `${label}.requiredSliceIds`, errors, { min: 1, pattern: taskIdPattern, unique: true });
-  if (!value.requiredSliceIds?.includes(value.sliceId)) errors.push(`${label}.requiredSliceIds must include the exact sliceId`);
+  if (Array.isArray(value.requiredSliceIds) && !value.requiredSliceIds.includes(value.sliceId)) errors.push(`${label}.requiredSliceIds must include the exact sliceId`);
   if (value.aggregateClosureClaim !== false) errors.push(`${label}.aggregateClosureClaim must equal false`);
 }
 
@@ -1121,6 +1129,7 @@ function validateControlTaskEnvelope(value, errors) {
   const label = "controlTaskEnvelope";
   const keys = ["schemaVersion", "envelopeId", "revisionId", "taskId", "workspaceIdentityId", "profileId", "profileRevisionId", "subject", "intent", "nonGoals", "entryMode", "phaseSliceCorrelation", "operations", "prohibitedOperations", "requiredGateIds", "returnContract", "createdAt"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   contractVersion(value.schemaVersion, "2.0", label, errors);
   for (const key of ["envelopeId", "revisionId", "taskId", "workspaceIdentityId", "profileId", "profileRevisionId"]) string(value[key], `${label}.${key}`, errors, taskIdPattern);
   validateSubject(value.subject, `${label}.subject`, errors);
@@ -1138,9 +1147,10 @@ function validateControlTaskEnvelope(value, errors) {
     strings(operation.scope, `${operationLabel}.scope`, errors, { min: 1, unique: true });
     string(operation.authorityRequirementId, `${operationLabel}.authorityRequirementId`, errors, taskIdPattern);
   });
+  strings(value.prohibitedOperations, `${label}.prohibitedOperations`, errors, { unique: true });
+  if (errors.length !== before) return;
   const operationIds = value.operations?.map((operation) => operation.operationId) ?? [];
   if (new Set(operationIds).size !== operationIds.length) errors.push(`${label}.operations contains duplicate operation ids`);
-  strings(value.prohibitedOperations, `${label}.prohibitedOperations`, errors, { unique: true });
   for (const operation of value.operations ?? []) if (value.prohibitedOperations?.includes(operation.operation)) errors.push(`${label} allows and prohibits the same operation: ${operation.operation}`);
   strings(value.requiredGateIds, `${label}.requiredGateIds`, errors, { pattern: taskIdPattern, unique: true });
   if (value.returnContract !== "return-receipt-v2") errors.push(`${label}.returnContract is invalid`);
@@ -1172,7 +1182,7 @@ function validateOperationGrant(value, errors) {
   if (exactKeys(value.retroactiveEffect, ["applies", "scope"], [], `${label}.retroactiveEffect`, errors)) {
     if (typeof value.retroactiveEffect.applies !== "boolean") errors.push(`${label}.retroactiveEffect.applies must be a boolean`);
     strings(value.retroactiveEffect.scope, `${label}.retroactiveEffect.scope`, errors, { unique: true });
-    if (value.retroactiveEffect.applies && value.retroactiveEffect.scope.length === 0) errors.push(`${label} bounded retroactive effect requires scope`);
+    if (value.retroactiveEffect.applies && Array.isArray(value.retroactiveEffect.scope) && value.retroactiveEffect.scope.length === 0) errors.push(`${label} bounded retroactive effect requires scope`);
   }
   if (Date.parse(value.notBefore) < Date.parse(value.issuedAt)) errors.push(`${label}.notBefore cannot precede issuedAt`);
   if (Date.parse(value.expiresAt) <= Date.parse(value.notBefore)) errors.push(`${label}.expiresAt must follow notBefore`);
@@ -1222,6 +1232,7 @@ function validateReturnReceiptV2(value, errors) {
   const label = "returnReceiptV2";
   const keys = ["schemaVersion", "receiptId", "taskId", "workspaceIdentityId", "profileId", "profileRevisionId", "envelopeId", "envelopeRevisionId", "controlRevisionId", "subjectId", "phaseSliceCorrelation", "exercisedOperationGrantIds", "changedScope", "validationEvidenceIdentityIds", "externalSideEffects", "confirmedNonMutations", "residualRisks", "rollbackEnvelopeLineageId", "deviations", "claimStatus", "verificationGateResultId", "closeout", "claimedAt"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   contractVersion(value.schemaVersion, "2.0", label, errors);
   for (const key of ["receiptId", "taskId", "workspaceIdentityId", "profileId", "profileRevisionId", "envelopeId", "envelopeRevisionId", "controlRevisionId", "subjectId"]) string(value[key], `${label}.${key}`, errors, taskIdPattern);
   validatePhaseSliceCorrelation(value.phaseSliceCorrelation, errors, `${label}.phaseSliceCorrelation`);
@@ -1236,6 +1247,7 @@ function validateReturnReceiptV2(value, errors) {
     string(effect.targetLocator, `${effectLabel}.targetLocator`, errors);
     dateTime(effect.observedAt, `${effectLabel}.observedAt`, errors);
   });
+  if (errors.length !== before) return;
   const sideEffectIds = value.externalSideEffects?.map((effect) => effect.operationId) ?? [];
   if (new Set(sideEffectIds).size !== sideEffectIds.length) errors.push(`${label}.externalSideEffects contains duplicate operation ids`);
   for (const key of ["confirmedNonMutations", "residualRisks", "deviations"]) strings(value[key], `${label}.${key}`, errors, { unique: true });
@@ -1254,6 +1266,7 @@ function validateRollbackEnvelopeLineage(value, errors) {
   const label = "rollbackEnvelopeLineage";
   const keys = ["schemaVersion", "lineageId", "workspaceIdentityId", "forwardEnvelope", "rollbackEnvelope", "forwardOperationGrantIds", "rollbackOperationGrantIds", "rollbackOperationIds", "state", "validationGateResultIds", "rollbackReceiptId", "declaredByEvidenceId", "reason", "createdAt"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   contractVersion(value.schemaVersion, "1.0", label, errors);
   string(value.lineageId, `${label}.lineageId`, errors, taskIdPattern);
   string(value.workspaceIdentityId, `${label}.workspaceIdentityId`, errors, taskIdPattern);
@@ -1266,6 +1279,7 @@ function validateRollbackEnvelopeLineage(value, errors) {
   string(value.reason, `${label}.reason`, errors);
   dateTime(value.createdAt, `${label}.createdAt`, errors);
   if (value.forwardEnvelope?.envelopeId === value.rollbackEnvelope?.envelopeId && value.forwardEnvelope?.revisionId === value.rollbackEnvelope?.revisionId) errors.push(`${label} rollback must use a new Envelope revision`);
+  if (errors.length !== before) return;
   const reusedGrants = (value.rollbackOperationGrantIds ?? []).filter((grantId) => value.forwardOperationGrantIds?.includes(grantId));
   if (reusedGrants.length > 0) errors.push(`${label} rollback cannot reuse forward Operation Grants: ${reusedGrants.join(", ")}`);
   if (["authorized", "executed", "verified"].includes(value.state) && (value.rollbackOperationGrantIds?.length ?? 0) === 0) errors.push(`${label} authorized or executed rollback requires rollback-specific grants`);
@@ -1276,6 +1290,7 @@ function validateReviewAuthorityRequirement(value, errors) {
   const label = "reviewAuthorityRequirement";
   const keys = ["schemaVersion", "requirementId", "workspaceIdentityId", "operation", "authorityClass", "subjectId", "scope", "authoritySourceIds", "acceptedEvidenceKinds", "quorum", "actorConstraints", "ownerCoverage", "freshness", "substitutionPolicy", "waiverPolicy", "declaredAt"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   contractVersion(value.schemaVersion, "1.0", label, errors);
   for (const key of ["requirementId", "workspaceIdentityId", "subjectId"]) string(value[key], `${label}.${key}`, errors, taskIdPattern);
   string(value.operation, `${label}.operation`, errors);
@@ -1290,12 +1305,12 @@ function validateReviewAuthorityRequirement(value, errors) {
   if (exactKeys(value.actorConstraints, ["eligibleActorSourceIds", "excludedRelations"], [], `${label}.actorConstraints`, errors)) {
     strings(value.actorConstraints.eligibleActorSourceIds, `${label}.actorConstraints.eligibleActorSourceIds`, errors, { pattern: taskIdPattern, unique: true });
     strings(value.actorConstraints.excludedRelations, `${label}.actorConstraints.excludedRelations`, errors, { unique: true });
-    for (const relation of value.actorConstraints.excludedRelations ?? []) if (!["subject-author", "executor", "evidence-author"].includes(relation)) errors.push(`${label}.actorConstraints.excludedRelations contains an invalid relation`);
+    for (const relation of Array.isArray(value.actorConstraints.excludedRelations) ? value.actorConstraints.excludedRelations : []) if (!["subject-author", "executor", "evidence-author"].includes(relation)) errors.push(`${label}.actorConstraints.excludedRelations contains an invalid relation`);
   }
   if (exactKeys(value.ownerCoverage, ["required", "surfaceIds"], [], `${label}.ownerCoverage`, errors)) {
     if (typeof value.ownerCoverage.required !== "boolean") errors.push(`${label}.ownerCoverage.required must be a boolean`);
     strings(value.ownerCoverage.surfaceIds, `${label}.ownerCoverage.surfaceIds`, errors, { pattern: taskIdPattern, unique: true });
-    if (value.ownerCoverage.required && value.ownerCoverage.surfaceIds.length === 0) errors.push(`${label} required owner coverage needs at least one surface`);
+    if (value.ownerCoverage.required && Array.isArray(value.ownerCoverage.surfaceIds) && value.ownerCoverage.surfaceIds.length === 0) errors.push(`${label} required owner coverage needs at least one surface`);
   }
   if (exactKeys(value.freshness, ["maxAgeSeconds", "expiresRequired"], [], `${label}.freshness`, errors)) {
     if (!Number.isInteger(value.freshness.maxAgeSeconds) || value.freshness.maxAgeSeconds < 1) errors.push(`${label}.freshness.maxAgeSeconds must be a positive integer`);
@@ -1314,6 +1329,7 @@ function validateReviewAuthorityRequirement(value, errors) {
       if (edge.toRequirementId !== value.requirementId) errors.push(`${edgeLabel} must target the exact authority requirement`);
       if (edge.direction !== "one-way" || edge.transitive !== false) errors.push(`${edgeLabel} equivalence must be one-way and non-transitive`);
     });
+    if (errors.length !== before) return;
     const edgeIds = value.substitutionPolicy.equivalenceEdges?.map((edge) => edge.edgeId) ?? [];
     if (new Set(edgeIds).size !== edgeIds.length) errors.push(`${label}.substitutionPolicy.equivalenceEdges contains duplicate edge ids`);
     if (value.substitutionPolicy.mode === "none" && edgeIds.length > 0) errors.push(`${label} non-substitutable requirement cannot declare equivalence edges`);
@@ -1337,7 +1353,7 @@ function validateAuthorityEvidence(value, errors) {
   if (!authorityClasses.includes(value.authorityClass)) errors.push(`${label}.authorityClass is invalid`);
   string(value.actorId, `${label}.actorId`, errors);
   strings(value.actorRelations, `${label}.actorRelations`, errors, { unique: true });
-  for (const relation of value.actorRelations ?? []) if (!["subject-author", "executor", "evidence-author", "surface-owner", "independent-reviewer"].includes(relation)) errors.push(`${label}.actorRelations contains an invalid relation`);
+  for (const relation of Array.isArray(value.actorRelations) ? value.actorRelations : []) if (!["subject-author", "executor", "evidence-author", "surface-owner", "independent-reviewer"].includes(relation)) errors.push(`${label}.actorRelations contains an invalid relation`);
   strings(value.scope, `${label}.scope`, errors, { min: 1, unique: true });
   strings(value.coveredSurfaceIds, `${label}.coveredSurfaceIds`, errors, { pattern: taskIdPattern, unique: true });
   const lifecycleStates = ["current", "stale", "revoked", "dismissed", "expired", "superseded"];
@@ -1361,6 +1377,7 @@ function validateValidationTopology(value, errors) {
   const label = "validationTopology";
   const keys = ["schemaVersion", "topologyId", "topologyRevisionId", "workspaceIdentityId", "profileId", "profileRevisionId", "subjectId", "coverageMode", "changedSurfaces", "validationRequirements", "declaredAt"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   contractVersion(value.schemaVersion, "1.0", label, errors);
   for (const key of ["topologyId", "topologyRevisionId", "workspaceIdentityId", "profileId", "profileRevisionId", "subjectId"]) string(value[key], `${label}.${key}`, errors, taskIdPattern);
   if (!["required", "advisory", "undeclared"].includes(value.coverageMode)) errors.push(`${label}.coverageMode is invalid`);
@@ -1383,12 +1400,13 @@ function validateValidationTopology(value, errors) {
     string(requirement.entrypointId, `${requirementLabel}.entrypointId`, errors, taskIdPattern);
     strings(requirement.prerequisiteDependencyEdgeIds, `${requirementLabel}.prerequisiteDependencyEdgeIds`, errors, { pattern: taskIdPattern, unique: true });
     strings(requirement.acceptedTrustClasses, `${requirementLabel}.acceptedTrustClasses`, errors, { min: 1, unique: true });
-    for (const trustClass of requirement.acceptedTrustClasses ?? []) if (!trustClasses.includes(trustClass)) errors.push(`${requirementLabel}.acceptedTrustClasses contains an invalid trust class`);
+    for (const trustClass of Array.isArray(requirement.acceptedTrustClasses) ? requirement.acceptedTrustClasses : []) if (!trustClasses.includes(trustClass)) errors.push(`${requirementLabel}.acceptedTrustClasses contains an invalid trust class`);
     strings(requirement.expectedResults, `${requirementLabel}.expectedResults`, errors, { min: 1, unique: true });
-    for (const result of requirement.expectedResults ?? []) if (!["passed", "not_applicable"].includes(result)) errors.push(`${requirementLabel}.expectedResults contains an invalid result`);
+    for (const result of Array.isArray(requirement.expectedResults) ? requirement.expectedResults : []) if (!["passed", "not_applicable"].includes(result)) errors.push(`${requirementLabel}.expectedResults contains an invalid result`);
     strings(requirement.evidenceLocators, `${requirementLabel}.evidenceLocators`, errors, { min: 1, unique: true });
     if (typeof requirement.selected !== "boolean") errors.push(`${requirementLabel}.selected must be a boolean`);
   });
+  if (errors.length !== before) return;
   const surfaceIds = value.changedSurfaces?.map((surface) => surface.surfaceId) ?? [];
   const requirementIds = value.validationRequirements?.map((requirement) => requirement.requirementId) ?? [];
   if (new Set(surfaceIds).size !== surfaceIds.length) errors.push(`${label}.changedSurfaces contains duplicate surface ids`);
@@ -1432,6 +1450,7 @@ function validateExecutionContextIdentity(value, errors) {
   const label = "executionContextIdentity";
   const keys = ["schemaVersion", "executionContextIdentityId", "workspaceIdentityId", "subjectId", "entrypoint", "invocationRoot", "executor", "runner", "toolIdentities", "providerIdentities", "dependencies", "observedAt", "sanitized"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   contractVersion(value.schemaVersion, "1.0", label, errors);
   for (const key of ["executionContextIdentityId", "workspaceIdentityId", "subjectId"]) string(value[key], `${label}.${key}`, errors, taskIdPattern);
   if (exactKeys(value.entrypoint, ["entrypointId", "kind", "locator", "digest"], [], `${label}.entrypoint`, errors)) {
@@ -1465,6 +1484,7 @@ function validateExecutionContextIdentity(value, errors) {
     validateNullableLimitedReason(dependency.limitedReason, errors, `${dependencyLabel}.limitedReason`);
     if ((dependency.availability !== "available" || ["undeclared-external", "unavailable-external"].includes(dependency.boundary)) && dependency.limitedReason === null) errors.push(`${dependencyLabel} unavailable or boundary-crossing dependency requires a limited reason`);
   });
+  if (errors.length !== before) return;
   const dependencyIds = value.dependencies?.map((dependency) => dependency.dependencyId) ?? [];
   if (new Set(dependencyIds).size !== dependencyIds.length) errors.push(`${label}.dependencies contains duplicate ids`);
   dateTime(value.observedAt, `${label}.observedAt`, errors);
@@ -1494,6 +1514,7 @@ function validateHostAdapterObservation(value, errors) {
   const label = "hostAdapterObservation";
   const keys = ["schemaVersion", "observationId", "adapterId", "adapterVersion", "hostIdentityId", "workspaceIdentityId", "scopeKind", "taskId", "subjectId", "controlRevisionId", "authorizationClaim", "capabilities", "observedAt", "sanitized"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   contractVersion(value.schemaVersion, "1.0", label, errors);
   string(value.observationId, `${label}.observationId`, errors, taskIdPattern);
   string(value.adapterId, `${label}.adapterId`, errors, idPattern);
@@ -1505,6 +1526,7 @@ function validateHostAdapterObservation(value, errors) {
   const capabilities = ["instruction-discovery", "workspace-boundary-discovery", "skill-or-plugin-discovery", "binding", "activation", "mutation", "execution-context", "verification"];
   if (!Array.isArray(value.capabilities) || value.capabilities.length === 0) errors.push(`${label}.capabilities must be a non-empty array`);
   else value.capabilities.forEach((capability, index) => validateAdapterCapabilityObservation(capability, errors, `${label}.capabilities[${index}]`, capabilities));
+  if (errors.length !== before) return;
   const capabilityIds = value.capabilities?.map((capability) => capability.capability) ?? [];
   if (new Set(capabilityIds).size !== capabilityIds.length) errors.push(`${label}.capabilities contains duplicate capability observations`);
   dateTime(value.observedAt, `${label}.observedAt`, errors);
@@ -1515,6 +1537,7 @@ function validateProviderAdapterObservation(value, errors) {
   const label = "providerAdapterObservation";
   const keys = ["schemaVersion", "observationId", "adapterId", "adapterVersion", "providerId", "workspaceIdentityId", "sourceIdentityId", "scopeKind", "taskId", "subjectId", "controlRevisionId", "identity", "authorizationClaim", "capabilities", "observedAt", "sanitized"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   contractVersion(value.schemaVersion, "1.0", label, errors);
   string(value.observationId, `${label}.observationId`, errors, taskIdPattern);
   string(value.adapterId, `${label}.adapterId`, errors, idPattern);
@@ -1549,6 +1572,7 @@ function validateProviderAdapterObservation(value, errors) {
     if (capability.state !== "supported" && capability.limitedReason === null) errors.push(`${capabilityLabel} non-supported capability requires a bounded limited reason`);
     if (capability.requiresIdentity && value.identity?.state !== "authenticated" && capability.state === "supported") errors.push(`${capabilityLabel} cannot be supported without authenticated identity`);
   });
+  if (errors.length !== before) return;
   const capabilityIds = value.capabilities?.map((capability) => capability.capability) ?? [];
   if (new Set(capabilityIds).size !== capabilityIds.length) errors.push(`${label}.capabilities contains duplicate capability observations`);
   dateTime(value.observedAt, `${label}.observedAt`, errors);
@@ -1565,6 +1589,7 @@ function validateCrossWorkspacePackComposition(value, errors) {
   const label = "crossWorkspacePackComposition";
   const keys = ["schemaVersion", "compositionId", "packId", "packVersion", "coreCompatibility", "kernelInvariants", "workspaceSet", "nodes", "dependencyEdges", "phases", "workspaceReceiptBundle", "declaredAt"];
   if (!exactKeys(value, keys, [], label, errors)) return;
+  const before = errors.length;
   contractVersion(value.schemaVersion, "1.0", label, errors);
   string(value.compositionId, `${label}.compositionId`, errors, taskIdPattern);
   if (value.packId !== "forgerail-cross-workspace-orchestration") errors.push(`${label}.packId is invalid`);
@@ -1575,7 +1600,7 @@ function validateCrossWorkspacePackComposition(value, errors) {
     for (const key of ["workspaceIdentityVersions", "taskEnvelopeVersions", "returnReceiptVersions", "phaseSliceCorrelationVersions"]) strings(value.coreCompatibility[key], `${label}.coreCompatibility.${key}`, errors, { min: 1, unique: true });
     if (!["compatible", "incompatible", "unverified"].includes(value.coreCompatibility.status)) errors.push(`${label}.coreCompatibility.status is invalid`);
     strings(value.coreCompatibility.evidenceIdentityIds, `${label}.coreCompatibility.evidenceIdentityIds`, errors, { pattern: taskIdPattern, unique: true });
-    if (value.coreCompatibility.status === "compatible" && value.coreCompatibility.evidenceIdentityIds.length === 0) errors.push(`${label} compatible Core contracts require evidence`);
+    if (value.coreCompatibility.status === "compatible" && Array.isArray(value.coreCompatibility.evidenceIdentityIds) && value.coreCompatibility.evidenceIdentityIds.length === 0) errors.push(`${label} compatible Core contracts require evidence`);
   }
 
   const invariantKeys = ["stateModelRedefined", "operationGrantMinting", "authoritySubstitution", "waiverBroadening", "freshnessBroadening", "receiptVerificationBypass", "transportAsAcceptance"];
@@ -1628,7 +1653,7 @@ function validateCrossWorkspacePackComposition(value, errors) {
           || node.coreReceipt.envelopeRevisionId !== node.coreEnvelope?.envelopeRevisionId
           || node.coreReceipt.subjectId !== node.coreEnvelope?.subjectId) errors.push(`${receiptLabel} must bind the exact node, Envelope revision, and subject`);
         if (node.coreReceipt.verificationStatus === "verified" && !node.coreReceipt.verificationGateResultId) errors.push(`${receiptLabel} verified receipt requires a verification gate result`);
-        if (node.coreReceipt.coordinatorAcceptance === "accepted" && (node.coreReceipt.verificationStatus !== "verified" || node.coreReceipt.coordinatorAcceptanceEvidenceIdentityIds.length === 0)) errors.push(`${receiptLabel} coordinator acceptance requires a Core-verified receipt and acceptance evidence`);
+        if (node.coreReceipt.coordinatorAcceptance === "accepted" && (node.coreReceipt.verificationStatus !== "verified" || (Array.isArray(node.coreReceipt.coordinatorAcceptanceEvidenceIdentityIds) && node.coreReceipt.coordinatorAcceptanceEvidenceIdentityIds.length === 0))) errors.push(`${receiptLabel} coordinator acceptance requires a Core-verified receipt and acceptance evidence`);
       }
     }
     if (!["pending", "ready", "executing", "receipt_pending", "verification_pending", "acceptance_pending", "accepted", "blocked", "failed", "stale"].includes(node.state)) errors.push(`${nodeLabel}.state is invalid`);
@@ -1692,6 +1717,7 @@ function validateCrossWorkspacePackComposition(value, errors) {
     if (bundle.predecessorBundleRevisionId === bundle.bundleRevisionId) errors.push(`${bundleLabel} cannot be its own predecessor`);
   }
 
+  if (errors.length !== before) return;
   const nodes = value.nodes ?? [];
   const nodeIds = nodes.map((node) => node.nodeId);
   const nodeMap = new Map(nodes.map((node) => [node.nodeId, node]));
@@ -1804,9 +1830,40 @@ function validateCrossWorkspacePackComposition(value, errors) {
   dateTime(value.declaredAt, `${label}.declaredAt`, errors);
 }
 
+// These limits protect all recursive credential and semantic scans below.
+// Count the root at depth zero and every JSON value (including scalars) as a node.
+const maxContractDepth = 64;
+const maxContractNodes = 10000;
+
+function* contractChildren(value) {
+  if (Array.isArray(value)) yield* value;
+  else if (object(value)) {
+    for (const key in value) if (Object.hasOwn(value, key)) yield value[key];
+  }
+}
+
+function contractComplexityError(payload) {
+  // Keep only the current traversal path, rather than enqueueing a wide input.
+  const stack = [[payload][Symbol.iterator]()];
+  let nodes = 0;
+  while (stack.length) {
+    const next = stack.at(-1).next();
+    if (next.done) {
+      stack.pop();
+      continue;
+    }
+    if (stack.length - 1 > maxContractDepth) return `contract input exceeds maximum depth of ${maxContractDepth}`;
+    if (++nodes > maxContractNodes) return `contract input exceeds maximum node count of ${maxContractNodes}`;
+    if (next.value !== null && typeof next.value === "object") stack.push(contractChildren(next.value));
+  }
+  return null;
+}
+
 export function validateContract(type, payload) {
   const errors = [];
   if (!contractTypes.includes(type)) return { valid: false, errors: [`unknown contract type: ${type}`] };
+  const complexityError = contractComplexityError(payload);
+  if (complexityError) return { valid: false, errors: [complexityError] };
   if (["workspace-identity", "workspace-relationship", "execution-context-identity"].includes(type) && containsInlineSecret(payload)) {
     return { valid: false, errors: [`${type} contains credential material`] };
   }

@@ -4,6 +4,15 @@
 
 No shipping changes yet.
 
+## 0.1.9 - 2026-10-12
+
+- Keep lifecycle journals and temporary recovery copies owner-readable only, retain original file modes for rollback, and require manual original-permission verification for both replaced and deleted files in legacy 1.1 journals.
+- Frame project governance blocks independently of existing Markdown while preserving user bytes on removal; reject insertion into unfinished code fences or HTML comments.
+- Confirm binding identity claims against their sources before and after provider preflight; bound each request to 128 provider calls and 15 seconds and reject duplicate selectors.
+- Exclude explicit examples, inline-code directives and fenced headings from instruction/source evidence; return bounded validation errors for malformed or excessively complex contract inputs.
+
+See [release notes](docs/release-0.1.9.md). This is a reliability-only patch; publication is confirmed by npm and the versioned GitHub Release.
+
 ## 0.1.8 - 2026-10-03
 
 - Add an optional workspace-owned Project Profile with bounded source and claim resolution, explicit activation/removal, and read-only GitHub API, Git SSH and npm identity observations.

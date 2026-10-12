@@ -3,6 +3,7 @@ import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { performance } from "node:perf_hooks";
 import { validateContract, containsInlineSecret } from "./contracts.mjs";
 import { readProjectFileBytes } from "./project-state.mjs";
 import { providerAdapterRegistry } from "./provider-adapter-registry.mjs";
@@ -53,8 +54,23 @@ function reason(binding, observedAt, code, impact, summary) {
 }
 
 function defaultRun(command, args, options) {
-  const result = spawnSync(command, args, { cwd: options.cwd, env: options.env, encoding: "utf8", timeout: 15000, maxBuffer: 64 * 1024 });
+  const result = spawnSync(command, args, { cwd: options.cwd, env: options.env, encoding: "utf8", timeout: options.timeout, killSignal: "SIGKILL", maxBuffer: 64 * 1024 });
   return { status: result.status, errorCode: result.error?.code ?? null, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
+}
+
+export function createProviderObservationBudget({ maxCalls = 128, timeoutMs = 15000, now = () => performance.now() } = {}) {
+  if (!Number.isInteger(maxCalls) || maxCalls < 1 || maxCalls > 128 || !Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 15000) throw new Error("invalid provider request budget");
+  const deadline = now() + timeoutMs;
+  let calls = 0;
+  return Object.freeze({
+    reserve() {
+      const remaining = Math.floor(deadline - now());
+      if (calls >= maxCalls || remaining < 1) throw new Error("provider request budget exhausted");
+      calls += 1;
+      return remaining;
+    },
+    expired() { return now() >= deadline; },
+  });
 }
 
 function credentialBytes(binding, context) {
@@ -138,7 +154,7 @@ function capability(binding, authenticated, evidenceIdentityIds, observedAt) {
   return [{ capability: "source-observation", state: authenticated ? "supported" : "unavailable", requiresIdentity: true, sideEffectKinds: [], approvalRequirementIds: [], evidenceIdentityIds, limitedReason: authenticated ? null : reason(binding, observedAt, "unauthenticated-provider", "unavailable", "Provider identity could not be authenticated.") }];
 }
 
-export function observeProjectProfileBindings({ workspace, declaration, operationId = null, targetId = null, executionContextIdentity = null, workspaceRelationships = [], relatedWorkspaceIdentities = [], environment = process.env, run = defaultRun, observedAt = new Date().toISOString() }) {
+export function observeProjectProfileBindings({ workspace, declaration, operationId = null, targetId = null, executionContextIdentity = null, workspaceRelationships = [], relatedWorkspaceIdentities = [], environment = process.env, run = defaultRun, requestBudget = createProviderObservationBudget(), observedAt = new Date().toISOString() }) {
   const validation = validateContract("project-profile-declaration", declaration);
   if (!validation.valid) throw new Error(`invalid Project Profile declaration: ${validation.errors.join("; ")}`);
   const root = realpathSync(workspace);
@@ -154,13 +170,18 @@ export function observeProjectProfileBindings({ workspace, declaration, operatio
   for (const binding of declaration.resourceBindings) {
     if (!binding.operationIds.includes(operationId)) { bindings.push({ bindingId: binding.bindingId, operationIds: binding.operationIds, requiredness: binding.requiredness, status: "not-applicable" }); continue; }
     const adapter = providerAdapterRegistry[binding.adapterId];
-    if (!adapter || !adapter.operations.includes(operationId) || !adapter.locatorKinds.includes(binding.locator.kind)) { bindings.push({ bindingId: binding.bindingId, operationIds: binding.operationIds, requiredness: binding.requiredness, status: "unsupported" }); continue; }
+    if (!adapter || !adapter.operations.includes(operationId) || !adapter.locatorKinds.includes(binding.locator.kind)) { bindings.push({ bindingId: binding.bindingId, operationIds: binding.operationIds, requiredness: binding.requiredness, status: "unsupported" }); if (binding.requiredness === "required") break; continue; }
     const observationId = `provider-observation:${sha256(JSON.stringify([declaration.workspaceIdentityId, executionContextIdentity.executionContextIdentityId, binding.bindingId, operationId, targetId, observedAt])).slice(0, 32)}`;
     let actorId = null, limitedReason = null, resultEvidence = [];
     try {
       const credentials = credentialBytes(binding, { workspace: root, declaration, workspaceRelationships, relatedWorkspaceIdentities, environment });
       const command = commandFor(binding, { workspace: root, environment }, credentials);
-      try { const result = run(command.command, command.args, { cwd: command.cwd ?? root, env: command.env }); providerCalls += 1; actorId = sanitizedActor(command.parse(result)); }
+      try {
+        const timeout = requestBudget.reserve();
+        providerCalls += 1;
+        const result = run(command.command, command.args, { cwd: command.cwd ?? root, env: command.env, timeout });
+        if (!requestBudget.expired()) actorId = sanitizedActor(command.parse(result));
+      }
       finally { command.cleanup?.(); }
       if (actorId) resultEvidence = [`evidence:${sha256(observationId).slice(0, 32)}`];
       else limitedReason = reason(binding, observedAt, "unauthenticated-provider", "unavailable", "Provider identity could not be authenticated.");
@@ -175,6 +196,7 @@ export function observeProjectProfileBindings({ workspace, declaration, operatio
     observations.push(observation);
     const status = actorId ? expected.length > 0 && expected.every((value) => value === actorId) ? "matched" : "wrong-actor" : "unresolved";
     bindings.push({ bindingId: binding.bindingId, operationIds: binding.operationIds, requiredness: binding.requiredness, status, targetId, targetPermission: binding.adapterId === "npm-registry" ? "unverified" : "not-observed", observationId: observation.observationId, rebind: status === "unresolved" ? { required: true, currentLocator: binding.locator, action: "review-project-profile-candidate" } : null });
+    if (binding.requiredness === "required" && status !== "matched") break;
   }
   return { executionContextIdentityId: executionContextIdentity.executionContextIdentityId, observations, bindings, providerCalls };
 }

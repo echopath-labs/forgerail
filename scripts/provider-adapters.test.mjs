@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import test from "node:test";
-import { classifyProjectProfileInspection, observeProjectProfileBindings, providerAdapterRegistry } from "./lib/provider-adapters.mjs";
+import { classifyProjectProfileInspection, createProviderObservationBudget, observeProjectProfileBindings, providerAdapterRegistry } from "./lib/provider-adapters.mjs";
 import { containsInlineSecret, validateContract } from "./lib/contracts.mjs";
 
 const observedAt = "2026-09-27T00:00:00Z";
@@ -366,4 +366,74 @@ test("SSH observation requires completed GitHub authentication, not a buffered g
     const observation = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", executionContextIdentity: context(root), observedAt, run() { return { stdout: "", ...result }; } });
     assert.equal(observation.bindings[0].status, result.status === 1 && !result.errorCode && result.stderr === greeting ? "matched" : "unresolved");
   }
+});
+
+test("a required provider identity failure stops subsequent observations", () => {
+  for (const firstResult of [{ status: 0, stdout: "wrong-user", stderr: "" }, { status: 1, stdout: "", stderr: "" }, null]) {
+    const root = workspace(); const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+    value.resourceBindings.push({ ...value.resourceBindings[0], bindingId: "binding:later" });
+    let calls = 0;
+    const result = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", executionContextIdentity: context(root), observedAt, run() { calls++; if (firstResult === null) throw new Error("failure"); return calls === 1 ? firstResult : { status: 0, stdout: "expected-user", stderr: "" }; } });
+    assert.equal(calls, 1);
+    assert.equal(result.providerCalls, 1);
+    assert.equal(result.bindings.length, 1);
+    assert.notEqual(result.bindings[0].status, "matched");
+    assert.equal(result.observations[0].authorizationClaim, false);
+  }
+});
+
+test("one request shares a bounded call count across selectors and bindings", () => {
+  const root = workspace(); const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  value.resourceBindings = Array.from({ length: 128 }, (_, index) => ({ ...value.resourceBindings[0], bindingId: `binding:${index}` }));
+  const requestBudget = createProviderObservationBudget(); let calls = 0;
+  const run = () => { calls++; return { status: 0, stdout: "expected-user", stderr: "" }; };
+  const first = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:first", executionContextIdentity: context(root), observedAt, requestBudget, run });
+  const next = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:next", executionContextIdentity: context(root), observedAt, requestBudget, run });
+  assert.equal(first.providerCalls, 128);
+  assert.equal(next.providerCalls, 0);
+  assert.equal(calls, 128);
+  assert.equal(next.bindings[0].status, "unresolved");
+});
+
+test("provider timeout uses the remaining monotonic request deadline and rejects late success", () => {
+  const root = workspace(); const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  value.resourceBindings = ["first", "later", "never"].map((name) => ({ ...value.resourceBindings[0], bindingId: `binding:${name}` }));
+  let time = 0; const requestBudget = createProviderObservationBudget({ timeoutMs: 100, now: () => time }); const timeouts = [];
+  const result = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", executionContextIdentity: context(root), observedAt, requestBudget, run(_command, _args, options) { timeouts.push(options.timeout); time += 60; return { status: 0, stdout: "expected-user", stderr: "" }; } });
+  assert.deepEqual(timeouts, [100, 40]);
+  assert.deepEqual(result.bindings.map((binding) => binding.status), ["matched", "unresolved"]);
+  assert.equal(result.providerCalls, 2);
+  const later = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:next", executionContextIdentity: context(root), observedAt, requestBudget, run() { assert.fail("expired request must not call provider"); } });
+  assert.equal(later.providerCalls, 0);
+});
+
+test("the subprocess runner enforces the request's remaining timeout with a local fake provider", () => {
+  const root = workspace(); const fakeBin = resolve(root, "fake-bin"); mkdirSync(fakeBin);
+  const fakeGh = resolve(fakeBin, "gh");
+  writeFileSync(fakeGh, `#!${process.execPath}\nsetTimeout(() => console.log('expected-user'), 1000);\n`); chmodSync(fakeGh, 0o755);
+  const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  const requestBudget = createProviderObservationBudget({ timeoutMs: 50 });
+  const start = performance.now();
+  const result = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", executionContextIdentity: context(root), observedAt, requestBudget, environment: { PATH: fakeBin } });
+  assert.equal(result.providerCalls, 1);
+  assert.equal(result.bindings[0].status, "unresolved");
+  assert.ok(performance.now() - start < 750, "50ms budget must not wait for the fake provider's 1s response");
+});
+
+test("the subprocess deadline terminates a direct child that ignores SIGTERM", () => {
+  const root = workspace(); const fakeBin = resolve(root, "fake-bin"); mkdirSync(fakeBin);
+  const fakeGh = resolve(fakeBin, "gh"); const ready = resolve(root, "ready");
+  // Allow this fixture's interpreter to install its handler before testing
+  // termination. The late fallback still cannot satisfy the elapsed guard;
+  // product deadlines are unchanged and the 50ms deadline case stays above.
+  writeFileSync(fakeGh, `#!${process.execPath}\nprocess.on('SIGTERM', () => {});\nrequire('node:fs').writeFileSync(${JSON.stringify(ready)}, 'ready');\nsetTimeout(() => { console.log('expected-user'); process.exit(0); }, 10000);\n`); chmodSync(fakeGh, 0o755);
+  const value = declaration({ ...base, providerId: "github", adapterId: "github-cli-api", operationIds: ["git.push"], locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } } });
+  const requestBudget = createProviderObservationBudget({ timeoutMs: 3000 });
+  const start = performance.now();
+  const result = observeProjectProfileBindings({ workspace: root, declaration: value, operationId: "git.push", targetId: "repo:test", executionContextIdentity: context(root), observedAt, requestBudget, environment: { PATH: fakeBin } });
+  const elapsed = performance.now() - start;
+  assert.equal(existsSync(ready), true, "fake provider installed its SIGTERM handler before the deadline");
+  assert.equal(result.providerCalls, 1);
+  assert.equal(result.bindings[0].status, "unresolved");
+  assert.ok(elapsed < 5000, `3s fixture deadline must not wait for the SIGTERM-resistant child's 10s fallback (${elapsed}ms)`);
 });

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, opendirSync, realpathSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { inspectBoundedPath } from "./bounded-read.mjs";
+import { matchedInlineCodeSpans, markdownRawHtmlOpening } from "./instruction-pointers.mjs";
 
 export const projectFileLimit = 4 * 1024 * 1024;
 export const projectDirectoryEntryLimit = 10000;
@@ -21,6 +22,7 @@ export const MANIFEST = ".forgerail/installation.json";
 export const JOURNAL = ".forgerail-operation.json";
 export const LOCK = ".forgerail-operation.lock";
 export const marker = "forgerail:project:codex:v1";
+export const framing = `<!-- ${marker}:framing:lf2-lf1 -->`;
 export const hash = (value) => createHash("sha256").update(value).digest("hex");
 export const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
 export const digest = (value) => value === null ? null : hash(value);
@@ -100,7 +102,89 @@ export function managedBlock(content) {
   const starts = content.split(start).length - 1, ends = content.split(end).length - 1;
   if (!starts && !ends) return null;
   if (starts !== 1 || ends !== 1 || content.indexOf(start) > content.indexOf(end)) throw new Error("invalid project managed block");
-  return content.slice(content.indexOf(start), content.indexOf(end) + end.length);
+  const from = content.indexOf(start), to = content.indexOf(end) + end.length;
+  const block = content.slice(from, to);
+  if (block.includes(`<!-- ${marker}:framing:`)) {
+    if (!block.startsWith(`${start}\n${framing}\n`) || block.split(framing).length !== 2 || content.slice(from - 2, from) !== "\n\n" || content.slice(to, to + 1) !== "\n") throw new Error("invalid project managed framing; ownership reconciliation required");
+    return content.slice(from - 2, to + 1);
+  }
+  return block;
+}
+
+// A bounded structural check, not a general Markdown parser. Blank framing
+// ends ordinary paragraph, list and quote contexts, but cannot close a fence
+// or HTML comment. Reject those contexts rather than hiding governance in them.
+export function assertMarkdownInsertion(content) {
+  const text = (content ?? "").replace(/\r\n?/g, "\n").replace(/^\ufeff/gm, "");
+  const spans = matchedInlineCodeSpans(text);
+  let fence = null, comment = false, rawHtml = null, codeEnd = 0, spanIndex = 0, nextLineOffset = 0;
+  for (const line of text.split("\n")) {
+    const lineOffset = nextLineOffset;
+    nextLineOffset += line.length + 1;
+    if (fence) {
+      const close = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
+      if (close && close[1][0] === fence.char && close[1].length >= fence.length) fence = null;
+      continue;
+    }
+    let offset = 0, htmlTail = false;
+    if (!comment && !rawHtml && codeEnd <= lineOffset) {
+      const open = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+      if (open && !(open[1][0] === "`" && open[2].includes("`"))) { fence = { char: open[1][0], length: open[1].length }; continue; }
+      const html = markdownRawHtmlOpening(line);
+      // Blank framing ends ordinary HTML blocks; these explicit-terminator
+      // blocks must close themselves before governance can be appended.
+      if (html?.end !== undefined && html.end !== null) rawHtml = html;
+    }
+    let commentStart = line.indexOf("<!--", offset), nextHtml;
+    const htmlOpen = /<(script|pre|style|textarea)(?=[\s>]|$)|<\?|<!\[CDATA\[|<![A-Z]/ig;
+    while (offset < line.length) {
+      if (rawHtml) {
+        let end;
+        if (rawHtml.caseInsensitive) {
+          const close = new RegExp(rawHtml.end, "ig"); close.lastIndex = offset;
+          end = close.exec(line)?.index ?? -1;
+        } else end = line.indexOf(rawHtml.end, offset);
+        if (end < 0) break;
+        offset = end + rawHtml.end.length; rawHtml = null; htmlTail = true;
+        continue;
+      }
+      if (comment) {
+        const end = line.indexOf("-->", offset);
+        if (end < 0) break;
+        comment = false; offset = end + 3;
+        continue;
+      }
+      if (codeEnd > lineOffset + offset) {
+        offset = Math.min(line.length, codeEnd - lineOffset);
+        continue;
+      }
+      if (commentStart !== -1 && commentStart < offset) commentStart = line.indexOf("<!--", offset);
+      // The rest of a raw HTML block's closing line is still HTML. Scan it
+      // for another container or comment; Markdown escapes/code cannot hide it.
+      if (htmlTail && (nextHtml === undefined || (nextHtml !== null && nextHtml.index < offset))) {
+        htmlOpen.lastIndex = offset; nextHtml = htmlOpen.exec(line);
+      }
+      const boundary = Math.min(commentStart < 0 ? line.length : commentStart, nextHtml?.index ?? line.length);
+      // Shared block-bounded spans can cross lines. Retain the consumed span's
+      // end so its closing ticks cannot become a second opener on the next line.
+      // Never consume candidates whose opening ticks were inside real comments.
+      while (spanIndex < spans.length && spans.at(spanIndex)[0] < lineOffset + offset) spanIndex++;
+      const span = spans.at(spanIndex);
+      if (!htmlTail && span && span[0] < lineOffset + boundary) {
+        codeEnd = span[1]; offset = Math.min(line.length, codeEnd - lineOffset); continue;
+      }
+      if (boundary === line.length) break;
+      if (boundary === commentStart) { comment = true; offset = boundary + 4; }
+      else { rawHtml = markdownRawHtmlOpening(nextHtml[0]); offset = boundary + nextHtml[0].length; }
+    }
+  }
+  if (fence || comment || rawHtml) throw new Error(`unsafe Markdown insertion: unclosed ${fence ? "code fence" : rawHtml ? `HTML ${rawHtml.kind}${rawHtml.caseInsensitive ? " container" : ""}` : "HTML comment"}; reconcile user structure before adoption`);
+}
+export function projectFileMode(workspace, path) {
+  if (readProjectFile(workspace, path) === null) return null;
+  const stat = lstatSync(resolve(realpathSync(workspace), path));
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`unsafe permission target: ${path}`);
+  return stat.mode & 0o7777;
 }
 export function readInstallation(workspace) {
   const configText = readProjectFile(workspace, CONFIG), manifestText = readProjectFile(workspace, MANIFEST);

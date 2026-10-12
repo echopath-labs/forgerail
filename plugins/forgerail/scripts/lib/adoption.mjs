@@ -684,7 +684,7 @@ export function applyApprovedAdoptionWrite(workspace, write, approvedWriteDigest
   return applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, adoptionOperations);
 }
 
-function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, operations, expectedIdentity) {
+function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, operations, expectedIdentity, policy = {}) {
   const binding = openBoundWorkspace(workspace);
   try {
     const { root } = binding;
@@ -712,6 +712,7 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
     let preserveBackup = false;
     let temporaryStat;
     let sourceStat;
+    let expectedSourceMode;
     let originalBytes;
     let content;
     const sourceRecovery = `.forgerail-${identity}.source`;
@@ -758,6 +759,8 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
         if (!confined(root, observed)) throw new Error(`adoption target escapes workspace before write: ${approvedWrite.path}`);
         const source = readSourceVersion(sourceDescriptor);
         sourceStat = source.metadata;
+        expectedSourceMode = sourceStat.mode & 0o7777;
+        if (policy.expectedMode !== undefined && (sourceStat.mode & 0o7777) !== policy.expectedMode) throw new Error(`target permissions changed: ${approvedWrite.path}`);
         originalBytes = source.bytes;
         const current = originalBytes.toString("utf8");
         if (!Buffer.from(current, "utf8").equals(originalBytes)) throw new Error(`adoption target is not valid UTF-8: ${approvedWrite.path}`);
@@ -773,19 +776,17 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
 
       verifyFinalCursorInstructions(approvedWrite.path, content, approvedWrite.coverage);
 
-      const mode = creating ? 0o644 : sourceStat.mode & 0o777;
+      const mode = policy.purpose === "journal" ? 0o600 : policy.restoreMode ?? (creating ? 0o644 : sourceStat.mode & 0o7777);
       temporaryDescriptor = openSync(
         temporary,
         constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW,
-        mode,
+        0o600,
       );
       temporaryExists = true;
-      fchmodSync(temporaryDescriptor, mode);
+      fchmodSync(temporaryDescriptor, 0o600);
       writeAll(temporaryDescriptor, content);
       fsyncSync(temporaryDescriptor);
       temporaryStat = fstatSync(temporaryDescriptor);
-      closeSync(temporaryDescriptor);
-      temporaryDescriptor = undefined;
 
       directoryDescriptor = openSync(".", constants.O_RDONLY);
       if (typeof testHooks.beforeInstall === "function") testHooks.beforeInstall();
@@ -802,9 +803,9 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
         backup = `.forgerail-${randomBytes(12).toString("hex")}.bak`;
         if (linkAwareStat(backup) !== null) throw new Error(`adoption recovery path already exists: ${approvedWrite.path}`);
         // An independent snapshot must not share edits to the original inode.
-        backupDescriptor = openSync(backup, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, mode);
+        backupDescriptor = openSync(backup, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
         backupExists = true;
-        fchmodSync(backupDescriptor, mode);
+        fchmodSync(backupDescriptor, 0o600);
         writeAll(backupDescriptor, originalBytes);
         fsyncSync(backupDescriptor);
         // Keep the original inode reachable if a late edit cannot be snapshotted.
@@ -826,9 +827,17 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
         if (!sourceMatches(readSourceVersion(sourceDescriptor), sourceStat, approvedWrite.baseSha256)) throw new Error(`adoption source drifted before replace: ${approvedWrite.path}`);
         const checkedPath = lstatSync(leaf);
         if (checkedPath.isSymbolicLink() || !sameFile(sourceStat, checkedPath)) throw new Error(`adoption target changed before atomic replace: ${approvedWrite.path}`);
+        // Our recovery link refreshes ctime, never the original mode baseline.
+        if ((checkedPath.mode & 0o7777) !== expectedSourceMode) throw new Error(`adoption source permissions changed before replace: ${approvedWrite.path}`);
         renameSync(temporary, leaf);
         temporaryExists = false;
         replacementInstalled = true;
+      }
+      // Recovery copies stay private. Set destination permissions only after
+      // installation, through the descriptor whose identity we already bound.
+      if (mode !== 0o600) {
+        fchmodSync(temporaryDescriptor, mode);
+        fsyncSync(temporaryDescriptor);
       }
       if (typeof testHooks.afterInstall === "function") testHooks.afterInstall();
       if (!creating) {
@@ -843,6 +852,7 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
         throw new Error(`adoption target identity mismatch after write: ${approvedWrite.path}`);
       }
       if (!targetContentMatches(leaf, temporaryStat, content)) throw new Error(`adoption target content changed after write: ${approvedWrite.path}`);
+      if ((installed.mode & 0o7777) !== mode) throw new Error(`adoption target permissions changed after write: ${approvedWrite.path}`);
       verifyCursorCoverage(root, approvedWrite.coverage, true, false,
         approvedWrite.path === "AGENTS.md" ? sha256(content) : approvedWrite.coverage?.agentsSha256);
       fsyncSync(directoryDescriptor);
@@ -871,10 +881,12 @@ function applyBoundWrite(workspace, write, approvedWriteDigest, testHooks, opera
           const installed = linkAwareStat(leaf);
           if (installed === null) {
             renameSync(backup, leaf);
+            fchmodSync(backupDescriptor, sourceStat.mode & 0o7777);
             backupExists = false;
             replacementInstalled = false;
           } else if (temporaryStat !== undefined && !installed.isSymbolicLink() && sameFile(temporaryStat, installed) && targetContentMatches(leaf, temporaryStat, content)) {
             renameSync(backup, leaf);
+            fchmodSync(backupDescriptor, sourceStat.mode & 0o7777);
             backupExists = false;
             replacementInstalled = false;
           } else {
@@ -1104,9 +1116,12 @@ export function adoptionWorkspaceIdentity(workspace) {
   finally { closeSync(binding.descriptor); }
 }
 
-export function applyProjectFile(workspace, path, before, after, testHooks = {}, expectedWorkspaceSha256 = adoptionWorkspaceIdentity(workspace), expectedIdentity) {
+export function applyProjectFile(workspace, path, before, after, testHooks = {}, expectedWorkspaceSha256 = adoptionWorkspaceIdentity(workspace), expectedIdentity, policy = {}) {
+  if (!["artifact", "journal", "restore"].includes(policy.purpose ?? "artifact")) throw new Error("invalid lifecycle write purpose");
+  for (const mode of [policy.restoreMode, policy.expectedMode]) if (mode !== undefined && (!Number.isInteger(mode) || mode < 0 || mode > 0o7777)) throw new Error("invalid lifecycle permission mode");
+  if (policy.restoreMode !== undefined && policy.purpose !== "restore") throw new Error("restoration mode requires restore purpose");
   adoptionTarget(workspace, path);
-  if (after === null) return removeProjectFile(workspace, path, before, testHooks, expectedWorkspaceSha256, expectedIdentity);
+  if (after === null) return removeProjectFile(workspace, path, before, testHooks, expectedWorkspaceSha256, expectedIdentity, policy);
   const write = {
     workspaceSha256: expectedWorkspaceSha256, path,
     operation: before === null ? "create" : "replace-file",
@@ -1114,10 +1129,10 @@ export function applyProjectFile(workspace, path, before, after, testHooks = {},
     contentSha256: sha256(after), managedMarker: null,
   };
   write.approvalSha256 = adoptionWriteApprovalDigest(write);
-  return applyBoundWrite(workspace, write, write.approvalSha256, testHooks, new Set(["create", "replace-file"]), expectedIdentity);
+  return applyBoundWrite(workspace, write, write.approvalSha256, testHooks, new Set(["create", "replace-file"]), expectedIdentity, policy);
 }
 
-function removeProjectFile(workspace, path, before, hooks, expectedWorkspaceSha256, expectedIdentity) {
+function removeProjectFile(workspace, path, before, hooks, expectedWorkspaceSha256, expectedIdentity, policy) {
   if (typeof before !== "string") throw new Error("removal requires a known baseline");
   const binding = openBoundWorkspace(workspace);
   try {
@@ -1131,16 +1146,18 @@ function removeProjectFile(workspace, path, before, hooks, expectedWorkspaceSha2
       try {
         const original = lstatSync(leaf);
         if (!original.isFile() || original.isSymbolicLink() || !targetContentMatches(leaf, original, before)) throw new Error(`removal baseline drift: ${path}`);
+        if (policy.expectedMode !== undefined && (original.mode & 0o7777) !== policy.expectedMode) throw new Error(`target permissions changed: ${path}`);
         hooks.beforeRemove?.();
         verifyBoundAdoptionParentPath(binding, parent, path);
         if (!targetContentMatches(leaf, original, before)) throw new Error(`removal baseline drift: ${path}`);
+        if ((lstatSync(leaf).mode & 0o7777) !== (original.mode & 0o7777)) throw new Error(`removal permission drift: ${path}`);
         if (expectedIdentity !== undefined && JSON.stringify(statIdentity(lstatSync(leaf, { bigint: true }))) !== JSON.stringify(expectedIdentity)) throw new Error(`removal ownership changed: ${path}`);
         renameSync(leaf, recovery);
         moved = true;
         if (!targetContentMatches(recovery, original, before)) throw new Error(`removal changed during rename: ${path}`);
         hooks.afterRemove?.();
         verifyBoundAdoptionParentPath(binding, parent, path);
-        if (linkAwareStat(leaf) !== null || !targetContentMatches(recovery, original, before)) throw new Error(`removal changed after rename: ${path}`);
+        if (linkAwareStat(leaf) !== null || !targetContentMatches(recovery, original, before) || (lstatSync(recovery).mode & 0o7777) !== (original.mode & 0o7777)) throw new Error(`removal changed after rename: ${path}`);
         fsyncSync(parent.descriptor);
         unlinkSync(recovery);
         moved = false;

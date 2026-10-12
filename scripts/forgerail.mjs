@@ -9,8 +9,8 @@ import { createLaunchContract, resolveProfile, verifyReceipt } from "./lib/compo
 import { containsInlineSecret, contractSchemaNames, contractTypes, readJson, validateContract } from "./lib/contracts.mjs";
 import { planProject, doctorProject, applyProject, planRecovery, recoverProject, releaseInterruptedLock, projectProfilePreflightBindingIds } from "./lib/project-adoption.mjs";
 import { diagnoseWorkspace } from "./lib/diagnosis.mjs";
-import { discoverProjectProfile, loadProjectProfile, verifyProjectWorkspaceIdentity, projectProfilePath } from "./lib/project-profile.mjs";
-import { classifyProjectProfileInspection, observeProjectProfileBindings, validateObservationSelectors } from "./lib/provider-adapters.mjs";
+import { confirmProjectProfileBindingSources, discoverProjectProfile, loadProjectProfile, verifyProjectWorkspaceIdentity, projectProfilePath } from "./lib/project-profile.mjs";
+import { classifyProjectProfileInspection, createProviderObservationBudget, observeProjectProfileBindings, validateObservationSelectors } from "./lib/provider-adapters.mjs";
 import { readProjectFile } from "./lib/project-state.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -345,7 +345,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.8") errors.push("Plugin version must be 0.1.8");
+  if (manifest.version !== "0.1.9") errors.push("Plugin version must be 0.1.9");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -790,6 +790,11 @@ if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
     const operationIds = args("--operation"), targetIds = args("--target");
     if (!operationIds.length || operationIds.length !== targetIds.length) fail("Project Profile rebind requires matching --operation and --target values");
     if (operationIds.length > 128) fail("Project Profile rebind exceeds the 128-operation preflight limit");
+    const selectors = operationIds.map((operationId, index) => {
+      validateObservationSelectors(operationId, targetIds[index]);
+      return JSON.stringify([operationId, targetIds[index]]);
+    });
+    if (new Set(selectors).size !== selectors.length) fail("Project Profile rebind rejects duplicate operation/target selectors");
     const candidateDeclaration = JSON.parse(profileCandidateText);
     const workspaceIdentity = ownerWorkspaceIdentity(arg("--workspace-identity"), workspace, candidateDeclaration.workspaceIdentityId);
     const relationshipPaths = args("--workspace-relationship"), identityPaths = args("--related-workspace-identity");
@@ -798,16 +803,22 @@ if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
     const relatedWorkspaceIdentities = contractEvidence(identityPaths, "workspace-identity", "workspaceIdentityId");
     let acceptedPreflight = null;
     const result = applyProject(root, workspace, action, approved, options, { verifyProfileBindings(requiredBindingIds, declaration) {
+      confirmProjectProfileBindingSources({ workspace, workspaceIdentity, declaration, bindingIds: requiredBindingIds });
       const selected = { ...declaration, resourceBindings: declaration.resourceBindings.filter((binding) => requiredBindingIds.includes(binding.bindingId)) };
-      const observations = operationIds.map((operationId, index) => {
+      const requestBudget = createProviderObservationBudget();
+      const observations = [];
+      for (const [index, operationId] of operationIds.entries()) {
         const observedAt = new Date().toISOString();
         const executionContext = executionContextIdentity(workspaceIdentity, operationId, targetIds[index], observedAt, "project-profile-set");
-        return observeProjectProfileBindings({ workspace, declaration: selected, operationId, targetId: targetIds[index], executionContextIdentity: executionContext, workspaceRelationships, relatedWorkspaceIdentities, observedAt });
-      });
+        const observation = observeProjectProfileBindings({ workspace, declaration: selected, operationId, targetId: targetIds[index], executionContextIdentity: executionContext, workspaceRelationships, relatedWorkspaceIdentities, requestBudget, observedAt });
+        observations.push(observation);
+        if (observation.bindings.some((binding) => !["matched", "not-applicable"].includes(binding.status))) throw new Error("Project Profile binding preflight did not verify expected identity; active declaration unchanged");
+      }
       const matched = new Set(observations.flatMap((observation) => observation.bindings.filter((binding) => binding.status === "matched").map((binding) => binding.bindingId)));
       const failed = new Set(observations.flatMap((observation) => observation.bindings.filter((binding) => !["matched", "not-applicable"].includes(binding.status)).map((binding) => binding.bindingId)));
       const missing = requiredBindingIds.filter((bindingId) => !matched.has(bindingId) || failed.has(bindingId));
       if (missing.length) throw new Error(`Project Profile binding preflight did not verify expected identity: ${missing.join(", ")}`);
+      confirmProjectProfileBindingSources({ workspace, workspaceIdentity, declaration, bindingIds: requiredBindingIds });
       acceptedPreflight = { requiredBindingIds, operationTargets: operationIds.map((operationId, index) => ({ operationId, targetId: targetIds[index] })), observations };
       return true;
     } });

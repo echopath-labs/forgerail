@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmodSync, existsSync, mkdtempSync, mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
@@ -648,5 +648,147 @@ test("inspection never echoes credential-like evidence paths", () => {
     assert.equal(result.status, 1);
     assert.equal((result.stdout + result.stderr).includes(secret), false);
     assert.match(result.stdout, /credential-like material/);
+  }
+});
+
+test("Markdown claim heading must be structural and unique outside comments and examples", () => {
+  for (const [text, confirmed] of [
+    ["```md\n## Policy\n```\n", false],
+    ["~~~\n## Policy\n~~~\n", false],
+    ["<!--\n## Policy\n-->\n", false],
+    ["    ## Policy\n", false],
+    ["## Policy\n```\n## Policy\n```\n", true],
+    ["## Policy\n<!--\n## Policy\n-->\n", true],
+    ["## Policy\n## Policy\n", false],
+    ["## Policy\r\n", true],
+    ["The literal is `<!--`.\n\n## Policy\nUse the project actor.\n", true],
+    ["The literal is ``<!-- ` literal``.\n\n## Policy\n", true],
+    ["The literal is `<!--`. <!--\n## Policy\n-->\n", false],
+    ["<!-- ` unmatched --> The literal is `<!--`.\n## Policy\n", true],
+    ["<!-- note -->## Policy\n", false],
+    ["<!-- note\n-->## Policy\n", false],
+    ["<!-- note -->## Policy\n## Policy\n", true],
+    ["> ```\n> example\n\n## Policy\n", true],
+    ...["pre", "script", "style", "textarea"].map((tag) => [`<${tag}>\n## Policy\n</${tag}>\n`, false]),
+    ["<pre>\n## Policy\n</pre>\n\n## Policy\n", true],
+    ["<pre>\n</pre><!--\n## Policy\n", false],
+    ["<?instruction\n## Policy\n?>\n", false],
+    ["<!DECL\n## Policy\n>\n", false],
+    ["<![CDATA[\n## Policy\n]]>\n", false],
+    // A type-2 HTML block interrupts the paragraph before inline matching.
+    ["`literal\n<!-- inside code\n`\n## Policy\n", false],
+    ["`literal\ncontinued text <!-- inside code\n`\n## Policy\n", true],
+    ["`example\n\n<!--`\n## Policy\n", false],
+    ["`example\n# New block\n<!--`\n## Policy\n", false],
+    ["`example\n~~~\nignored\n~~~\n## Policy\n`", true],
+    ["> <!-- unclosed\n\n## Policy\n", true],
+    ['<custom data=">">\n## Policy\n', false],
+    ['<custom data=">">\n\n## Policy\n', true],
+    ["> prose `example\n<!-- `\n## Policy\n", false],
+    ["> prose <!-- open\nlazy text -->\n## Policy\n", true],
+  ]) {
+    const root = workspace(); write(root, "AGENTS.md", text);
+    install(root, declaration([source("source:policy", "AGENTS.md", text)], [claim("claim:actor", "source:policy", "git.actor", "expected-user")]));
+    const result = loadProjectProfile({ workspace: root, workspaceIdentity: identity(root), computedAt: observedAt });
+    assert.equal(result.ruleClaims[0].status === "confirmed", confirmed, JSON.stringify(text));
+  }
+});
+
+test("512 distinct Markdown claims reuse one bounded source scan", (t) => {
+  const root = workspace();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const headings = Array.from({ length: 512 }, (_, index) => `## Policy ${index}`);
+  const tail = `${headings.join("\n")}\n`;
+  const line = "ordinary prose with no ticks\n";
+  const policy = line.repeat(Math.floor((4 * 1024 * 1024 - tail.length) / line.length)) + tail;
+  assert.ok(Buffer.byteLength(policy) <= 4 * 1024 * 1024);
+  write(root, "AGENTS.md", policy);
+  install(root, declaration([source("source:policy", "AGENTS.md", policy)], headings.map((heading, index) =>
+    claim(`claim:actor-${index}`, "source:policy", "git.actor", "expected-user", { kind: "markdown-heading", heading }))));
+  const moduleUrl = new URL("./lib/project-profile.mjs", import.meta.url).href;
+  const script = `
+    import assert from "node:assert/strict";
+    import { loadProjectProfile } from ${JSON.stringify(moduleUrl)};
+    const result = loadProjectProfile({ workspace: ${JSON.stringify(root)}, workspaceIdentity: ${JSON.stringify(identity(root))}, computedAt: ${JSON.stringify(observedAt)} });
+    assert.equal(result.status, "resolved", JSON.stringify(result.errors));
+    assert.equal(result.ruleClaims.length, 512);
+    assert.ok(result.ruleClaims.every((claim) => claim.status === "confirmed"));
+  `;
+  const result = spawnSync(process.execPath, ["--max-old-space-size=256", "--input-type=module", "--eval", script], { encoding: "utf8", timeout: 10000 });
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("Markdown heading results are separate per source and refreshed on each load", (t) => {
+  const root = workspace();
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const other = "## Policy\n";
+  write(root, "other.md", other);
+  for (const [policy, policyConfirmed, newConfirmed] of [
+    ["## Policy\n", true, false],
+    ["## New\n", false, true],
+    ["## Policy\n## Policy\n## New\n", false, true],
+  ]) {
+    write(root, "AGENTS.md", policy);
+    install(root, declaration(
+      [source("source:policy", "AGENTS.md", policy), source("source:other", "other.md", other)],
+      [claim("claim:policy", "source:policy", "git.actor", "expected-user"),
+        claim("claim:new", "source:policy", "git.actor", "expected-user", { kind: "markdown-heading", heading: "## New" }),
+        claim("claim:other", "source:other", "git.actor", "expected-user")],
+    ));
+    const result = loadProjectProfile({ workspace: root, workspaceIdentity: identity(root), computedAt: observedAt });
+    const confirmed = (id) => result.ruleClaims.find((claim) => claim.claimId === id).status === "confirmed";
+    assert.equal(confirmed("claim:policy"), policyConfirmed, policy);
+    assert.equal(confirmed("claim:new"), newConfirmed, policy);
+    assert.equal(confirmed("claim:other"), true, policy);
+    assert.equal(result.confirmedSourceDigests["source:policy"], sha256(policy));
+  }
+});
+
+test("binding activation confirms only relevant source claims before and after fake provider observations", () => {
+  const cli = resolve(plugin, "scripts/forgerail.mjs");
+  for (const scenario of ["missing", "unpinned", "digest-drift", "missing-pointer", "structured-mismatch", "provider-drift", "unrelated-broken"]) {
+    const root = workspace(); const fakeBin = resolve(root, "fake-bin"); mkdirSync(fakeBin);
+    const policy = '{"actor":"expected-user"}\n'; write(root, "policy.json", policy);
+    const binding = { bindingId: "binding:github", providerId: "github", purpose: "Observe actor.", operationIds: ["git.push"], adapterId: "github-cli-api", locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } }, expectedIdentityClaimIds: ["claim:actor"], requiredness: "required" };
+    const value = declaration([source("source:policy", "policy.json", policy, "structured-profile")], [claim("claim:actor", "source:policy", "github.actor", "expected-user", { kind: "json-pointer", pointer: "/actor" })], [binding]);
+    if (scenario === "missing") value.sources[0].locator = "missing.json";
+    if (scenario === "unpinned") value.sources[0].expectedSha256 = null;
+    if (scenario === "digest-drift") value.sources[0].expectedSha256 = "a".repeat(64);
+    if (scenario === "missing-pointer") value.claims[0].sourcePointer.pointer = "/absent";
+    if (scenario === "structured-mismatch") { write(root, "policy.json", '{"actor":"other-user"}\n'); value.sources[0].expectedSha256 = sha256('{"actor":"other-user"}\n'); }
+    if (scenario === "unrelated-broken") { value.sources.push(source("source:other", "missing.md", "## Policy\n")); value.claims.push(claim("claim:other", "source:other", "other.actor", "other-user")); }
+    const marker = resolve(root, "called");
+    const fakeGh = resolve(fakeBin, "gh");
+    writeFileSync(fakeGh, `#!/bin/sh\n: > '${marker}'\n${scenario === "provider-drift" ? `printf '%s\\n' changed > '${resolve(root, "policy.json")}'\n` : ""}printf '%s\\n' expected-user\n`); chmodSync(fakeGh, 0o755);
+    const candidatePath = ".forgerail/candidates/profile.json"; write(root, candidatePath, JSON.stringify(value));
+    const workspaceIdentityPath = resolve(root, "identity.json"); writeFileSync(workspaceIdentityPath, JSON.stringify(absoluteIdentity(root)));
+    const run = (...args) => spawnSync(process.execPath, [cli, "project-profile-set", "--workspace", root, "--candidate", candidatePath, ...args], { encoding: "utf8", env: { PATH: fakeBin } });
+    const preview = run(); assert.equal(preview.status, 0, preview.stdout);
+    const result = run("--apply", JSON.parse(preview.stdout).planSha256, "--workspace-identity", workspaceIdentityPath, "--operation", "git.push", "--target", "repo:test");
+    assert.equal(result.status, scenario === "unrelated-broken" ? 0 : 1, `${scenario}: ${result.stdout}`);
+    assert.equal(existsSync(marker), ["provider-drift", "unrelated-broken"].includes(scenario), scenario);
+    assert.equal(discoverProjectProfile(root).status, scenario === "unrelated-broken" ? "discovered" : "not-adopted", scenario);
+  }
+});
+
+test("activation rejects duplicate selectors and stops on first failed identity across selectors", () => {
+  const cli = resolve(plugin, "scripts/forgerail.mjs");
+  for (const scenario of ["duplicates", "first-failure", "call-limit"]) {
+    const root = workspace(); const fakeBin = resolve(root, "fake-bin"); mkdirSync(fakeBin);
+    const policy = "## Policy\n"; write(root, "AGENTS.md", policy);
+    const binding = { bindingId: "binding:github", providerId: "github", purpose: "Observe actor.", operationIds: ["git.push"], adapterId: "github-cli-api", locator: { kind: "provider-native", providerId: "github", coordinates: { host: "github.com" } }, expectedIdentityClaimIds: ["claim:actor"], requiredness: "required" };
+    const bindings = scenario === "call-limit" ? Array.from({ length: 128 }, (_, index) => ({ ...binding, bindingId: `binding:${index}` })) : [binding];
+    const value = declaration([source("source:policy", "AGENTS.md", policy)], [claim("claim:actor", "source:policy", "github.actor", "expected-user")], bindings);
+    const marker = resolve(root, "calls"); const fakeGh = resolve(fakeBin, "gh");
+    writeFileSync(fakeGh, `#!/bin/sh\nprintf x >> '${marker}'\nprintf '%s\\n' ${scenario === "first-failure" ? "wrong-user" : "expected-user"}\n`); chmodSync(fakeGh, 0o755);
+    const candidatePath = ".forgerail/candidates/profile.json"; write(root, candidatePath, JSON.stringify(value));
+    const workspaceIdentityPath = resolve(root, "identity.json"); writeFileSync(workspaceIdentityPath, JSON.stringify(absoluteIdentity(root)));
+    const run = (...args) => spawnSync(process.execPath, [cli, "project-profile-set", "--workspace", root, "--candidate", candidatePath, ...args], { encoding: "utf8", env: { PATH: fakeBin } });
+    const preview = run(); assert.equal(preview.status, 0, preview.stdout);
+    const result = run("--apply", JSON.parse(preview.stdout).planSha256, "--workspace-identity", workspaceIdentityPath, "--operation", "git.push", "--target", "repo:first", "--operation", "git.push", "--target", scenario === "duplicates" ? "repo:first" : "repo:later");
+    assert.equal(result.status, 1, `${scenario}: ${result.stdout}`);
+    assert.equal(existsSync(marker) ? readProjectFile(root, "calls").length : 0, scenario === "duplicates" ? 0 : scenario === "first-failure" ? 1 : 128, scenario);
+    assert.equal(discoverProjectProfile(root).status, "not-adopted");
   }
 });

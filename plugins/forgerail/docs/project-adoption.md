@@ -1,11 +1,11 @@
-# Project adoption lifecycle (0.1.8)
+# Project adoption lifecycle (0.1.9)
 
-This guide targets 0.1.8. Consult npm and the versioned GitHub Release for publication status. Published 0.1.4 lacks these commands. Existing workspace snapshots require an explicit update; installing the CLI does not migrate them.
+This guide targets 0.1.9. Consult npm and the versioned GitHub Release for publication status. Published 0.1.4 lacks these commands. Existing workspace snapshots require an explicit update; installing the CLI does not migrate them.
 
 ForgeRail manages its own Codex project Skills and a bounded AGENTS block.
 The target project needs no package.json, dependency installation or Node project.
 The CLI itself requires Node.js 22+. Other hosts retain their existing support
-levels. No network access, tool updater, executor or background service is added.
+levels. The package lifecycle and doctor checks remain local. Optional Project Profile identity preflight can contact GitHub or npm as described in [Privacy](../PRIVACY.md); no tool updater, executor or background service is added.
 
 ## Operator workflow
 
@@ -56,12 +56,24 @@ These version 1.0 contracts use strict runtime validation in
   the supported Skill names, project destinations, binding marker and activation
   boundary. The v1 Host Adapter and Adoption Plan schemas stay unchanged.
 
-All inserted bytes are inside the managed markers: init adds no unowned leading
-or trailing separator. Removal preserves user bytes exactly, including a missing
+New blocks declare ownership of exactly two leading LF bytes and one trailing
+LF byte with a framing comment inside the managed markers. The artifact digest
+includes these separators, and extraction verifies them before update or removal.
+Legacy plain blocks remain readable; their unowned surrounding whitespace is retained.
+The planner refuses insertion inside an unclosed top-level code fence or HTML
+comment or an unclosed script/pre/style/textarea HTML container. Processing
+instructions (`<?` to `?>`), declarations (`<!` plus an uppercase letter to `>`)
+and CDATA (`<![CDATA[` to `]]>`) also require their closing delimiters. It checks the
+remainder of a container's closing line for further comments or containers;
+escaped backtick openers do not conceal real comments. The shared bounded code
+span matcher respects supported paragraph and block boundaries. Within a block,
+it tracks closing ticks across lines so they cannot reopen a span and conceal
+a following real comment. This bounded structural check is not a complete Markdown parser;
+ambiguous structures may require user reconciliation. Removal preserves user bytes exactly, including a missing
 final newline, BOM and CRLF. Whitespace left by older development candidates is
 not retroactively deleted because its ownership cannot be proved.
 
-The managed block owns only its marker-delimited content; edits outside it are
+The managed block owns its marker-delimited content and declared framing; edits outside it are
 preserved and do not imply long-term drift. Unknown same-name Skills cannot be
 taken over. Drift blocks mutations, including removal. Remove retains user
 content, unrelated files and empty directories, and does not uninstall the CLI.
@@ -75,7 +87,17 @@ lifecycle, including one with unhealthy metadata.
 
 A project-wide cooperating lock (`.forgerail-operation.lock`) serializes lifecycle
 writers. Before any managed mutation, `.forgerail-operation.json` stores the
-exact operation and recovery baselines, plus version 1.1 progress receipts. A
+exact operation and recovery baselines, plus version 1.2 progress receipts and
+original POSIX permission modes. Before journal creation, each captured target's
+presence must match its plan baseline; a mismatch aborts before any planned
+project operation begins. Journals and their temporary/backup copies use
+owner-only mode 0600 regardless of umask. Ordinary artifacts retain their target
+permissions; rollback reconstructs deleted files with their recorded mode.
+Before replacing an existing target, the writer rechecks its captured source
+mode. Preparing a recovery link does not rebase that permission baseline;
+external mode changes abort replacement and preserve the current target.
+Permission recovery does not preserve ACLs, owner/group, or extended attributes.
+A
 receipt records whether a write is in flight or completed and the identity of
 the file actually installed (device, inode, size and modification/change times).
 Completed writes are rolled back only while that identity and content still
@@ -102,6 +124,10 @@ durably saved requires ownership reconciliation if the target changed. This
 includes a process killed after the write but before its receipt. Do not infer
 ownership from matching bytes in that window. Old development journals without
 receipts refuse automatic rollback; do not rewrite their schema to bypass this.
+Version 1.1 receipts can still remove provably created files. Replaced and deleted
+prior files require manual ownership and permission reconciliation: the journal
+does not record their original permissions, and a completed replacement's live
+mode cannot prove the prior mode or special bits. No permission fallback is inferred.
 
 The serialized recovery journal is limited to 4 MiB, including reserved capacity
 for all completion receipts. Planning and apply reject oversized operations before
@@ -174,4 +200,4 @@ Each write is checked immediately; completed writes are rechecked against their 
 
 Rollback also retains the identities returned by writes in the current recovery attempt and checks them before restoring metadata and removing the journal. Recovery evidence in metadata directories is checked for both adopted and unadopted projects. A 520-operation update is exercised to completion by the lifecycle regression suite; duration depends on the filesystem and file sizes.
 
-If a started operation's target already contains its prior non-null content when recovery is previewed, automatic rollback requires ownership reconciliation. Identical bytes cannot distinguish an external restoration from an interrupted rollback; version 1.1 journals do not retain rollback receipts across attempts. The journal and current files are preserved. An absent prior baseline claims no file and remains safe to skip. A lifecycle binding left in AGENTS.md without installation metadata is also reported as recovery-required, without claiming adoption or inventing a recovery journal; reconcile the retained binding and metadata before retrying adoption.
+If a started operation's target already contains its prior non-null content when recovery is previewed, automatic rollback requires ownership reconciliation. Identical bytes cannot distinguish an external restoration from an interrupted rollback; version 1.1 and 1.2 journals do not retain rollback receipts across attempts. The journal and current files are preserved. An absent prior baseline claims no file and remains safe to skip. A lifecycle binding left in AGENTS.md without installation metadata is also reported as recovery-required, without claiming adoption or inventing a recovery journal; reconcile the retained binding and metadata before retrying adoption.

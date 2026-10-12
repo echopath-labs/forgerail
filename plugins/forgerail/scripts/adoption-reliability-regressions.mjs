@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { appendFileSync, closeSync, mkdtempSync, openSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync, writeSync } from "node:fs";
+import { appendFileSync, chmodSync, closeSync, mkdtempSync, openSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync, writeSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { adoptionWriteApprovalDigest, applyApprovedAdoptionWrite } from "./lib/adoption.mjs";
+import { adoptionWriteApprovalDigest, applyApprovedAdoptionWrite, applyProjectFile } from "./lib/adoption.mjs";
 
 const hash = value => createHash("sha256").update(value).digest("hex");
 const marker = "forgerail:binding:codex:v1";
@@ -22,6 +22,66 @@ function fixture(t, prior, operation = "append-managed-block") {
   return { workspace, target, write };
 }
 const apply = (f, hooks) => applyApprovedAdoptionWrite(f.workspace, f.write, f.write.approvalSha256, hooks);
+
+test("original permission drift during recovery preparation refuses replacement", t => {
+  for (const timing of ["beforeInstall", "beforeReplace"]) for (const operation of ["append-managed-block", "replace-managed-block", "replace-file"]) {
+    const prior = operation === "replace-managed-block" ? `${start}\nOld rules.\n${end}\n` : "Original\n";
+    const f = fixture(t, prior, operation);
+    chmodSync(f.target, 0o600); const inode = statSync(f.target).ino;
+    const hooks = { [timing]() { chmodSync(f.target, 0o644); } };
+    assert.throws(() => operation === "replace-file"
+      ? applyProjectFile(f.workspace, "AGENTS.md", prior, "Replacement\n", hooks, undefined, undefined, { expectedMode: 0o600 })
+      : apply(f, hooks), /drift|permissions changed/, `${timing}: ${operation}`);
+    assert.equal(readFileSync(f.target, "utf8"), prior);
+    assert.equal(statSync(f.target).ino, inode);
+    assert.equal(statSync(f.target).mode & 0o7777, 0o644);
+    assert.deepEqual(readdirSync(f.workspace), ["AGENTS.md"]);
+  }
+});
+
+test("installed permission drift fails and restores the original replacement", t => {
+  for (const operation of ["append-managed-block", "replace-managed-block", "replace-file"]) {
+    const prior = operation === "replace-managed-block" ? `${start}\nOld rules.\n${end}\n` : "Original\n";
+    const f = fixture(t, prior, operation);
+    chmodSync(f.target, 0o600);
+    const hooks = { afterInstall() { chmodSync(f.target, 0o644); } };
+    assert.throws(() => operation === "replace-file"
+      ? applyProjectFile(f.workspace, "AGENTS.md", prior, "Replacement\n", hooks)
+      : apply(f, hooks), /permissions changed after write/);
+    assert.equal(readFileSync(f.target, "utf8"), prior);
+    assert.equal(statSync(f.target).mode & 0o7777, 0o600);
+    assert.deepEqual(readdirSync(f.workspace), ["AGENTS.md"]);
+  }
+});
+
+test("successful ordinary replacements preserve special POSIX permission bits", async t => {
+  for (const mode of [0o2750, 0o4750, 0o1750, 0o7750]) await t.test(mode.toString(8), t => {
+    for (const operation of ["append-managed-block", "replace-managed-block", "replace-file"]) {
+      const prior = operation === "replace-managed-block" ? `${start}\nOld rules.\n${end}\n` : "Original\n";
+      const f = fixture(t, prior, operation);
+      try { chmodSync(f.target, mode); }
+      catch (error) {
+        if (!["ENOTSUP", "EOPNOTSUPP", "ENOSYS"].includes(error.code)) throw error;
+        t.skip(`filesystem does not support POSIX mode ${mode.toString(8)}: ${error.code}`);
+        return;
+      }
+      const before = statSync(f.target).mode & 0o7777;
+      if (before !== mode) { t.skip(`platform does not retain POSIX mode ${mode.toString(8)} (observed ${before.toString(8)})`); return; }
+      const inode = statSync(f.target).ino;
+      const hooks = { beforeInstall() {
+        for (const file of readdirSync(f.workspace).filter(name => name.endsWith(".tmp"))) assert.equal(statSync(resolve(f.workspace, file)).mode & 0o7777, 0o600);
+      }, beforeReplace() {
+        for (const file of readdirSync(f.workspace).filter(name => name.endsWith(".bak"))) assert.equal(statSync(resolve(f.workspace, file)).mode & 0o7777, 0o600);
+      } };
+      if (operation === "replace-file") applyProjectFile(f.workspace, "AGENTS.md", prior, "Replacement\n", hooks);
+      else apply(f, hooks);
+      assert.notEqual(statSync(f.target).ino, inode, operation);
+      assert.equal(statSync(f.target).mode & 0o7777, mode, operation);
+      assert.ok(readFileSync(f.target, "utf8").includes(operation === "replace-file" ? "Replacement" : "New rules."));
+      assert.deepEqual(readdirSync(f.workspace), ["AGENTS.md"]);
+    }
+  });
+});
 
 test("malformed approved replacement boundaries fail without changing the target", t => {
   const prior = `Prefix\n${start}\nOld\n${end}\nSuffix\n`;
