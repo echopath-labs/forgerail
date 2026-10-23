@@ -6,8 +6,12 @@
   "instructionDiscovery": "rules",
   "skillDiscovery": "agent-skills",
   "bindingTarget": ".cursor/rules/forgerail.mdc",
-  "detectionTargets": [".cursor"],
-  "bindingModes": ["thin-reference"],
+  "detectionTargets": [
+    ".cursor"
+  ],
+  "bindingModes": [
+    "thin-reference"
+  ],
   "bindingTemplates": {
     "thin-reference": "bindings/cursor-thin.mdc"
   },
@@ -16,10 +20,13 @@
   "activationBoundary": "new-task-required",
   "verification": {
     "mode": "new-task-discovery",
-    "expectedSkills": ["forgerail"]
+    "expectedSkills": [
+      "forgerail"
+    ]
   },
   "limitations": [
-    "Cursor Desktop Agents 3.22.12 was verified on 2026-09-30 in separate fresh disposable read-only and bounded engineering sessions using AGENTS.md and the exact current .agents/skills/forgerail Core tree (SHA-256 297b42258a137190c1fca64941821a15cffef6f4202f40d1ef88a89d0823e6ec). The engineering session loaded the active Project Profile and declared policy source, while the unrelated read-only session produced no Profile, policy, validation, provider or file-change activity. A changed Core tree needs new IDE acceptance. The Cursor Rule plus Skill path was independently smoke-tested only in Cursor CLI 2026.09.18 and remains profile-only in the IDE.",
+    "On 2026-10-22 the user exercised two fresh isolated Cursor IDE Agent sessions against the exact shared Core tree SHA-256 3c75fcfd8f11317e0b2ff40878ef86d87d12b4be61b2df4654328f96de7a5a9a; bounded evidence was independently reviewed on 2026-10-23. Original transcripts retain tool-call inputs but no tool-result bodies: the engineering session requested the Skill, Project Profile and declared policy, invoked before/create/after branch operations, changed only format.mjs and its test, and reported validation and impact; the read-only transcript has a single README Read. The original before observation passed; independent current after comparison, immutable-input/file/Git checks and tests passed. Cursor version and original model are unknown. The missing original after/test outputs remain unverified as historical results. Acceptance covers only AGENTS.md plus this exact project-local Core route, not every guidance clause or task. A changed Core requires new IDE acceptance.",
+    "Historical acceptance only: Cursor IDE 3.25.6 with Claude Opus 5.5 High was exercised by the user on 2026-10-20 in separate fresh disposable read-only and bounded engineering sessions using AGENTS.md and the exact .agents/skills/forgerail Core tree (SHA-256 bc188e56d4753a295b90e1e6ad422366a1b41aa83fef3999bac0340ec2c539b5). Acceptance combines user-provided UI screenshots and an Agent-authored session report with a retained branch-before observation and independently rechecked Git/file/test results. The report describes loading the Project Profile and declared source; the full file-read sequence is not independently audited. The read-only screenshot shows README-only exploration and the workspace remained unchanged. A changed Core tree needs new IDE acceptance. The Cursor Rule plus Skill path was independently smoke-tested only in Cursor CLI 2026.09.18 and remains profile-only in the IDE.",
     "Each adopted project still needs fresh-session verification of its own binding, Skill identity, and behavior; CLI and Cloud Agent behavior are not certified by the IDE result.",
     "A Cursor Rule can duplicate an existing AGENTS.md Core pointer; review the adoption plan and keep one Core owner."
   ]

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
@@ -6,6 +7,8 @@ import { spawn } from "node:child_process";
 import test from "node:test";
 import { classifyProjectProfileInspection, createProviderObservationBudget, observeProjectProfileBindings, providerAdapterRegistry } from "./lib/provider-adapters.mjs";
 import { containsInlineSecret, validateContract } from "./lib/contracts.mjs";
+import { loadProjectProfile } from "./lib/project-profile.mjs";
+import { resolveEffectiveProfileV2 } from "./lib/composition.mjs";
 
 const observedAt = "2026-09-27T00:00:00Z";
 const workspace = () => realpathSync(mkdtempSync(resolve(tmpdir(), "forgerail-provider-")));
@@ -186,6 +189,86 @@ test("inspection classification blocks required wrong actors and degrades option
   assert.equal(classifyProjectProfileInspection(profile, { bindings: [{ requiredness: "required", status: "matched", targetPermission: "unverified" }] }, "package.publish"), "unresolved");
   assert.equal(classifyProjectProfileInspection(profile, { bindings: [{ requiredness: "required", status: "matched", targetPermission: "unverified" }] }, "package.inspect"), "ready");
   assert.equal(classifyProjectProfileInspection(profile, { bindings: [{ requiredness: "optional", status: "unresolved" }] }, "git.push"), "degraded");
+});
+
+function inspectionProfile(entries) {
+  const root = workspace();
+  const sources = [], claims = [];
+  for (const [index, entry] of entries.entries()) {
+    const sourceId = `source:policy-${index}`;
+    const content = JSON.stringify({ value: entry.value ?? "expected-user" });
+    if (!entry.missing) write(root, `policy-${index}.json`, content);
+    sources.push({ sourceId, sourceKind: entry.sourceKind ?? "instructions", locator: `policy-${index}.json`, requiredness: entry.requiredness ?? "required", expectedSha256: createHash("sha256").update(content).digest("hex") });
+    if (entry.operationIds) claims.push({ claimId: `claim:policy-${index}`, sourceId, sourcePointer: { kind: "json-pointer", pointer: "/value" }, ruleKey: entry.ruleKey ?? "provider.actor", normalizedValue: entry.value ?? "expected-user", operationIds: entry.operationIds });
+  }
+  const value = { schemaVersion: "1.0", profileId: "profile:test", workspaceIdentityId: "workspace:test", workspaceRelationshipIds: [], sources, claims, resourceBindings: [] };
+  const workspaceIdentity = { schemaVersion: "1.0", workspaceIdentityId: "workspace:test", canonicalRootLocator: root, boundaryClaims: [{ providerId: "local", kind: "explicit-workspace", identity: "test-root", observedAt }], observedAt };
+  const loaded = loadProjectProfile({ workspace: root, workspaceIdentity, discoverySnapshot: { status: "discovered", workspace: root, declaration: value, errors: [] }, computedAt: observedAt });
+  assert.equal(loaded.status, "resolved", loaded.errors.join("\n"));
+  return loaded;
+}
+
+test("inspection limits conflicts to the current operation and retains the whole-profile audit", () => {
+  const loaded = inspectionProfile([
+    { operationIds: ["git.push"] },
+    { operationIds: ["release.publish"], value: "release-owner" },
+    { operationIds: ["release.publish"], value: "other-owner" },
+  ]);
+  const before = structuredClone(loaded);
+  assert.equal(loaded.profile.completeness, "unresolved");
+  assert.equal(loaded.profile.conflicts.length, 1);
+  assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "git.push"), "ready");
+  assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "release.publish"), "unresolved");
+  assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, null), "resolved");
+  assert.deepEqual(loaded, before);
+});
+
+test("inspection scopes unavailable sources but retains applicable and unscoped gaps", () => {
+  for (const requiredness of ["required", "optional"]) {
+    const loaded = inspectionProfile([
+      { operationIds: ["git.push"] },
+      { operationIds: ["release.publish"], missing: true, requiredness },
+    ]);
+    const expected = requiredness === "required" ? "unresolved" : "degraded";
+    assert.equal(loaded.profile.completeness, expected);
+    assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "git.push"), "ready");
+    assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "release.publish"), expected);
+    assert.equal(loaded.profile.completeness, expected);
+  }
+  const unscoped = inspectionProfile([{ operationIds: ["git.push"] }, { missing: true }]);
+  assert.deepEqual(unscoped.governanceSources[1].applicabilityScope, ["workspace"]);
+  assert.equal(classifyProjectProfileInspection(unscoped, { bindings: [] }, "git.push"), "unresolved");
+  assert.equal(classifyProjectProfileInspection({ status: "resolved", profile: { completeness: "unresolved" } }, { bindings: [] }, "git.push"), "unresolved");
+});
+
+test("inspection applies precedence only within the current operation", () => {
+  const loaded = inspectionProfile([
+    { operationIds: ["git.push"], value: "git-owner" },
+    { operationIds: ["git.push", "release.publish"], sourceKind: "other", value: "first-owner" },
+    { operationIds: ["git.push", "release.publish"], sourceKind: "other", value: "second-owner" },
+  ]);
+  assert.equal(loaded.profile.completeness, "unresolved");
+  assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "git.push"), "ready");
+  assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "release.publish"), "unresolved");
+  assert.equal(loaded.profile.completeness, "unresolved");
+});
+
+test("inspection scopes dependencies using the original observed claims", () => {
+  for (const requiredness of ["required", "optional"]) {
+    const loaded = inspectionProfile([{ operationIds: ["git.push", "release.publish"] }]);
+    const edge = { schemaVersion: "1.0", edgeId: "edge:release", workspaceIdentityId: "workspace:test", declaringSourceId: "source:policy-0", target: { kind: "skill", locator: "skills/missing/SKILL.md", identity: "skill:missing" }, requiredness, applicabilityScope: ["release.publish"], provenanceStatus: "structured", observationStatus: "unavailable", affectedClaimIds: ["claim:policy-0"], observedAt, limitedReason: "release Skill is unavailable" };
+    loaded.governanceSources[0].dependencyEdgeIds = [edge.edgeId];
+    loaded.ruleClaims[0].dependencyEdgeIds = [edge.edgeId];
+    const resolved = resolveEffectiveProfileV2({ profileId: loaded.profile.profileId, profileRevisionId: loaded.profile.revisionId, workspaceIdentityId: loaded.profile.workspaceIdentityId, governanceSources: loaded.governanceSources, ruleClaims: loaded.ruleClaims, dependencyEdges: [edge], computedAt: observedAt });
+    assert.equal(resolved.valid, true, resolved.errors.join("\n"));
+    loaded.profile = resolved.profile; loaded.explanation = resolved.explanation;
+    const before = structuredClone(loaded);
+    const expected = requiredness === "required" ? "unresolved" : "degraded";
+    assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "git.push"), "ready");
+    assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "release.publish"), expected);
+    assert.equal(loaded.profile.completeness, expected);
+    assert.deepEqual(loaded, before);
+  }
 });
 
 
@@ -436,4 +519,25 @@ test("the subprocess deadline terminates a direct child that ignores SIGTERM", (
   assert.equal(result.providerCalls, 1);
   assert.equal(result.bindings[0].status, "unresolved");
   assert.ok(elapsed < 5000, `3s fixture deadline must not wait for the SIGTERM-resistant child's 10s fallback (${elapsed}ms)`);
+});
+
+test("shared optional sources isolate claim failures without hiding source-wide failures", () => {
+  const initial = inspectionProfile([{ operationIds: ["git.push"], requiredness: "optional" }]);
+  const declaration = structuredClone(initial.declaration);
+  declaration.claims.push({ ...declaration.claims[0], claimId: "claim:release", operationIds: ["release.publish"], sourcePointer: { kind: "json-pointer", pointer: "/missing" } });
+  const load = () => loadProjectProfile({ workspace: initial.workspace, workspaceIdentity: initial.workspaceIdentity, discoverySnapshot: { status: "discovered", workspace: initial.workspace, declaration, errors: [] }, computedAt: observedAt });
+  const loaded = load(), before = structuredClone(loaded);
+  assert.equal(loaded.profile.completeness, "degraded");
+  assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "git.push"), "ready");
+  assert.equal(classifyProjectProfileInspection(loaded, { bindings: [] }, "release.publish"), "degraded");
+  assert.deepEqual(loaded, before);
+  const noDigest = structuredClone(loaded); delete noDigest.confirmedSourceDigests;
+  assert.equal(classifyProjectProfileInspection(noDigest, { bindings: [] }, "git.push"), "degraded");
+  declaration.claims[0].sourcePointer.pointer = "/also-missing";
+  assert.equal(classifyProjectProfileInspection(load(), { bindings: [] }, "git.push"), "degraded");
+  declaration.claims[0].sourcePointer.pointer = "/value";
+  write(initial.workspace, "policy-0.json", JSON.stringify({ value: "changed" }));
+  assert.equal(classifyProjectProfileInspection(load(), { bindings: [] }, "git.push"), "degraded");
+  declaration.sources[0].locator = "absent.json";
+  assert.equal(classifyProjectProfileInspection(load(), { bindings: [] }, "git.push"), "degraded");
 });

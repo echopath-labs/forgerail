@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { applicableCorePointer, applicableContractPointer } from "./instruction-pointers.mjs";
 import { providerAdapterRegistry } from "./provider-adapter-registry.mjs";
+import { validateKnownRuleValue } from "./engineering-mode.mjs";
 
 export const cursorSharedCoreCoverageEvidence = "Existing AGENTS.md references the matching project-local ForgeRail Core Skill; this Cursor-only plan needs no additional Cursor Rule.";
 export const cursorSharedContractCoverageEvidence = "Existing AGENTS.md references both the matching project-local ForgeRail Core Skill and FORGERAIL.md; this shared-contract plan needs no additional Cursor Rule.";
@@ -392,6 +393,7 @@ function validateProjectProfileDeclaration(value, errors) {
     string(claim.sourceId, `${label}.sourceId`, errors, taskIdPattern);
     validateSourcePointer(claim.sourcePointer, `${label}.sourcePointer`, errors);
     string(claim.ruleKey, `${label}.ruleKey`, errors, ruleIdPattern);
+    validateKnownRuleValue(claim.ruleKey, claim.normalizedValue, `${label}.normalizedValue`, errors);
     strings(claim.operationIds, `${label}.operationIds`, errors, { min: 1, pattern: ruleIdPattern, unique: true });
     if (Array.isArray(claim.operationIds) && claim.operationIds.length > 64) errors.push(`${label}.operationIds must contain at most 64 items`);
     if (containsInlineSecret(claim.normalizedValue) || containsSecretField(claim.normalizedValue)) errors.push(`${label}.normalizedValue contains credential material`);
@@ -904,6 +906,7 @@ function validateRuleClaim(value, errors, label = "ruleClaim") {
   string(value.workspaceIdentityId, `${label}.workspaceIdentityId`, errors, taskIdPattern);
   string(value.sourceId, `${label}.sourceId`, errors, taskIdPattern);
   string(value.ruleKey, `${label}.ruleKey`, errors, ruleIdPattern);
+  validateKnownRuleValue(value.ruleKey, value.normalizedValue, `${label}.normalizedValue`, errors);
   string(value.precedenceClass, `${label}.precedenceClass`, errors);
   strings(value.applicabilityScope, `${label}.applicabilityScope`, errors, { min: 1, unique: true });
   string(value.observationPoint, `${label}.observationPoint`, errors);

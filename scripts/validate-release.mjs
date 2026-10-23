@@ -11,9 +11,9 @@ import { validateProductSurface } from "./lib/product-surface.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export function validateRelease() {
   const expectedPackageName = "@echopath-labs/forgerail";
-  const expectedVersion = "0.1.9";
+  const expectedVersion = "0.1.10";
   const expectedTag = `v${expectedVersion}`;
-  const expectedDate = "2026-10-12";
+  const expectedPreparationDate = "2026-10-22";
   const expectedPlugins = [
     "forgerail",
     "forgerail-cross-workspace-orchestration",
@@ -131,7 +131,7 @@ export function validateRelease() {
   }
 
   const changelog = read("CHANGELOG.md");
-  const releaseHeading = `## ${expectedVersion} - ${expectedDate}`;
+  const releaseHeading = `## ${expectedVersion} - Unreleased (prepared ${expectedPreparationDate})`;
   const unreleased = changelog.slice(changelog.indexOf("## Unreleased") + "## Unreleased".length, changelog.indexOf(releaseHeading)).trim();
   record("changelog-version", changelog.includes(releaseHeading), releaseHeading);
   record("changelog-clean-unreleased", unreleased === "No shipping changes yet.", unreleased);
@@ -224,8 +224,8 @@ export function validateRelease() {
   record("project-lifecycle-publication", ["scripts/lib/project-adoption.mjs", "scripts/lib/project-state.mjs", "scripts/project-adoption.test.mjs"].every((path) => packageJson.files.includes(path)) && packageJson.scripts.test.includes("npm run test:project-adoption"), "explicit lifecycle modules and installed regression suite");
   record("no-apply-adoption-script", !read("scripts/forgerail.mjs").includes('command === "apply-adoption"'), "no apply-adoption command");
 
-  const releaseEnglish = read("docs/release-0.1.9.md");
-  const releaseChinese = read("docs/release-0.1.9.zh-CN.md");
+  const releaseEnglish = read("docs/release-0.1.10.md");
+  const releaseChinese = read("docs/release-0.1.10.zh-CN.md");
   const releaseDocs = `${releaseEnglish}\n${releaseChinese}`;
   const currentRunbookEnglish = read("docs/release.md");
   const currentRunbookChinese = read("docs/release.zh-CN.md");
@@ -233,6 +233,8 @@ export function validateRelease() {
   record("current-runbook-version", currentRunbooks.includes(expectedVersion) && currentRunbooks.includes(expectedTag), { expectedVersion, expectedTag });
   record("current-runbook-no-alpha1-release-identity", !currentRunbooks.includes("0.1.0-alpha.1"), "generic runbooks must not retain the first-prerelease identity");
   record("current-runbook-stable-channel", currentRunbookEnglish.includes("npm `latest`") && currentRunbookChinese.includes("npm `latest`"), "stable runbooks publish to latest");
+  record("release-preparation-status", releaseEnglish.includes("not released") && releaseChinese.includes("尚未发布") && releaseDocs.includes(expectedPreparationDate), expectedPreparationDate);
+  record("runbook-staged-owner-approval", currentRunbookEnglish.includes("staged publishing") && currentRunbookEnglish.includes("personally completes web approval and 2FA") && currentRunbookChinese.includes("staged publishing") && currentRunbookChinese.includes("Owner 本人完成网页批准与 2FA"), "stage upload requires personal owner approval; no direct token publication");
   for (const phrase of [
     "remote_integration_approval",
     "release_approval",
@@ -240,7 +242,7 @@ export function validateRelease() {
     expectedVersion,
     expectedTag,
     "Node.js 22 and 24",
-    "release/0.1.9",
+    "release/0.1.10",
     "Do not unpublish",
     "AGW",
     "Host Binding Receipt",
@@ -283,7 +285,7 @@ export function validateRelease() {
   const failures = checks.filter((check) => !check.passed);
   const report = {
     schemaVersion: "1.0",
-    release: { version: expectedVersion, tag: expectedTag, date: expectedDate },
+    release: { version: expectedVersion, tag: expectedTag, status: "preparation-only", preparationDate: expectedPreparationDate },
     status: failures.length === 0 ? "passed" : "failed",
     checks,
     failures: failures.map(({ id, detail }) => ({ id, detail })),

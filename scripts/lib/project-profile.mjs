@@ -203,7 +203,7 @@ export function loadProjectProfile({ workspace, workspaceIdentity, computedAt = 
             : `claim ${claim.claimId} does not match its structured source value`;
       return { claim, pointer, confirmed, limitedReason };
     });
-    const optionalClaimFailure = source.requiredness === "optional" ? evaluatedClaims.find((item) => !item.confirmed) : null;
+    const optionalClaimFailure = source.requiredness === "optional" ? (evaluatedClaims.find((item) => !item.confirmed) ?? null) : null;
     const sourceObserved = state.observed && optionalClaimFailure === null;
     sourceRequiredness[source.sourceId] = source.requiredness;
     const applicabilityScope = [...new Set(declaredClaims.flatMap((claim) => claim.operationIds))].sort();

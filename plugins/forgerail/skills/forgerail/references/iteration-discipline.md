@@ -28,6 +28,16 @@ progress stalls across sessions, or when the critical path is blocked.
   current plan. Do not produce successive layers of preparation to avoid facing
   a blocker.
 
+## Stop At Sufficient Evidence
+
+Use the [engineering mode](engineering-mode.md) completion conditions and
+[impact review](impact-review.md) to bound checks. Reuse results whose tested
+object and relevant inputs still apply; after a fix, repeat affected checks rather
+than restarting every successful check without a reason. Preserve mandatory
+freshness and full-suite requirements. Once required evidence and gates are
+satisfied, continue authorized delivery; non-blocking polish does not justify
+another routine review or an expanded audit.
+
 ## Waiting Is Not Idling
 
 - Classify every blocker: agent-actionable within current authorization, or

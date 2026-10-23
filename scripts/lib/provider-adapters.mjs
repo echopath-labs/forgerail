@@ -7,6 +7,7 @@ import { performance } from "node:perf_hooks";
 import { validateContract, containsInlineSecret } from "./contracts.mjs";
 import { readProjectFileBytes } from "./project-state.mjs";
 import { providerAdapterRegistry } from "./provider-adapter-registry.mjs";
+import { resolveEffectiveProfileV2 } from "./composition.mjs";
 export { providerAdapterRegistry } from "./provider-adapter-registry.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
@@ -201,12 +202,63 @@ export function observeProjectProfileBindings({ workspace, declaration, operatio
   return { executionContextIdentityId: executionContextIdentity.executionContextIdentityId, observations, bindings, providerCalls };
 }
 
+function operationProfile(profile, operationId) {
+  // Reuse the resolver with the original observed inputs. The stored effective
+  // claims may already be narrowed or blocked by another operation's dependency.
+  if (!profile.declaration || !Array.isArray(profile.governanceSources) || !Array.isArray(profile.ruleClaims)) return profile;
+  const applies = (item) => item.applicabilityScope.includes(operationId) || item.applicabilityScope.includes("workspace");
+  const claims = profile.ruleClaims.filter(applies);
+  const claimIds = new Set(claims.map((claim) => claim.claimId));
+  const edges = profile.profile.dependencyEdges.filter(applies);
+  const edgeIds = new Set(edges.map((edge) => edge.edgeId));
+  const sourceIds = new Set([...claims.map((claim) => claim.sourceId), ...edges.map((edge) => edge.declaringSourceId)]);
+  const scopedSource = (source) => {
+    const declaredSource = profile.declaration.sources.find(item => item.sourceId === source.sourceId);
+    const declaredClaims = profile.declaration.claims.filter(item => item.sourceId === source.sourceId && (item.operationIds.includes(operationId) || item.operationIds.includes("workspace")));
+    // A verified file digest distinguishes a claim-local failure from a
+    // source-wide read/identity failure. Never infer recovery from omission.
+    const recovered = declaredSource?.requiredness === "optional"
+      && typeof declaredSource.expectedSha256 === "string"
+      && profile.confirmedSourceDigests?.[source.sourceId] === declaredSource.expectedSha256
+      && declaredClaims.length > 0
+      && declaredClaims.every(item => claims.some(claim => claim.claimId === item.claimId && claim.status === "confirmed" && claim.enforcement === "enforceable"));
+    return recovered ? { ...source, observationStatus: "observed", limitedReason: null } : source;
+  };
+  const resolved = resolveEffectiveProfileV2({
+    profileId: profile.profile.profileId,
+    profileRevisionId: profile.profile.revisionId,
+    workspaceIdentityId: profile.profile.workspaceIdentityId,
+    workspaceRelationshipIds: profile.profile.workspaceRelationshipIds,
+    governanceSources: profile.governanceSources.filter((source) => applies(source) || sourceIds.has(source.sourceId)).map((source) => ({
+      ...scopedSource(source), applicabilityScope: [operationId],
+      ruleClaimIds: source.ruleClaimIds.filter((id) => claimIds.has(id)),
+      dependencyEdgeIds: source.dependencyEdgeIds.filter((id) => edgeIds.has(id)),
+    })),
+    ruleClaims: claims.map((claim) => ({ ...claim, applicabilityScope: [operationId], dependencyEdgeIds: claim.dependencyEdgeIds.filter((id) => edgeIds.has(id)) })),
+    dependencyEdges: edges.map((edge) => ({ ...edge, applicabilityScope: [operationId], affectedClaimIds: edge.affectedClaimIds.filter((id) => claimIds.has(id)) })),
+    sourceRequiredness: Object.fromEntries(profile.declaration.sources.map((source) => [source.sourceId, source.requiredness])),
+    computedAt: profile.profile.computedAt,
+  });
+  // Incomplete scoping evidence must not turn an unresolved audit into ready.
+  return resolved.valid ? resolved : { profile: { completeness: "unresolved" } };
+}
+
 export function classifyProjectProfileInspection(profile, providerObservation, operationId) {
   if (profile.status === "invalid") return "invalid";
   if (operationId === null) return profile.status;
+  profile = operationProfile(profile, operationId);
+  const shadowed = new Set((profile.explanation?.claimDecisions ?? []).filter(item => item.disposition === "shadowed").map(item => item.claimId));
+  // Whole-profile audit conflicts remain unresolved in the stored contract.
+  // Only clear the operation verdict when shadowed conflicts are the sole gap.
+  const auditOnly = profile.profile?.conflicts?.length > 0
+    && profile.profile.conflicts.every(conflict => conflict.claimIds.filter(id => !shadowed.has(id)).length < 2)
+    && profile.explanation?.sourceSummaries?.every(source => source.status === "observed")
+    && profile.profile.ruleClaims.every(claim => claim.enforcement === "enforceable")
+    && profile.profile.dependencyEdges.every(edge => edge.observationStatus === "available");
+  const completeness = auditOnly ? "complete" : profile.profile?.completeness;
   const applicable = providerObservation.bindings.filter((binding) => !["not-applicable", "not-requested"].includes(binding.status));
   if (applicable.some((binding) => binding.requiredness === "required" && binding.status === "wrong-actor")) return "blocked";
-  if (profile.profile?.completeness === "unresolved" || applicable.some((binding) => binding.requiredness === "required" && (["unresolved", "unsupported"].includes(binding.status) || (operationId === "package.publish" && binding.targetPermission === "unverified")))) return "unresolved";
-  if (profile.profile?.completeness === "degraded" || applicable.some((binding) => binding.requiredness === "optional" && binding.status !== "matched")) return "degraded";
+  if (completeness === "unresolved" || applicable.some((binding) => binding.requiredness === "required" && (["unresolved", "unsupported"].includes(binding.status) || (operationId === "package.publish" && binding.targetPermission === "unverified")))) return "unresolved";
+  if (completeness === "degraded" || applicable.some((binding) => binding.requiredness === "optional" && binding.status !== "matched")) return "degraded";
   return "ready";
 }

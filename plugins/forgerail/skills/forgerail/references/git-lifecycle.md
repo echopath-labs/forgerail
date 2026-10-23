@@ -8,9 +8,11 @@ Use this reference when creating branches, committing, merging, pushing, alignin
 - [Primary Branch Naming](#primary-branch-naming)
 - [Resolve Branch Rules](#resolve-branch-rules)
 - [Branch Ownership And Creation](#branch-ownership-and-creation)
+- [Check Actual Branch Results](#check-actual-branch-results)
 - [Bounded Parallel Work](#bounded-parallel-work)
 - [Lightweight Integration Paths](#lightweight-integration-paths)
 - [Release And Shared Environment Work](#release-and-shared-environment-work)
+- [PR And Commit Granularity](#pr-and-commit-granularity)
 - [Commit Rules](#commit-rules)
 - [Merge And Closeout](#merge-and-closeout)
 - [Closeout Branch Restore](#closeout-branch-restore)
@@ -95,7 +97,9 @@ an enforced rule requires a different namespace, follow it and report the
 exception instead of renaming or bypassing it.
 
 Do not rename an existing or pushed branch merely because it does not match
-these defaults.
+these defaults. A mistakenly created branch in the current task has the narrower
+[bounded correction](#check-actual-branch-results) path below when every condition
+and the current task's correction authorization are established.
 
 ## Branch Ownership And Creation
 
@@ -144,6 +148,70 @@ branch decision merely because safely preservable unrelated dirty files exist.
 Branch creation authorization does not authorize merge, push, branch deletion,
 release, or deployment.
 
+## Check Actual Branch Results
+
+Resolve explicit `git.branch.naming` claims through the existing Profile, source,
+digest, scope and precedence rules. The known value is a `prefixes` object mapping
+`feature`, `fix`, `maintenance`, and `documentation` to non-empty prefix arrays.
+Absent an applicable declaration, keep the portable defaults above labeled as
+defaults; they are not a project-enforced allow-list. All modes preserve the same
+explicit branch rules.
+
+For the first relevant branch operation, and when owner, policy or operation
+intent changes, use the CLI's read-only `branch-check` before/after phases:
+`forgerail branch-check --workspace <owner> --phase before --task-type <type>
+--branch <name> --intent create|reuse --checkout true|false`. Save its JSON output
+outside the repository; afterward use the same arguments with `--phase after
+--before <saved-before.json>`. For adopted Profiles, supply independent
+`--workspace-identity` evidence and the applicable `--operation`/`--target` scope;
+required applicable provider dependencies remain unverified in this local-only
+command and must be resolved before the affected action. The checker does not
+create Profile state. Before the host creates or reuses a branch, supply the exact owner,
+task type, candidate, create/reuse intent and whether checkout is intended.
+Preserve the returned local refs/HEAD and policy revision in a temporary task file;
+it is an observation, not an authorization token or ownership certificate.
+Choose a compliant candidate and recheck within existing authorization if the
+candidate is wrong. Do not invoke the check on every conversation turn.
+
+The host performs the authorized Git operation, then checks its actual result
+using the original before observation and identical intent. Creation without
+checkout needs the ref to exist; it does not require HEAD to switch. Checkout
+intent also needs the actual HEAD to match. A changed policy, wrong owner/worktree,
+missing before state, truncated/failed observation or concurrent ambiguity cannot
+prove success. Read the result instead of claiming success from the command plan.
+The checker never creates, switches, renames or deletes branches and never reads
+remote state. Direct Git commands can bypass it; a check proves only its observed
+moment, not global enforcement.
+
+If actual creation produced an unexpected name, the host may correct it without
+another prompt only within already-confirmed current-task correction authority
+and when **all** of the following are supported by evidence:
+
+- Before state plus this task's non-forcing creation record and after observation
+  establish this is a newly created branch of this task, not an old branch.
+- It was not pushed; no upstream alone is insufficient. Use current relevant
+  remote evidence when needed and authorized; unknown push state is not safe.
+- No commits added by others, no other task dependency, and clear task ownership.
+  Inherited baseline commits are legitimate; author fields alone cannot prove
+  ownership or the absence of another task's dependency.
+- No other worktree has it checked out, the correct target is explicit and absent,
+  and the rename preserves commits, working tree and staging area.
+- Correction does not delete, reset, clean, overwrite a ref, force push, or bypass
+  a mandatory host limitation.
+
+Compare commits, worktree and staging state before and after a permitted rename,
+rerun the post-check and report the actual correction (for example, created
+`codex/x`, corrected to `feat/x`). If any condition is unknown or false, preserve
+state, explain the bounded correction plan and missing decision, and pause only
+related operations. A naming-only mismatch with established ownership/isolation
+can still allow authorized local edits; ambiguous ownership or other-task
+dependence cannot. On correction failure or renewed inconsistency, stop that
+correction and report; do not enter a rename loop.
+
+Reuse a suitable existing task branch even if it follows historical naming.
+Use the before observation to distinguish reuse from creation; a newly wrong
+branch cannot be relabeled “historical reuse” using a caller-supplied flag.
+
 ## Bounded Parallel Work
 
 Keep parallel lines of work for the same objective bounded and attributable.
@@ -190,6 +258,45 @@ For repositories that release to shared environments, respect the repository's
 own release rules.
 
 Do not infer production, staging, Kubernetes, CI/CD, rollback, image, or customer-data procedures from this generic skill. If a project-specific release checklist exists, use it. If none exists, stop and ask for explicit instructions before triggering high-risk release actions.
+
+## PR And Commit Granularity
+
+Before coding a large or multi-goal task, identify cohesive batches and their
+acceptance evidence. One PR should advance one independently reviewable,
+verifiable objective; state scope, non-goals and dependencies in the existing
+Task Envelope or PR description. Keep unrelated refactors out. If batches need
+stacked PRs, name their order and base dependencies; each integrated batch must
+remain buildable, compatible and safe. Do not split transaction, authorization
+or consistency boundaries merely to reduce diff size.
+
+One commit should express one clear intent, including its necessary code and
+tests, so it can be understood, diagnosed and safely reverted. Do not mechanically
+split by file, or separate a fix from the tests needed to establish its behavior.
+Follow repository history rules without automatically rewriting pushed history.
+
+Core supplies these principles. Project-specific size reminders, counting
+methods, exceptions and mandatory gates belong to the existing project Profile;
+this guidance introduces no new Profile key or required configuration. File and
+line counts are reminders, not universal hard limits. Consider handwritten code,
+generated output, migrations and tests by their actual review cost. When an
+applicable reminder is exceeded, reassess splitting or record why keeping the
+change together is safer. Without a numeric reminder, use cohesion, dependencies
+and reviewability; do not invent a fixed limit or split to game a count.
+
+| Situation | Decision |
+| --- | --- |
+| Two independent CLI improvements with separate acceptance tests | Plan separate PRs before coding; keep each improvement and its tests together. |
+| A storage change and validation needed to preserve one atomic write boundary | Keep the safety-critical change together and explain the dependency; split only with a demonstrated compatible intermediate state. |
+| A cohesive PR is already reviewed and ready to merge | Do not force a history rewrite just to meet a size reminder; record the rationale and use smaller batches for subsequent work. Still fix acceptance-blocking defects. |
+
+Reuse [iteration discipline](iteration-discipline.md) for repeated same-class
+failures and [impact review](impact-review.md) for validation selection. Fix
+known acceptance-blocking defects together where they share a root cause;
+separate deferrable suggestions instead of expanding every review. Reuse still
+applicable evidence and avoid requesting the same review again for the same
+unchanged commit unless new evidence or an existing gate requires it. This adds
+no approval stage, record system or automatic enforcement; existing authorization,
+CI, bot review and release gates remain in force.
 
 ## Commit Rules
 

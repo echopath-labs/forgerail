@@ -4,6 +4,15 @@
 
 No shipping changes yet.
 
+## 0.1.10 - Unreleased (prepared 2026-10-22)
+
+- Add fast/balanced/strict effort guidance with scoped risk checks, host review by default in balanced mode, evidence reuse and explicit stopping conditions; retain existing mandatory gates.
+- Interpret `engineering.mode` and `git.branch.naming` through existing Project Profile sources and scopes; expose unresolved values without silently refreshing source digests.
+- Add local, read-only `branch-check` before/after observations. The host performs authorized branch operations and any bounded correction; checks never grant authorization or contact a remote.
+- Clarify cohesive PRs, intentional commits and pre-coding batch planning; keep size reminders project-specific and preserve safety boundaries and existing gates.
+
+This is preparation, not a released version. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; see the adoption notes for evidence limits. Local package checks passed on Node.js 22 and 24 on 2026-10-23; release authorization and post-publication verification remain pending. See [preparation notes](docs/release-0.1.10.md) and [usage and boundaries](docs/engineering-mode.md).
+
 ## 0.1.9 - 2026-10-12
 
 - Keep lifecycle journals and temporary recovery copies owner-readable only, retain original file modes for rollback, and require manual original-permission verification for both replaced and deleted files in legacy 1.1 journals.

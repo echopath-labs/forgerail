@@ -2,6 +2,8 @@
 
 This directory contains a local, Skills-only submission candidate. It is not evidence that ForgeRail is listed, under review, or approved in the Universal Plugins Directory.
 
+The current local candidate targets 0.1.10, prepared on 2026-10-22 and not released. See [candidate notes](release-notes-0.1.10.md); all submission gates remain unchanged.
+
 The Agent Plugin is the product entry. Its Core Skills do not require Node.js, `package.json`, `node_modules`, or `.forgerail/` state in a user project. The separately published npm CLI remains optional validation and lifecycle tooling.
 
 The candidate follows the OpenAI submission guidance observed on 2026-08-30:
