@@ -1,10 +1,10 @@
 # ForgeRail Support
 
-> 0.1.10 is in preparation as of 2026-10-22 and is not released. Exact-version commands below apply only after publication is confirmed. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; Cursor version/model and original tool-result bodies are unavailable. Other release checks and authorization still apply.
+> Publication status is recorded by npm and the versioned GitHub Release. Exact-version commands below apply only after publication is confirmed. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; Cursor version/model and original tool-result bodies are unavailable. Release checks and authorization still apply.
 
 > This guide targets 0.1.10. Consult npm and the versioned GitHub Release for publication status.
 
-ForgeRail is maintained as an open-source project. The planned 0.1.10 support scope is npm installation, explicit packaged-Skill loading, and the evidence-bounded Cursor IDE Agent shared-Core route described below. Support is best effort; no response-time or resolution-time service level is promised.
+ForgeRail is maintained as an open-source project. The 0.1.10 support scope is npm installation, explicit packaged-Skill loading, and the evidence-bounded Cursor IDE Agent shared-Core route described below. Support is best effort; no response-time or resolution-time service level is promised.
 
 ## Start here
 

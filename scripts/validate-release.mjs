@@ -13,7 +13,6 @@ export function validateRelease() {
   const expectedPackageName = "@echopath-labs/forgerail";
   const expectedVersion = "0.1.10";
   const expectedTag = `v${expectedVersion}`;
-  const expectedPreparationDate = "2026-10-22";
   const expectedPlugins = [
     "forgerail",
     "forgerail-cross-workspace-orchestration",
@@ -131,9 +130,12 @@ export function validateRelease() {
   }
 
   const changelog = read("CHANGELOG.md");
-  const releaseHeading = `## ${expectedVersion} - Unreleased (prepared ${expectedPreparationDate})`;
-  const unreleased = changelog.slice(changelog.indexOf("## Unreleased") + "## Unreleased".length, changelog.indexOf(releaseHeading)).trim();
-  record("changelog-version", changelog.includes(releaseHeading), releaseHeading);
+  const releaseHeading = changelog.match(new RegExp(`^## ${expectedVersion.replaceAll(".", "\\.")}(?: - \\d{4}-\\d{2}-\\d{2})?$`, "m"));
+  const unreleasedHeading = /^## Unreleased$/m.exec(changelog);
+  const unreleased = releaseHeading && unreleasedHeading && releaseHeading.index > unreleasedHeading.index
+    ? changelog.slice(unreleasedHeading.index + unreleasedHeading[0].length, releaseHeading.index).trim()
+    : null;
+  record("changelog-version", Boolean(releaseHeading), releaseHeading?.[0] ?? null);
   record("changelog-clean-unreleased", unreleased === "No shipping changes yet.", unreleased);
   for (const phrase of ["Workspace Diagnosis", "Return Receipts", "GitHub Rulesets", "Node.js 22 and 24", "Apache-2.0"]) {
     record(`changelog-${phrase.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, changelog.includes(phrase), phrase);
@@ -233,7 +235,8 @@ export function validateRelease() {
   record("current-runbook-version", currentRunbooks.includes(expectedVersion) && currentRunbooks.includes(expectedTag), { expectedVersion, expectedTag });
   record("current-runbook-no-alpha1-release-identity", !currentRunbooks.includes("0.1.0-alpha.1"), "generic runbooks must not retain the first-prerelease identity");
   record("current-runbook-stable-channel", currentRunbookEnglish.includes("npm `latest`") && currentRunbookChinese.includes("npm `latest`"), "stable runbooks publish to latest");
-  record("release-preparation-status", releaseEnglish.includes("not released") && releaseChinese.includes("尚未发布") && releaseDocs.includes(expectedPreparationDate), expectedPreparationDate);
+  record("release-publication-evidence-boundary", releaseEnglish.includes("Publication status is recorded by npm and the versioned GitHub Release.")
+    && releaseChinese.includes("发布状态以 npm 和版本化 GitHub Release 为准。"), "source checks do not query or establish publication");
   record("runbook-staged-owner-approval", currentRunbookEnglish.includes("staged publishing") && currentRunbookEnglish.includes("personally completes web approval and 2FA") && currentRunbookChinese.includes("staged publishing") && currentRunbookChinese.includes("Owner 本人完成网页批准与 2FA"), "stage upload requires personal owner approval; no direct token publication");
   for (const phrase of [
     "remote_integration_approval",
@@ -285,7 +288,8 @@ export function validateRelease() {
   const failures = checks.filter((check) => !check.passed);
   const report = {
     schemaVersion: "1.0",
-    release: { version: expectedVersion, tag: expectedTag, status: "preparation-only", preparationDate: expectedPreparationDate },
+    scope: "source-readiness",
+    release: { version: expectedVersion, tag: expectedTag, status: failures.length === 0 ? "source-ready" : "source-not-ready", publicationStatus: "not-queried" },
     status: failures.length === 0 ? "passed" : "failed",
     checks,
     failures: failures.map(({ id, detail }) => ({ id, detail })),

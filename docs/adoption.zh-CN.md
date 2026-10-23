@@ -1,6 +1,6 @@
 # 渐进式采用
 
-> 0.1.10 于 2026-10-22 准备中，尚未发布；下方精确版本命令仅在确认发布后适用。精确共用 Core 已于 2026-10-23 通过有界 Cursor IDE 证据复核；Cursor 版本、模型及原工具返回正文缺失，其他发布检查与授权继续适用。
+> 发布状态以 npm 和版本化 GitHub Release 为准。下方精确版本命令仅在确认发布后适用。精确共用 Core 已于 2026-10-23 通过有界 Cursor IDE 证据复核；Cursor 版本、模型及原工具返回正文缺失，发布检查与授权继续适用。
 
 > 本文对应 ForgeRail 0.1.10，可通过 npm 和版本化 GitHub Release 核对发布状态。
 
@@ -66,7 +66,7 @@ npx --yes @echopath-labs/forgerail@0.1.10 adoption-plan --workspace . --selectio
 
 ## 宿主支持
 
-下表描述尚未发布的 ForgeRail 0.1.10 候选。历史 0.1.6 包中的 Cursor 仍为 `profile-only`；后续版本不会改写其 Adapter 状态。
+下表描述 ForgeRail 0.1.10。历史 0.1.6 包中的 Cursor 仍为 `profile-only`；后续版本不会改写其 Adapter 状态。
 
 | 宿主 | 原生目标 | Adapter 状态 | 验证边界 |
 | --- | --- | --- | --- |
@@ -74,7 +74,7 @@ npx --yes @echopath-labs/forgerail@0.1.10 adoption-plan --workspace . --selectio
 | Claude Code | `CLAUDE.md` | `profile-only` | 已建模目标与薄绑定，不声称端到端激活已验证 |
 | Cursor IDE Agent | 共用 `AGENTS.md` 与 `.agents/skills/forgerail/SKILL.md`；`.cursor/rules/forgerail.mdc` 回退路径 | 精确测试过的共用 Core 目录为 `supported`；Rule 回退路径仍为 `profile-only` | 已发布的 0.1.7 使用 2026-09-26 Cursor Desktop Agents 3.22.7 验收与 Core 摘要 `00f8af0e805cd66a4fc034a35fc76ce9b0c4d1d235d511a12e49cb3b167574fc`。未修改的共用 Core 于 2026-09-30 为 0.1.8 通过两个独立 Cursor IDE Agent 3.22.12 会话续验：工程任务读取活动 Project Profile 与其声明的策略来源，只修改允许文件；无关只读任务没有 Profile、策略、验证、provider 或文件变更活动。新摘要为 `297b42258a137190c1fca64941821a15cffef6f4202f40d1ef88a89d0823e6ec`。Cursor Rule-only IDE 行为仍未验证。每个接入项目仍须在新会话验收；Cloud Agent 与 CLI 完整工程行为未验证 |
 
-当前未发布 0.1.10 候选：用户于 2026-10-22 对 Core `3c75fcfd8f11317e0b2ff40878ef86d87d12b4be61b2df4654328f96de7a5a9a` 运行两个全新隔离 Cursor IDE 会话，2026-10-23 完成有界证据复核。原记录包含工程 Skill/Profile/声明策略读取、分支 before/create/after 调用、限定实现、测试调用与影响判断；无关只读原记录只有一次 README Read。留存的 before 结果通过；独立当前不可变输入/Git/文件/测试与 after 比较均通过，这些重核不补造缺失的原工具返回正文。Cursor 版本、原模型未知。工程会话还多读了参考文件，并先查错 policy 路径再读取声明源，因此不认证最小投入或每项指导均被遵守。验收仅覆盖该精确共用 Core 路径；Rule 回退、Cloud Agent 与广义 CLI 边界不变。2026-10-20 Core `bc188e56d4753a295b90e1e6ad422366a1b41aa83fef3999bac0340ec2c539b5` 的 Cursor IDE 3.25.6 / Claude Opus 5.5 High 验收保留为历史，不代表新会话身份。
+ForgeRail 0.1.10 Core 验收：用户于 2026-10-22 对 Core `3c75fcfd8f11317e0b2ff40878ef86d87d12b4be61b2df4654328f96de7a5a9a` 运行两个全新隔离 Cursor IDE 会话，2026-10-23 完成有界证据复核。原记录包含工程 Skill/Profile/声明策略读取、分支 before/create/after 调用、限定实现、测试调用与影响判断；无关只读原记录只有一次 README Read。留存的 before 结果通过；独立当前不可变输入/Git/文件/测试与 after 比较均通过，这些重核不补造缺失的原工具返回正文。Cursor 版本、原模型未知。工程会话还多读了参考文件，并先查错 policy 路径再读取声明源，因此不认证最小投入或每项指导均被遵守。验收仅覆盖该精确共用 Core 路径；Rule 回退、Cloud Agent 与广义 CLI 边界不变。2026-10-20 Core `bc188e56d4753a295b90e1e6ad422366a1b41aa83fef3999bac0340ec2c539b5` 的 Cursor IDE 3.25.6 / Claude Opus 5.5 High 验收保留为历史，不代表新会话身份。
 
 默认 `all-detected` 规划会在共用 `AGENTS.md`/Core 路径匹配时纳入 Cursor，即使没有 `.cursor` 目录。收到的计划只有在多宿主契约省略 Cursor Rule 时才能携带共用 Cursor 覆盖摘要；契约写入须在首位，受覆盖的 `AGENTS.md` 更新须在末位。
 
@@ -107,6 +107,6 @@ Lightweight Adoption 只有满足以下条件才算完成：
 
 这不启用 Pack 状态机制，也不要求复制全部 schema/adapter。回退需包含配套入口、锁定/快照、检查脚本及测试、许可、采用时修改的导航/生成器。审阅固定采用差异及后续采用修正，保留无关的后续修改，不能整仓 reset。
 
-## Unreleased lifecycle distinction
+## 项目接入生命周期区别
 
 The v1 binding-only workflow above remains supported. Explicit project snapshot adoption uses a separate [lifecycle contract](project-adoption.zh-CN.md), which may create bounded project installation metadata. It does not activate persisted governance. Published 0.1.4 retains its original behavior.

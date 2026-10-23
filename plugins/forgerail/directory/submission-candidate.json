@@ -58,7 +58,7 @@
   "releaseNotes": {
     "state": "candidate",
     "path": "./directory/release-notes-0.1.10.md",
-    "value": "ForgeRail 0.1.10: engineering effort guidance, local read-only branch checks and cohesive delivery guidance. Prepared 2026-10-22; not released. Local catalog only; Directory submission remains deferred and unapproved."
+    "value": "ForgeRail 0.1.10: engineering effort guidance, local read-only branch checks and cohesive delivery guidance. Publication status is recorded by npm and the versioned GitHub Release. Local catalog only; Directory submission remains deferred and unapproved."
   },
   "evaluationFile": "./directory/evaluations.json",
   "unresolvedGates": [

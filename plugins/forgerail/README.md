@@ -1,6 +1,6 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
-ForgeRail 0.1.10 is in preparation as of 2026-10-22. It adds engineering effort guidance, read-only branch checks and delivery granularity guidance. It is not released; existing projects do not upgrade automatically.
+ForgeRail 0.1.10 adds engineering effort guidance, read-only branch checks and delivery granularity guidance. Existing projects do not upgrade automatically.
 
 </p>
 
@@ -16,9 +16,9 @@ ForgeRail 0.1.10 is in preparation as of 2026-10-22. It adds engineering effort 
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Release line:** `0.1.10` / `v0.1.10` is a preparation target, not a publication receipt. The commands below apply only after exact-version publication is confirmed. Native Plugin activation remains unverified.
+> **Release line:** `0.1.10` / `v0.1.10` is the stable release line. Publication status is recorded by npm and the versioned GitHub Release. The commands below apply only after exact-version publication is confirmed. Native Plugin activation remains unverified.
 
-> **0.1.10 scope:** Add fast/balanced/strict effort guidance, scoped Profile interpretation, local read-only `branch-check` observations, and cohesive PR/intentional commit guidance. Existing mandatory gates remain. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; see the adoption notes for evidence limits. Local package checks passed on Node.js 22 and 24 on 2026-10-23; release authorization and post-publication verification remain pending. See the [preparation notes](docs/release-0.1.10.md) and [usage and boundaries](docs/engineering-mode.md).
+> **0.1.10 scope:** Add fast/balanced/strict effort guidance, scoped Profile interpretation, local read-only `branch-check` observations, and cohesive PR/intentional commit guidance. Existing mandatory gates remain. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; see the adoption notes for evidence limits. Source and installed-archive checks remain distinct from publication verification. See the [release notes](docs/release-0.1.10.md) and [usage and boundaries](docs/engineering-mode.md).
 
 Rule conflict preflight is Host Agent guidance shared across capabilities: inspect relevant visible rules, reuse valid decisions, and ask only about unresolved choices that affect the action. Mandatory host restrictions cannot be bypassed by approval. See [Profile resolution](skills/forgerail/references/profile-resolution.md).
 
@@ -163,7 +163,7 @@ See [product boundaries and current capability status](docs/product-boundary.md)
 
 ## Project status
 
-ForgeRail 0.1.10 is an unreleased npm-package candidate for explicit loading of the packaged Skills. Start with Plugin Only; review any durable project binding separately:
+ForgeRail 0.1.10 provides an npm package for explicit loading of the packaged Skills. Start with Plugin Only; review any durable project binding separately:
 
 - Codex can load packaged guidance explicitly; native Plugin activation is unverified. Claude Code remains `profile-only`. The exact 0.1.10 shared Core has bounded Cursor IDE acceptance with unknown original version/model and missing tool-result bodies; broad Cursor CLI behavior and Cloud Agent remain unverified.
 - Persisted `.forgerail/` governance is deferred.
@@ -171,7 +171,7 @@ ForgeRail 0.1.10 is an unreleased npm-package candidate for explicit loading of 
 - npm installation is the current route; Codex Marketplace registration and Universal Plugins Directory publication are deferred.
 - Defects are fixed forward in a new version; published tags and packages are not rewritten.
 
-No 0.1.10 publication is claimed. After publication, npm and the versioned GitHub Release provide the authoritative receipts. See the [changelog](CHANGELOG.md) for candidate scope.
+Publication status is recorded by npm and the versioned GitHub Release. See the [changelog](CHANGELOG.md) for version scope.
 
 ## Contributing and support
 

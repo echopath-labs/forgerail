@@ -6,7 +6,7 @@ deterministic projection of the private canonical source. External Capability
 Packs keep their independent alpha.4 identities and release lifecycles. This
 document describes the procedure; it does not grant authority by itself.
 
-Prepared on 2026-10-22; not released. Current authorization covers preparation only. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; the accepted digest must match the final source. Version/model and original tool-result bodies are unavailable; see the 0.1.10 preparation notes. Do not refresh an acceptance digest to bypass the gate.
+Publication status is recorded by npm and the versioned GitHub Release. Execution requires authorization for the exact target and actions. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; the accepted digest must match the final source. Version/model and original tool-result bodies are unavailable; see the 0.1.10 release notes. Do not refresh an acceptance digest to bypass the gate.
 
 ## Independent gates
 
