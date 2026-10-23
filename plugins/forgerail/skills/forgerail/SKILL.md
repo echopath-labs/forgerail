@@ -25,7 +25,11 @@ sibling workspaces, or load the Project Profile merely because a casual, simple,
 unrelated read-only task is being answered. Absence keeps the ordinary Core workflow
 unchanged. Invalid or unresolved required declarations are evidence to explain and
 route through reviewed rebind or Profile lifecycle work; do not silently substitute
-another source or write a replacement.
+another source or write a replacement. Assess the intended operation's relevant
+claims and dependencies: pause only affected actions. An unresolved mode is not an
+absent declaration; use the conservative temporary policy in
+[Engineering mode](references/engineering-mode.md), preserving traceable confirmed
+strict requirements and independent mandatory rules.
 
 A resolved Project Profile, matching provider identity, or successful read-only
 preflight is governance evidence only. It never grants task authorization, approval
@@ -48,7 +52,9 @@ keep one owner for each equivalent workflow.
 Always preserve unrelated user changes and dirty-worktree state. Do not treat a repository, worktree, or task branch as disposable.
 
 Before editing each owner repository, inspect actual Git state and choose its
-branch deliberately. Keep changes scoped. After changes, review existing-behavior
+branch deliberately. Before coding large or multi-goal work, plan cohesive PR
+batches and intentional commits using [Git granularity](references/git-lifecycle.md#pr-and-commit-granularity).
+Keep changes scoped. After changes, review existing-behavior
 impact, run the relevant project checks, update the authorized existing record
 and relationship links, and check human-facing documentation. If no documentation
 update is needed, briefly explain why in the closeout. Report branch,
@@ -62,6 +68,31 @@ Envelope or Receipt can be expressed in the conversation and existing project
 records; do not require new JSON files, a second task history, or a new record
 system. Read the relevant reference below at its trigger, not all references at
 startup.
+
+## Engineering Effort
+
+For applicable engineering work, use `engineering.mode` from the same effective
+Profile: `fast`, `balanced`, or `strict`; no applicable declaration defaults to
+`balanced` without creating configuration. Mode selects default effort, never
+operation authorization or permission to weaken mandatory gates. A current-task
+explicit user choice can raise or lower default effort within higher-priority
+rules; keep it task-scoped and preserve independent mandatory requirements.
+
+Read [Engineering mode](references/engineering-mode.md) when selecting effort,
+handling an unresolved mode, strengthening a concrete risk, reusing evidence, or
+deciding when validation is sufficient. `fast` includes focused verification and a
+brief host impact judgment; `balanced` adds relevant regression and one scoped
+review, which the host may perform. Existing mandatory bot review remains.
+`strict` adds the checks required by specific risks and critical dependencies,
+without an unbounded whole-workspace audit. Apply
+[Impact review](references/impact-review.md) to choose checks and semantic review
+from the actual behavior affected, including behavior-changing Markdown.
+
+Once the applicable acceptance checks and gates are satisfied with no known
+blocker, continue the authorized delivery. Do not append routine full regression
+or another review for non-blocking polish. Required evidence that is missing,
+failed, or stale remains a gap; distinguish implementation, deployment readiness,
+deployment, and human business acceptance.
 
 ## Continuous Progress And Authorization Reuse
 

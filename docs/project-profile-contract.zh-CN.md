@@ -124,3 +124,7 @@ Profile规范化和总预算顺序不依赖宿主语言环境。关联工作区�
 npm身份观测仅接受不含userinfo、查询参数或片段的HTTPS registry URL，其他URL在调用npm前拒绝。凭据筛查包含百分号编码的查询参数名。
 
 Git SSH适配器只认可正常结束的GitHub兼容认证响应；超时、进程失败和其他问候保持unresolved。
+
+## 工程投入与分支策略
+
+[Engineering Mode 与分支检查](engineering-mode.zh-CN.md)说明可选已知键 `engineering.mode`、`git.branch.naming`、任务级投入选择和只读分支观察。它们复用本声明、source/claim 范围与现有生命周期，不产生操作授权或第二套配置。

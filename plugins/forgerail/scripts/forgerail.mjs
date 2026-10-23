@@ -13,6 +13,9 @@ import { confirmProjectProfileBindingSources, discoverProjectProfile, loadProjec
 import { classifyProjectProfileInspection, createProviderObservationBudget, observeProjectProfileBindings, validateObservationSelectors } from "./lib/provider-adapters.mjs";
 import { readProjectFile } from "./lib/project-state.mjs";
 
+import { explainEngineeringMode, resolveBranchPolicy } from "./lib/engineering-mode.mjs";
+import { checkBranchPolicy } from "./lib/branch-policy.mjs";
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function fail(message, code = "INVALID_INPUT") { emit({ valid: false, code, errors: [message] }); process.exit(1); }
@@ -37,8 +40,8 @@ function args(name) {
 }
 
 let evidenceBytesRemaining = 16 * 1024 * 1024;
-function boundedEvidence(path) {
-  const limit = Math.min(256 * 1024, evidenceBytesRemaining);
+function boundedEvidence(path, maximumBytes = 256 * 1024) {
+  const limit = Math.min(maximumBytes, evidenceBytesRemaining);
   const fd = openSync(resolve(path), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
     const stat = fstatSync(fd);
@@ -89,6 +92,7 @@ function validateCommandOptions(command) {
     ["project-profile-set", ["--workspace", "--candidate", "--apply", "--workspace-identity", "--operation", "--target", "--workspace-relationship", "--related-workspace-identity"]],
     ["project-profile-remove", ["--workspace", "--apply"]],
     ["project-profile-inspect", ["--workspace", "--workspace-identity", "--operation", "--target", "--workspace-relationship", "--related-workspace-identity"]],
+    ["branch-check", ["--workspace", "--phase", "--task-type", "--branch", "--intent", "--checkout", "--before", "--workspace-identity", "--operation", "--target"]],
     ["doctor", ["--workspace"]],
     ["recover", ["--workspace", "--apply", "--release-lock"]],
     ["validate-fixtures", ["--scope"]],
@@ -345,7 +349,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.9") errors.push("Plugin version must be 0.1.9");
+  if (manifest.version !== "0.1.10") errors.push("Plugin version must be 0.1.10");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -828,13 +832,14 @@ if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
   const workspace = arg("--workspace"); if (!workspace) fail("project-profile-inspect requires --workspace");
   const operationId = arg("--operation") ?? null, targetId = arg("--target") ?? null;
   if ((operationId === null) !== (targetId === null)) fail("project-profile-inspect requires --operation and --target together");
+  validateObservationSelectors(operationId, targetId);
   const relationshipPaths = args("--workspace-relationship"), identityPaths = args("--related-workspace-identity");
   if (operationId === null && (relationshipPaths.length || identityPaths.length)) fail("related workspace evidence requires --operation and --target");
   if (relationshipPaths.length > 128 || identityPaths.length > 128) fail("related workspace evidence exceeds the 128-item limit");
   const workspaceRelationships = contractEvidence(relationshipPaths, "workspace-relationship", "relationshipId");
   const relatedWorkspaceIdentities = contractEvidence(identityPaths, "workspace-identity", "workspaceIdentityId");
   const discovered = discoverProjectProfile(workspace);
-  if (discovered.status !== "discovered") { emit({ ...discovered, localOnly: operationId === null, providerObservation: null, authorizationClaim: false }); if (discovered.status === "invalid") process.exitCode = 1; }
+  if (discovered.status !== "discovered") { emit({ ...discovered, engineeringMode: explainEngineeringMode({ loadedProfile: discovered, operationId }), branchPolicy: resolveBranchPolicy({ loadedProfile: discovered, operationId }), localOnly: operationId === null, providerObservation: null, authorizationClaim: false }); if (discovered.status === "invalid") process.exitCode = 1; }
   else {
     const observedAt = new Date().toISOString();
     const workspaceIdentity = ownerWorkspaceIdentity(arg("--workspace-identity"), workspace, discovered.declaration.workspaceIdentityId);
@@ -842,10 +847,49 @@ if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
     const executionContext = executionContextIdentity(workspaceIdentity, operationId, targetId, observedAt);
     const providerObservation = observeProjectProfileBindings({ workspace, declaration: discovered.declaration, operationId, targetId, executionContextIdentity: executionContext, workspaceRelationships, relatedWorkspaceIdentities, observedAt });
     const profileStatus = profile.status;
-    const inspectionStatus = classifyProjectProfileInspection(profile, providerObservation, operationId);
-    emit({ ...profile, status: inspectionStatus, profileStatus, localOnly: operationId === null, operationId, targetId, executionContextIdentity: executionContext, providerObservation, authorizationClaim: false });
+    let inspectionStatus = classifyProjectProfileInspection(profile, providerObservation, operationId);
+    const engineeringMode = explainEngineeringMode({ loadedProfile: profile, operationId, providerObservation });
+    const branchPolicy = resolveBranchPolicy({ loadedProfile: profile, operationId, providerObservation });
+    if (!["invalid", "blocked"].includes(inspectionStatus) && [engineeringMode.status, branchPolicy.status].some(status => ["invalid", "unresolved"].includes(status))) inspectionStatus = "unresolved";
+    emit({ ...profile, engineeringMode, branchPolicy, status: inspectionStatus, profileStatus, localOnly: operationId === null, operationId, targetId, executionContextIdentity: executionContext, providerObservation, authorizationClaim: false });
     if (["invalid", "blocked", "unresolved"].includes(inspectionStatus)) process.exitCode = 1;
   }
+} else if (command === "branch-check") {
+  const workspace = arg("--workspace"), phase = arg("--phase");
+  const taskType = arg("--task-type"), branch = arg("--branch"), intent = arg("--intent");
+  const checkoutValue = arg("--checkout");
+  if (!workspace || !["before", "after"].includes(phase) || !taskType || !branch || !["create", "reuse"].includes(intent) || !["true", "false"].includes(checkoutValue)) {
+    fail("branch-check requires --workspace, --phase before|after, --task-type, --branch, --intent create|reuse and --checkout true|false");
+  }
+  const beforePath = arg("--before");
+  if ((phase === "after") !== Boolean(beforePath)) fail("--before is required only for the after phase");
+  const operationId = arg("--operation") ?? null, targetId = arg("--target") ?? null;
+  if ((operationId === null) !== (targetId === null)) fail("branch-check requires --operation and --target together");
+  validateObservationSelectors(operationId, targetId);
+  const discovery = discoverProjectProfile(workspace);
+  let loadedProfile = discovery, providerObservation = null;
+  if (discovery.status === "discovered") {
+    if (operationId === null) fail("adopted Project Profile branch checks require --operation and --target to evaluate action dependencies");
+    const observedAt = new Date().toISOString();
+    const workspaceIdentity = ownerWorkspaceIdentity(arg("--workspace-identity"), workspace, discovery.declaration.workspaceIdentityId);
+    loadedProfile = loadProjectProfile({ workspace, workspaceIdentity, computedAt: observedAt, discoverySnapshot: discovery });
+    // Branch observation is strictly local. Required provider dependencies stay
+    // unverified rather than causing an implicit network request or authorization.
+    providerObservation = { bindings: discovery.declaration.resourceBindings.map(binding => ({
+      bindingId: binding.bindingId, requiredness: binding.requiredness, operationIds: binding.operationIds,
+      status: operationId !== null && binding.operationIds.includes(operationId) ? "not-requested" : "not-applicable",
+    })) };
+  }
+  const policy = resolveBranchPolicy({ loadedProfile, operationId, providerObservation });
+  let before = null;
+  if (beforePath) {
+    if (containsInlineSecret(beforePath)) throw new Error("before evidence path contains credential-like material");
+    try { before = boundedEvidence(beforePath, 4 * 1024 * 1024); }
+    catch { throw new Error("before evidence is unreadable or invalid"); }
+  }
+  const result = checkBranchPolicy({ workspace, phase, taskType, branch, intent, checkout: checkoutValue === "true", targetId, policy, before });
+  emit(result);
+  if (!result.valid) process.exitCode = 1;
 } else if (command === "validate") {
   const result = validatePlugin(); emit(result); if (!result.valid) process.exitCode = 1;
 } else if (command === "validate-fixtures") {
@@ -891,7 +935,7 @@ if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
   const receipt = arg("--receipt"); const workspace = arg("--workspace");
   if (!receipt || !workspace) fail("verify-receipt requires --receipt and --workspace");
   const result = verifyReceipt(readJson(resolve(receipt)), workspace); emit(result); if (!result.valid) process.exitCode = 1;
-} else fail("usage: forgerail.mjs init | update | doctor | remove | recover | project-profile-set | project-profile-remove | project-profile-inspect | validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");
+} else fail("usage: forgerail.mjs init | update | doctor | remove | recover | project-profile-set | project-profile-remove | project-profile-inspect | branch-check | validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");
 
 } catch (error) {
   const code = error instanceof SyntaxError ? "INVALID_JSON" : ["ENOENT", "EACCES", "EPERM", "EISDIR", "ENOTDIR"].includes(error.code) ? "INPUT_UNAVAILABLE" : "INTERNAL_ERROR";

@@ -230,8 +230,10 @@ export function resolveEffectiveProfileV2({
     return {
       claimId: claim.claimId,
       sourceId: claim.sourceId,
-      disposition: unresolved ? "unresolved" : higher ? "shadowed" : "active",
-      reasonCode: unresolved ? "unresolved-source-or-conflict" : higher ? "higher-precedence-claim" : partiallyShadowed ? "highest-precedence-for-remaining-scopes" : "highest-applicable-precedence",
+      // A fully shadowed claim cannot govern this operation, even when its
+      // lower-precedence peers conflict. Keep the conflict in the audit trail.
+      disposition: higher ? "shadowed" : unresolved ? "unresolved" : "active",
+      reasonCode: higher ? "higher-precedence-claim" : unresolved ? "unresolved-source-or-conflict" : partiallyShadowed ? "highest-precedence-for-remaining-scopes" : "highest-applicable-precedence",
       dependencyEdgeIds: [...claim.dependencyEdgeIds].sort(),
     };
   });

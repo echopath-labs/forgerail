@@ -14,6 +14,12 @@ For each effective rule, retain:
 Do not create `.forgerail/`, edit `AGENTS.md`, or initialize a record system merely to materialize the Profile. When a reusable rule deserves persistence, present a candidate, the proposed owner/source, evidence, effect, and rollback. Obtain confirmation only if existing authorization does not already cover recording that decision and scope.
 
 
+For `engineering.mode` and `git.branch.naming`, retain the same provenance,
+operation scope, dependencies and revision. Do not mistake a known portable
+default for an accepted project rule. Mode resolution failures and task-only
+effort choices follow [Engineering mode](engineering-mode.md); explicit task
+choices adjust default effort without downgrading independent mandatory rules.
+
 ## Action-scoped conflict preflight
 
 Use this same check across capabilities, including Git, review, validation,

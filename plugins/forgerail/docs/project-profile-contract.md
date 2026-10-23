@@ -124,3 +124,7 @@ Computed Profile claims narrow partially shadowed operations to their remaining 
 Npm identity observation requires an HTTPS registry URL without userinfo, query or fragment; unsupported URLs are rejected before invoking npm. Credential screening includes percent-encoded query names.
 
 The Git SSH adapter recognizes completed GitHub-compatible authentication responses; timeouts, failed processes and other greetings remain unresolved.
+
+## Engineering effort and branch policy
+
+See [Engineering mode and branch checks](engineering-mode.md) for the optional known rule keys `engineering.mode` and `git.branch.naming`, task-only effort choices and the read-only branch observation workflow. They reuse this declaration, its source/claim scopes and the same lifecycle; they do not create operation authorization or another configuration layer.

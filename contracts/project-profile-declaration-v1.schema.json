@@ -95,6 +95,16 @@
       }
     },
     "claim": {
+      "allOf": [
+        {
+          "if": { "properties": { "ruleKey": { "const": "engineering.mode" } }, "required": ["ruleKey"] },
+          "then": { "properties": { "normalizedValue": { "enum": ["fast", "balanced", "strict"] } } }
+        },
+        {
+          "if": { "properties": { "ruleKey": { "const": "git.branch.naming" } }, "required": ["ruleKey"] },
+          "then": { "properties": { "normalizedValue": { "$ref": "#/$defs/branchNaming" } } }
+        }
+      ],
       "type": "object",
       "additionalProperties": false,
       "required": ["claimId", "sourceId", "sourcePointer", "ruleKey", "normalizedValue", "operationIds"],
@@ -114,6 +124,31 @@
       "properties": {
         "kind": { "const": "workspace-file" },
         "path": { "$ref": "#/$defs/relativePath" }
+      }
+    },
+    "branchNaming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefixes"],
+      "properties": {
+        "prefixes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["feature", "fix", "maintenance", "documentation"],
+          "properties": {
+            "feature": { "$ref": "#/$defs/branchPrefixes" },
+            "fix": { "$ref": "#/$defs/branchPrefixes" },
+            "maintenance": { "$ref": "#/$defs/branchPrefixes" },
+            "documentation": { "$ref": "#/$defs/branchPrefixes" }
+          }
+        }
+      }
+    },
+    "branchPrefixes": {
+      "type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true,
+      "items": {
+        "type": "string", "maxLength": 200,
+        "pattern": "^(?!.*\\.\\.)(?!.*@\\{)(?!.*//)(?!.*(?:^|/)\\.)(?!.*(?:\\.|\\.lock)/)[A-Za-z0-9_][A-Za-z0-9._/-]*/$"
       }
     },
     "relatedWorkspaceFileLocator": {
