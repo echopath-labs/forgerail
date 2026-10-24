@@ -1,6 +1,6 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
-ForgeRail 0.1.10 于 2026-10-22 处于准备阶段，新增工程投入指导、只读分支检查与交付粒度指导。尚未发布，既有项目不会自动升级。
+ForgeRail 0.1.10 新增工程投入指导、只读分支检查与交付粒度指导。既有项目不会自动升级。
 
 </p>
 
@@ -16,9 +16,9 @@ ForgeRail 0.1.10 于 2026-10-22 处于准备阶段，新增工程投入指导、
   <a href="CHANGELOG.md">变更记录</a>
 </p>
 
-> **版本：** `0.1.10` / `v0.1.10` 是准备目标，不是发布回执。下方命令仅在核实精确版本已发布后适用。原生 Plugin 激活仍未验证。
+> **版本：** `0.1.10` / `v0.1.10` 是稳定版本线，发布状态以 npm 和版本化 GitHub Release 为准。下方命令仅在核实精确版本已发布后适用。原生 Plugin 激活仍未验证。
 
-> **0.1.10 范围：** 新增 fast/balanced/strict 投入指导、限定范围的 Profile 解释、本地只读 `branch-check` 观察，以及内聚 PR／意图明确 Commit 的指导；保留既有强制门禁。精确共用 Core 已于 2026-10-23 通过有界 Cursor IDE 证据复核，证据限制见接入说明；本地包检查已于 2026-10-23 在 Node.js 22 和 24 下通过；发布授权与发布后验证仍待完成。见[准备说明](docs/release-0.1.10.zh-CN.md)和[使用与边界](docs/engineering-mode.zh-CN.md)。
+> **0.1.10 范围：** 新增 fast/balanced/strict 投入指导、限定范围的 Profile 解释、本地只读 `branch-check` 观察，以及内聚 PR／意图明确 Commit 的指导；保留既有强制门禁。精确共用 Core 已于 2026-10-23 通过有界 Cursor IDE 证据复核，证据限制见接入说明；源码与安装归档检查和发布验证分别核验。见[发布说明](docs/release-0.1.10.zh-CN.md)和[使用与边界](docs/engineering-mode.zh-CN.md)。
 
 规则冲突预检是各能力共用的 Host Agent 指引：按需检查可见规则、复用有效决定，只对影响当前动作的未决取舍提醒用户。用户批准不能绕过宿主强制限制；ForgeRail 不提供配置修改机制。见[规则解析](skills/forgerail/references/profile-resolution.md)。
 
@@ -163,7 +163,7 @@ npx --yes @echopath-labs/forgerail@0.1.10 diagnose --workspace .
 
 ## 项目状态
 
-ForgeRail 0.1.10 是尚未发布的 npm 包候选，供 Agent 显式加载包内 Skill。从 Plugin Only 开始，持久项目绑定另行评审：
+ForgeRail 0.1.10 提供 npm 包，供 Agent 显式加载包内 Skill。从 Plugin Only 开始，持久项目绑定另行评审：
 
 - Codex 可显式加载包内指导；原生 Plugin 激活尚未验证。Claude Code 保持 `profile-only`；0.1.10 精确共用 Core 已通过有界 Cursor IDE 验收，原版本/模型未知且工具返回正文缺失，广义 Cursor CLI 行为和 Cloud Agent 仍未验证；
 - 持久化 `.forgerail/` 治理仍延期；
@@ -171,7 +171,7 @@ ForgeRail 0.1.10 是尚未发布的 npm 包候选，供 Agent 显式加载包内
 - 当前采用 npm 安装，Codex 市场注册与 Universal Plugins Directory 上架暂缓；
 - 缺陷通过新版本 forward fix，不改写已发布 tag 或 package。
 
-当前不声称 0.1.10 已发布。未来实际发布以版本化 GitHub Release 和 npm registry 为权威回执；候选范围见[变更记录](CHANGELOG.md)。
+发布状态以 npm 和版本化 GitHub Release 为准；版本范围见[变更记录](CHANGELOG.md)。
 
 ## 贡献与支持
 

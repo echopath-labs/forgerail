@@ -1,6 +1,6 @@
 # Install ForgeRail with npm
 
-> 0.1.10 is in preparation as of 2026-10-22 and is not released. Exact-version commands below apply only after publication is confirmed. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; Cursor version/model and original tool-result bodies are unavailable. Other release checks and authorization still apply.
+> Publication status is recorded by npm and the versioned GitHub Release. Exact-version commands below apply only after publication is confirmed. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; Cursor version/model and original tool-result bodies are unavailable. Release checks and authorization still apply.
 
 > This guide installs ForgeRail 0.1.10. Confirm availability through npm and the versioned GitHub Release.
 
