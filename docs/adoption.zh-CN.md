@@ -67,7 +67,7 @@ npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --selectio
 
 ## 宿主支持
 
-下表描述 ForgeRail 0.1.11 候选。历史 0.1.6 包中的 Cursor 仍为 `profile-only`；后续版本不会改写其 Adapter 状态。
+下表描述 ForgeRail 0.1.11。历史 0.1.6 包中的 Cursor 仍为 `profile-only`；后续版本不会改写其 Adapter 状态。
 
 | 宿主 | 原生目标 | Adapter 状态 | 验证边界 |
 | --- | --- | --- | --- |
@@ -77,7 +77,7 @@ npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --selectio
 
 ForgeRail 0.1.10 Core 验收：用户于 2026-10-22 对 Core `3c75fcfd8f11317e0b2ff40878ef86d87d12b4be61b2df4654328f96de7a5a9a` 运行两个全新隔离 Cursor IDE 会话，2026-10-23 完成有界证据复核。原记录包含工程 Skill/Profile/声明策略读取、分支 before/create/after 调用、限定实现、测试调用与影响判断；无关只读原记录只有一次 README Read。留存的 before 结果通过；独立当前不可变输入/Git/文件/测试与 after 比较均通过，这些重核不补造缺失的原工具返回正文。Cursor 版本、原模型未知。工程会话还多读了参考文件，并先查错 policy 路径再读取声明源，因此不认证最小投入或每项指导均被遵守。验收仅覆盖该精确共用 Core 路径；Rule 回退、Cloud Agent 与广义 CLI 边界不变。2026-10-20 Core `bc188e56d4753a295b90e1e6ad422366a1b41aa83fef3999bac0340ec2c539b5` 的 Cursor IDE 3.25.6 / Claude Opus 5.5 High 验收保留为历史，不代表新会话身份。
 
-当前 0.1.11 候选 Core 验收（2026-10-26）：用户运行两个全新隔离 Cursor IDE 会话后，精确 Core `7ad344f3eb2b77f3d4b25d98bbbd0142150540108d2f8153c8f500f36aa6bb7d` 通过有界复核。Agent 自撰报告描述工程任务读取 Core/optional-delegation/Profile/声明策略，结合小任务和外部 worker 禁令直接处理，以及无关只读任务仅阅读 README。独立核对准备摘要锚点、不可变输入/Core、当前 Git/文件/测试与保留的分支 before/after 通过结果，支持该限定结论。未提供完整原始 transcript，完整读取顺序、额外提问及没有未记录动作均未独立审计。Cursor 版本、模型及档位未知，Grok 4.7 仅为报告引用的系统自称。显式条件探针是推理证据，不是执行器运行时或恢复实测。仅受理既有共享 `AGENTS.md` 路径的这份精确 Core，不提升 Rule 回退、CLI、Cloud Agent 或其他宿主支持；已安装 0.1.10 不变，候选仍未发布。
+ForgeRail 0.1.11 Core 验收（2026-10-26）：用户运行两个全新隔离 Cursor IDE 会话后，精确 Core `7ad344f3eb2b77f3d4b25d98bbbd0142150540108d2f8153c8f500f36aa6bb7d` 通过有界复核。Agent 自撰报告描述工程任务读取 Core/optional-delegation/Profile/声明策略，结合小任务和外部 worker 禁令直接处理，以及无关只读任务仅阅读 README。独立核对准备摘要锚点、不可变输入/Core、当前 Git/文件/测试与保留的分支 before/after 通过结果，支持该限定结论。未提供完整原始 transcript，完整读取顺序、额外提问及没有未记录动作均未独立审计。Cursor 版本、模型及档位未知，Grok 4.7 仅为报告引用的系统自称。显式条件探针是推理证据，不是执行器运行时或恢复实测。仅受理既有共享 `AGENTS.md` 路径的这份精确 Core，不提升 Rule 回退、CLI、Cloud Agent 或其他宿主支持；已安装 0.1.10 须显式更新；发布状态仍须独立通过 npm 与版本化 GitHub Release 核实。
 
 默认 `all-detected` 规划会在共用 `AGENTS.md`/Core 路径匹配时纳入 Cursor，即使没有 `.cursor` 目录。收到的计划只有在多宿主契约省略 Cursor Rule 时才能携带共用 Cursor 覆盖摘要；契约写入须在首位，受覆盖的 `AGENTS.md` 更新须在末位。
 

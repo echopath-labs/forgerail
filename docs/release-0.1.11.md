@@ -7,7 +7,7 @@ Publication status is recorded by npm and the versioned GitHub Release. Source m
 - Reuse valid task authorization without repeated confirmation. Preference does not broaden scope or bypass mandatory host limits; the Host collects results, checks actual artifacts/evidence and owns acceptance and the final report.
 - Keep small, tightly coupled or uneconomic tasks with the Host. Report unavailable routes, partial results and unknown cost honestly; do not claim success or savings without evidence. RelayPact/host retains dispatch, models, processes, wait, cancellation, retry and recovery.
 
-See [optional delegation](../skills/forgerail/references/optional-delegation.md). This candidate adds no Skill owner, CLI command, configuration/schema, persistent task state or execution runtime. Existing engineering-mode, branch-check and reliability behavior is retained. External Capability Packs keep their independent `0.1.0-alpha.4` versions.
+See [optional delegation](../skills/forgerail/references/optional-delegation.md). This version adds no Skill owner, CLI command, configuration/schema, persistent task state or execution runtime. Existing engineering-mode, branch-check and reliability behavior is retained. External Capability Packs keep their independent `0.1.0-alpha.4` versions.
 
 ## Host acceptance and installation
 

@@ -1,6 +1,6 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
-ForgeRail 0.1.11 prepares optional RelayPact delegation guidance. Existing projects do not upgrade automatically.
+ForgeRail 0.1.11 provides optional RelayPact delegation guidance. Existing projects do not upgrade automatically.
 
 </p>
 
@@ -16,18 +16,18 @@ ForgeRail 0.1.11 prepares optional RelayPact delegation guidance. Existing proje
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Candidate:** `0.1.11` / `v0.1.11` is prepared locally and is not published by this source change. Publication status is recorded by npm and the versioned GitHub Release. The commands below apply only after exact-version publication is confirmed. Native Plugin activation remains unverified.
+> **Version:** `0.1.11` / `v0.1.11`. Publication status is recorded by npm and the versioned GitHub Release. The commands below apply only after exact-version publication is confirmed. Native Plugin activation remains unverified.
 
 > **0.1.11 scope:** Optional delegation guidance reuses Core and one on-demand reference: explicitly enabled preference, verified current capability, total-cost judgment, authorization reuse, result collection and Host acceptance. No execution runtime or new configuration is added. The unchanged exact Core passed bounded Cursor IDE evidence review on 2026-10-26; see [release notes](docs/release-0.1.11.md) and [evidence limits](docs/adoption.md#host-support).
 
 Rule conflict preflight is Host Agent guidance shared across capabilities: inspect relevant visible rules, reuse valid decisions, and ask only about unresolved choices that affect the action. Mandatory host restrictions cannot be bypassed by approval. See [Profile resolution](skills/forgerail/references/profile-resolution.md).
 
-**0.1.11 candidate guidance:** When project rules or the user explicitly enable
+**0.1.11 guidance:** When project rules or the user explicitly enable
 delegation preference, the Host assesses bounded subtasks and full decomposition,
 handoff, execution, review and rework cost, then prefers currently verified RelayPact
 capabilities where justified. The Host collects and accepts results; RelayPact
 remains optional and owns execution. See [optional delegation](skills/forgerail/references/optional-delegation.md).
-This candidate does not upgrade installed 0.1.10. Its exact Core passed separate bounded Cursor IDE evidence review on 2026-10-26; report and independent file/Git evidence limits are described in [adoption](docs/adoption.md#host-support).
+This version does not automatically upgrade an existing 0.1.10 installation. Its exact Core passed separate bounded Cursor IDE evidence review on 2026-10-26; report and independent file/Git evidence limits are described in [adoption](docs/adoption.md#host-support).
 
 ## Why ForgeRail?
 

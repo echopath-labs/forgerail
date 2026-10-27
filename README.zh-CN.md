@@ -1,6 +1,6 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
-ForgeRail 0.1.11 准备可选 RelayPact 委派指导。既有项目不会自动升级。
+ForgeRail 0.1.11 提供可选 RelayPact 委派指导。既有项目不会自动升级。
 
 </p>
 
@@ -16,13 +16,13 @@ ForgeRail 0.1.11 准备可选 RelayPact 委派指导。既有项目不会自动�
   <a href="CHANGELOG.md">变更记录</a>
 </p>
 
-> **候选版本：** `0.1.11` / `v0.1.11` 当前仅做源码准备，本变更不执行发布。发布状态以 npm 和版本化 GitHub Release 为准。下方命令仅在核实精确版本已发布后适用。原生 Plugin 激活仍未验证。
+> **版本：** `0.1.11` / `v0.1.11`。发布状态以 npm 和版本化 GitHub Release 为准。下方命令仅在核实精确版本已发布后适用。原生 Plugin 激活仍未验证。
 
 > **0.1.11 范围：** 可选委派指导复用 Core 与一份按需 reference，覆盖明确启用偏好、当前能力核验、总成本判断、授权复用、结果收取和 Host 验收；不新增执行运行时或配置。未再修改的精确 Core 已于 2026-10-26 通过有界 Cursor IDE 证据复核，见[发布说明](docs/release-0.1.11.zh-CN.md)及[证据限制](docs/adoption.zh-CN.md#宿主支持)。
 
 规则冲突预检是各能力共用的 Host Agent 指引：按需检查可见规则、复用有效决定，只对影响当前动作的未决取舍提醒用户。用户批准不能绕过宿主强制限制；ForgeRail 不提供配置修改机制。见[规则解析](skills/forgerail/references/profile-resolution.md)。
 
-**0.1.11 候选指导：**项目规约或用户明确启用委派偏好后，Host 判断有界子任务及拆分、交接、执行、复核、返工总成本，适合时优先使用当前可验证的 RelayPact 能力。Host 收取并验收结果；RelayPact 保持可选并负责执行。见[可选委派指导](skills/forgerail/references/optional-delegation.md)。此候选不会升级已安装的 0.1.10；其精确 Core 已于 2026-10-26 单独通过有界 Cursor IDE 证据复核，报告与独立文件/Git 检查的限制见[接入说明](docs/adoption.zh-CN.md#宿主支持)。
+**0.1.11 指导：**项目规约或用户明确启用委派偏好后，Host 判断有界子任务及拆分、交接、执行、复核、返工总成本，适合时优先使用当前可验证的 RelayPact 能力。Host 收取并验收结果；RelayPact 保持可选并负责执行。见[可选委派指导](skills/forgerail/references/optional-delegation.md)。本版本不会自动升级已安装的 0.1.10；其精确 Core 已于 2026-10-26 单独通过有界 Cursor IDE 证据复核，报告与独立文件/Git 检查的限制见[接入说明](docs/adoption.zh-CN.md#宿主支持)。
 
 ## 为什么需要 ForgeRail？
 

@@ -7,7 +7,7 @@
 - 复用有效任务授权，不重复索取相同确认。偏好不扩大范围、不越过宿主强制限制；Host 收取结果、核对实际产物和证据，负责验收与最终回报。
 - 微小、高耦合或交接不合算的工作由 Host 直接处理。不可用路由、部分结果和未知成本如实报告，无证据不声称成功或节省；派发、模型、进程、等待、取消、重试和恢复继续归 RelayPact/宿主。
 
-见[可选委派指导](../skills/forgerail/references/optional-delegation.md)。此候选不新增 Skill owner、CLI 命令、配置/schema、持久任务状态或执行运行时；保留既有工程投入、分支检查和可靠性行为。外部 Capability Pack 保持独立 `0.1.0-alpha.4` 版本。
+见[可选委派指导](../skills/forgerail/references/optional-delegation.md)。本版本不新增 Skill owner、CLI 命令、配置/schema、持久任务状态或执行运行时；保留既有工程投入、分支检查和可靠性行为。外部 Capability Pack 保持独立 `0.1.0-alpha.4` 版本。
 
 ## 宿主验收与安装
 

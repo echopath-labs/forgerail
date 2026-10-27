@@ -43,6 +43,12 @@ const skills = ["$forgerail", "$forgerail-workspace-diagnosis", "$workspace-heal
 const releaseVersion = "0.1.11";
 const releaseTag = `v${releaseVersion}`;
 const exactInstall = `npm install --global @echopath-labs/forgerail@${releaseVersion}`;
+const currentReleaseCopy = [
+  "README.md", "README.zh-CN.md", "docs/adoption.md", "docs/adoption.zh-CN.md",
+  "docs/product-boundary.md", "docs/product-boundary.zh-CN.md",
+  `docs/release-${releaseVersion}.md`, `docs/release-${releaseVersion}.zh-CN.md`,
+  `directory/release-notes-${releaseVersion}.md`,
+];
 
 function record(condition, message) {
   if (!condition) failures.push(message);
@@ -57,6 +63,18 @@ function classify(kind, content, base = pluginRoot) {
   const errors = [];
   if (kind === "release-text") {
     if (/current[^\n]{0,80}(?:alpha\.2|0\.1\.0-alpha\.2)|install[^\n]{0,80}v0\.1\.0-alpha\.2/i.test(content)) errors.push("stale-release");
+  }
+  if (kind === "release-wording") {
+    // Only current product descriptions: procedural/Directory/Profile candidates
+    // and historical release records retain their own lifecycle meaning.
+    const version = releaseVersion.replaceAll(".", "\\.");
+    const temporaryIntro = new RegExp(`^(?:ForgeRail\\s+${version}\\s+(?:prepares|准备)|Prepare optional RelayPact|准备可选 RelayPact)`, "im");
+    const temporaryVersion = new RegExp(`${version}\\s*(?:candidate\\b|候选)`, "i");
+    if (/^\s*>\s*\*\*(?:Candidate|候选版本)\s*[:：]/im.test(content)
+      || temporaryIntro.test(content) || temporaryVersion.test(content)
+      || /\b(?:this(?: exact)? candidate(?: Core)?|unreleased Core guidance|candidate remains unreleased)\b|此候选|本次(?:精确)?候选\s*Core|未发布\s*Core\s*指导|候选仍未发布/i.test(content)) {
+      errors.push("temporary-release-wording");
+    }
   }
   if (kind === "markdown-link") {
     for (const match of content.matchAll(/\[[^\]]+\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g)) {
@@ -116,6 +134,10 @@ for (const path of publicTextFiles) {
   record(classify("public-text", content).length === 0, `public text has no private path or process reference: ${path}`);
 }
 
+for (const path of currentReleaseCopy) {
+  record(classify("release-wording", read(path)).length === 0, `current product description has version-neutral release wording: ${path}`);
+}
+
 // On-demand guidance must remain loadable from the shipped Core, independently
 // of release-version prose checks. This checks packaging links, not Agent behavior.
 for (const path of ["skills/forgerail/SKILL.md", "skills/forgerail/references/optional-delegation.md"]) {
@@ -130,7 +152,7 @@ const fixtures = JSON.parse(read("scripts/fixtures/open-source-docs/cases.json")
 record(fixtures.schemaVersion === "1.0" && Array.isArray(fixtures.cases), "documentation fixture schema is valid");
 for (const fixture of fixtures.cases) {
   const base = fixture.kind === "markdown-link" ? resolve(pluginRoot, "scripts/fixtures/open-source-docs") : pluginRoot;
-  const content = fixture.content.replace("__PRIVATE_USER_PATH__", ["", "Users", "example", ".codex", "worktrees", "private", "project"].join("/"));
+  const content = fixture.content.replaceAll("__RELEASE_VERSION__", releaseVersion).replace("__PRIVATE_USER_PATH__", ["", "Users", "example", ".codex", "worktrees", "private", "project"].join("/"));
   const actual = classify(fixture.kind, content, base);
   const expected = [...fixture.expectedErrors].sort();
   record(JSON.stringify(actual) === JSON.stringify(expected), `fixture fails closed as expected: ${fixture.id}`);
