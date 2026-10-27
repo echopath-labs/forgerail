@@ -23,6 +23,8 @@ const requiredFiles = [
   "docs/composable-autonomy.zh-CN.md",
   "docs/product-boundary.md",
   "docs/product-boundary.zh-CN.md",
+  "skills/forgerail/SKILL.md",
+  "skills/forgerail/references/optional-delegation.md",
   ".github/PULL_REQUEST_TEMPLATE.md",
   ".github/ISSUE_TEMPLATE/bug_report.yml",
   ".github/ISSUE_TEMPLATE/feature_request.yml",
@@ -38,7 +40,7 @@ const issueForms = [
   ".github/ISSUE_TEMPLATE/documentation.yml"
 ];
 const skills = ["$forgerail", "$forgerail-workspace-diagnosis", "$workspace-health-review", "$architecture-convergence-audit"];
-const releaseVersion = "0.1.10";
+const releaseVersion = "0.1.11";
 const releaseTag = `v${releaseVersion}`;
 const exactInstall = `npm install --global @echopath-labs/forgerail@${releaseVersion}`;
 
@@ -112,6 +114,12 @@ for (const path of ["README.md", "README.zh-CN.md", "docs/installation.md", "doc
 for (const path of publicTextFiles) {
   const content = read(path);
   record(classify("public-text", content).length === 0, `public text has no private path or process reference: ${path}`);
+}
+
+// On-demand guidance must remain loadable from the shipped Core, independently
+// of release-version prose checks. This checks packaging links, not Agent behavior.
+for (const path of ["skills/forgerail/SKILL.md", "skills/forgerail/references/optional-delegation.md"]) {
+  record(classify("markdown-link", read(path), dirname(resolve(pluginRoot, path))).length === 0, `Core guidance relative links resolve: ${path}`);
 }
 
 for (const path of issueForms) {

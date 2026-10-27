@@ -1,6 +1,6 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
-ForgeRail 0.1.10 新增工程投入指导、只读分支检查与交付粒度指导。既有项目不会自动升级。
+ForgeRail 0.1.11 准备可选 RelayPact 委派指导。既有项目不会自动升级。
 
 </p>
 
@@ -16,11 +16,13 @@ ForgeRail 0.1.10 新增工程投入指导、只读分支检查与交付粒度指
   <a href="CHANGELOG.md">变更记录</a>
 </p>
 
-> **版本：** `0.1.10` / `v0.1.10` 是稳定版本线，发布状态以 npm 和版本化 GitHub Release 为准。下方命令仅在核实精确版本已发布后适用。原生 Plugin 激活仍未验证。
+> **候选版本：** `0.1.11` / `v0.1.11` 当前仅做源码准备，本变更不执行发布。发布状态以 npm 和版本化 GitHub Release 为准。下方命令仅在核实精确版本已发布后适用。原生 Plugin 激活仍未验证。
 
-> **0.1.10 范围：** 新增 fast/balanced/strict 投入指导、限定范围的 Profile 解释、本地只读 `branch-check` 观察，以及内聚 PR／意图明确 Commit 的指导；保留既有强制门禁。精确共用 Core 已于 2026-10-23 通过有界 Cursor IDE 证据复核，证据限制见接入说明；源码与安装归档检查和发布验证分别核验。见[发布说明](docs/release-0.1.10.zh-CN.md)和[使用与边界](docs/engineering-mode.zh-CN.md)。
+> **0.1.11 范围：** 可选委派指导复用 Core 与一份按需 reference，覆盖明确启用偏好、当前能力核验、总成本判断、授权复用、结果收取和 Host 验收；不新增执行运行时或配置。未再修改的精确 Core 已于 2026-10-26 通过有界 Cursor IDE 证据复核，见[发布说明](docs/release-0.1.11.zh-CN.md)及[证据限制](docs/adoption.zh-CN.md#宿主支持)。
 
 规则冲突预检是各能力共用的 Host Agent 指引：按需检查可见规则、复用有效决定，只对影响当前动作的未决取舍提醒用户。用户批准不能绕过宿主强制限制；ForgeRail 不提供配置修改机制。见[规则解析](skills/forgerail/references/profile-resolution.md)。
+
+**0.1.11 候选指导：**项目规约或用户明确启用委派偏好后，Host 判断有界子任务及拆分、交接、执行、复核、返工总成本，适合时优先使用当前可验证的 RelayPact 能力。Host 收取并验收结果；RelayPact 保持可选并负责执行。见[可选委派指导](skills/forgerail/references/optional-delegation.md)。此候选不会升级已安装的 0.1.10；其精确 Core 已于 2026-10-26 单独通过有界 Cursor IDE 证据复核，报告与独立文件/Git 检查的限制见[接入说明](docs/adoption.zh-CN.md#宿主支持)。
 
 ## 为什么需要 ForgeRail？
 
@@ -40,7 +42,7 @@ ForgeRail 不是自动执行器，不替代 OpenSpec 或 `AGENTS.md`，不提供
 **把接入任务交给你正在使用的 Coding Agent。**在目标项目工作区复制下面整段提示词。你只需给出目标；Agent 负责阅读文档、选择当前宿主实际支持的路径、执行并回传证据。下面的 Codex 项目接入命令是其中一种已发布路径，其他宿主的支持状态须分别核对。
 
 ```text
-先确认 npm 与版本化 GitHub Release 已发布 ForgeRail 0.1.10，再在当前项目工作区接入 https://github.com/echopath-labs/forgerail/tree/v0.1.10 对应的精确版本，让后续工程任务能按项目规则使用它。先阅读该 tag 或精确 npm 包内同版本的安装与采用说明，不用 main 分支的未来版本命令。检查当前 Agent 宿主、Node.js、已有接入、项目规则和 Git 状态，再选择该版本对当前宿主实际支持的方式。安装来源固定为 @echopath-labs/forgerail@0.1.10；若全局已有不同版本，不要替换它：Codex 项目接入的 CLI 可用精确版本 npm exec，其他宿主的显式 Skill 加载应从独立工具目录找到确切包路径。若使用 Codex 项目接入，先展示只读计划并核对受管内容，在本次授权内执行，再做离线检查；其他宿主不要把显式加载说成自动发现。保留用户文件；遇到同名未知来源、漂移或规则冲突时，说明具体阻碍，不要强行覆盖。
+先确认 npm 与版本化 GitHub Release 已发布 ForgeRail 0.1.11，再在当前项目工作区接入 https://github.com/echopath-labs/forgerail/tree/v0.1.11 对应的精确版本，让后续工程任务能按项目规则使用它。先阅读该 tag 或精确 npm 包内同版本的安装与采用说明，不用 main 分支的未来版本命令。检查当前 Agent 宿主、Node.js、已有接入、项目规则和 Git 状态，再选择该版本对当前宿主实际支持的方式。安装来源固定为 @echopath-labs/forgerail@0.1.11；若全局已有不同版本，不要替换它：Codex 项目接入的 CLI 可用精确版本 npm exec，其他宿主的显式 Skill 加载应从独立工具目录找到确切包路径。若使用 Codex 项目接入，先展示只读计划并核对受管内容，在本次授权内执行，再做离线检查；其他宿主不要把显式加载说成自动发现。保留用户文件；遇到同名未知来源、漂移或规则冲突时，说明具体阻碍，不要强行覆盖。
 
 接入后分别验证包和项目文件、宿主发现、具体工程任务中的实际行为。尽可能在新任务中用安全、可回退的小任务测试；不要为测试修改无关内容或执行 push、合并、发布。若无法新开任务，给我可复制的测试提示词，并把未完成的验证标为未验证。最后报告实际版本与来源、修改的文件、检查结果、适用与不适用的触发场景，以及当前宿主仍未验证的能力。
 ```
@@ -49,12 +51,12 @@ Agent 如何选择接入路径、如何回报验收，以及 Codex 的具体命�
 
 下面的手动步骤用于只读体验；上方提示词会按宿主的已验证支持状态选择接入方式。
 
-### 1. 通过 npm 安装 0.1.10
+### 1. 通过 npm 安装 0.1.11
 
 运行环境需要 Node.js 22 或以上。先核对现有全局版本；若其他项目依赖不同版本，使用下方 `npx` 路径或独立工具目录。适合全局安装时固定精确版本：
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.10
+npm install --global @echopath-labs/forgerail@0.1.11
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -63,7 +65,7 @@ forgerail diagnose --workspace .
 
 ### 2. 按需加载工程指导
 
-安装包带有四个Skill。仅在全局安装确为 0.1.10 时用 `npm root --global` 找包；若保留其他全局版本，先把 0.1.10 装在独立工具目录。向已有Agent提供该精确包内 `skills/forgerail/SKILL.md` 的绝对路径，要求按项目已有规则做只读评估。注明从npm安装包 `explicit_source` 加载；npm不会自动注册原生Plugin。详见[安装与Agent加载说明](docs/installation.zh-CN.md)。
+安装包带有四个Skill。仅在全局安装确为 0.1.11 时用 `npm root --global` 找包；若保留其他全局版本，先把 0.1.11 装在独立工具目录。向已有Agent提供该精确包内 `skills/forgerail/SKILL.md` 的绝对路径，要求按项目已有规则做只读评估。注明从npm安装包 `explicit_source` 加载；npm不会自动注册原生Plugin。详见[安装与Agent加载说明](docs/installation.zh-CN.md)。
 
 ### 3. 判断结果
 
@@ -122,7 +124,7 @@ ForgeRail 将“能力可用”和“项目采用”分开：
 | --- | --- | --- |
 | Plugin Only | 什么都不修改 | 默认方式；偶尔使用引导或诊断 |
 | Lightweight Adoption | 一个经过评审的 managed instruction block，或 `FORGERAIL.md` 绑定 | 反复使用且长期指导确有价值 |
-| Persisted Governance | 0.1.10 不包含 | 只有机器配置具有明确 owner、迁移和删除规则后才考虑 |
+| Persisted Governance | 0.1.11 不包含 | 只有机器配置具有明确 owner、迁移和删除规则后才考虑 |
 
 ForgeRail 不会自行应用 Lightweight Adoption。Agent 必须展示精确路径与内容、核对当前授权、保护无关内容、在新任务中验证结果并返回 Receipt；当前请求已明确授权的接入无需重复确认。详情见[渐进式采用](docs/adoption.zh-CN.md)。
 
@@ -142,8 +144,8 @@ ForgeRail 组合四层能力，但不会要求每个项目都持久化这些层�
 npm 包为维护者和 CI 提供确定性校验与诊断，**不是** Agent Plugin 或目标项目的必需条件。
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.10 validate
-npx --yes @echopath-labs/forgerail@0.1.10 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.11 validate
+npx --yes @echopath-labs/forgerail@0.1.11 diagnose --workspace .
 ```
 
 正式包是带组织 scope 的 `@echopath-labs/forgerail`。不带 scope 的 `forgerail` 只是名称占位，不是安装来源。
@@ -157,15 +159,15 @@ npx --yes @echopath-labs/forgerail@0.1.10 diagnose --workspace .
 - [从 Agent Workflow Governance 迁移](docs/migration-from-agw.md)
 - [架构验收](docs/architecture-acceptance.md)
 - [Project Profile 声明合同](docs/project-profile-contract.zh-CN.md)
-- [0.1.10 发布说明](docs/release-0.1.10.zh-CN.md)
+- [0.1.11 发布说明](docs/release-0.1.11.zh-CN.md)
 
-详见[产品边界与当前能力状态](docs/product-boundary.zh-CN.md)。[Cursor 执行器实验](docs/cursor-local-executor-canary.zh-CN.md)已退出。0.1.10 的变更 Core 已于 2026-10-23 通过有界[共用 Core Cursor IDE Agent 路径](docs/adoption.zh-CN.md#宿主支持)的精确树验收；Cursor Rule 回退路径仍为 `profile-only`，历史 0.1.6 adapter 不改写。
+详见[产品边界与当前能力状态](docs/product-boundary.zh-CN.md)。[Cursor 执行器实验](docs/cursor-local-executor-canary.zh-CN.md)已退出。0.1.11 的变更 Core 已于 2026-10-26 通过有界[共用 Core Cursor IDE Agent 路径](docs/adoption.zh-CN.md#宿主支持)的精确树验收；Cursor Rule 回退路径仍为 `profile-only`，历史 0.1.6 adapter 不改写。
 
 ## 项目状态
 
-ForgeRail 0.1.10 提供 npm 包，供 Agent 显式加载包内 Skill。从 Plugin Only 开始，持久项目绑定另行评审：
+ForgeRail 0.1.11 提供 npm 包，供 Agent 显式加载包内 Skill。从 Plugin Only 开始，持久项目绑定另行评审：
 
-- Codex 可显式加载包内指导；原生 Plugin 激活尚未验证。Claude Code 保持 `profile-only`；0.1.10 精确共用 Core 已通过有界 Cursor IDE 验收，原版本/模型未知且工具返回正文缺失，广义 Cursor CLI 行为和 Cloud Agent 仍未验证；
+- Codex 可显式加载包内指导；原生 Plugin 激活尚未验证。Claude Code 保持 `profile-only`；0.1.11 精确共用 Core 已通过有界 Cursor IDE 验收，版本/模型未知，未提供完整原始 transcript，广义 Cursor CLI 行为和 Cloud Agent 仍未验证；
 - 持久化 `.forgerail/` 治理仍延期；
 - 外部 Capability Packs 继续独立安装、显式调用；
 - 当前采用 npm 安装，Codex 市场注册与 Universal Plugins Directory 上架暂缓；
@@ -187,8 +189,8 @@ ForgeRail 使用 [Apache License 2.0](LICENSE)，署名信息见 [NOTICE](NOTICE
 
 ## 可选项目接入能力
 
-0.1.5 引入的可选 Codex 项目接入闭环保留在 0.1.10；旧版 0.1.4 尚不包含这些命令。见 [项目接入与恢复](docs/project-adoption.zh-CN.md)。原有只读评估与显式 Skill 加载继续可用。
+0.1.5 引入的可选 Codex 项目接入闭环保留在 0.1.11；旧版 0.1.4 尚不包含这些命令。见 [项目接入与恢复](docs/project-adoption.zh-CN.md)。原有只读评估与显式 Skill 加载继续可用。
 
 ## 可选 Project Profile
 
-ForgeRail 0.1.10 保留 0.1.9 的可靠性修复，以及 0.1.8 引入的可选项目自有 `.forgerail/project-profile.json`、显式激活/移除及只读 provider 身份预检。已发布 0.1.7 不包含这些命令；身份匹配不产生外部操作授权。生命周期和宿主验证范围见 [Project Profile 契约](docs/project-profile-contract.zh-CN.md)。
+ForgeRail 0.1.11 保留 0.1.9 的可靠性修复，以及 0.1.8 引入的可选项目自有 `.forgerail/project-profile.json`、显式激活/移除及只读 provider 身份预检。已发布 0.1.7 不包含这些命令；身份匹配不产生外部操作授权。生命周期和宿主验证范围见 [Project Profile 契约](docs/project-profile-contract.zh-CN.md)。

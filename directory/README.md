@@ -2,7 +2,7 @@
 
 This directory contains a local, Skills-only submission candidate. It is not evidence that ForgeRail is listed, under review, or approved in the Universal Plugins Directory.
 
-The current local Directory candidate targets ForgeRail 0.1.10. Publication status is recorded by npm and the versioned GitHub Release. See [release notes](release-notes-0.1.10.md); all submission gates remain unchanged.
+The current local Directory candidate targets ForgeRail 0.1.11. Publication status is recorded by npm and the versioned GitHub Release. See [release notes](release-notes-0.1.11.md); all submission gates remain unchanged.
 
 The Agent Plugin is the product entry. Its Core Skills do not require Node.js, `package.json`, `node_modules`, or `.forgerail/` state in a user project. The separately published npm CLI remains optional validation and lifecycle tooling.
 
