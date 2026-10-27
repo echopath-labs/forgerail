@@ -20,6 +20,24 @@
       "expectedErrors": ["broken-link"]
     },
     {
+      "id": "optional-guidance-reference-loadable",
+      "kind": "markdown-link",
+      "content": "Read [delegation](../../../skills/forgerail/references/optional-delegation.md).",
+      "expectedErrors": []
+    },
+    {
+      "id": "missing-core-guidance-reference",
+      "kind": "markdown-link",
+      "content": "Read [guidance](../../../skills/forgerail/references/does-not-exist.md).",
+      "expectedErrors": ["broken-link"]
+    },
+    {
+      "id": "reference-outside-shipped-plugin",
+      "kind": "markdown-link",
+      "content": "Read [owner instructions](../../../../../AGENTS.md).",
+      "expectedErrors": ["broken-link"]
+    },
+    {
       "id": "valid-issue-form",
       "kind": "issue-form",
       "content": "name: Bug report\ndescription: Report a problem.\nbody: []\n",

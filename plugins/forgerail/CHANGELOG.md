@@ -4,6 +4,10 @@
 
 No shipping changes yet.
 
+## 0.1.11
+
+- Add optional RelayPact delegation guidance in Core: evaluate explicitly enabled preference, current capabilities and total cost; reuse scoped authorization and keep result collection and acceptance with the Host. No execution runtime or new configuration is added. The exact changed Core received separate bounded Cursor IDE acceptance on 2026-10-26; publication and other gates remain separate.
+
 ## 0.1.10
 
 - Add fast/balanced/strict effort guidance with scoped risk checks, host review by default in balanced mode, evidence reuse and explicit stopping conditions; retain existing mandatory gates.

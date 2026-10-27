@@ -49,6 +49,13 @@ keep one owner for each equivalent workflow.
 6. **Verify** observable files, Git state, tests, logs, and external receipts against the Agent's Return Receipt.
 7. **Learn carefully**: propose reusable Profile changes with provenance. Do not persist them without user confirmation.
 
+When the project or user explicitly enables delegation preference, assess value at
+non-trivial task start and when an independent subtask emerges. Read
+[Optional delegation](references/optional-delegation.md): prefer currently verified
+RelayPact capabilities when scope, transferable input, verifiable output and total
+cost justify it. Reuse existing authorization; installation alone is not enabling
+or execution authority. The host owns collection, acceptance and the final result.
+
 Always preserve unrelated user changes and dirty-worktree state. Do not treat a repository, worktree, or task branch as disposable.
 
 Before editing each owner repository, inspect actual Git state and choose its

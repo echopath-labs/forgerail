@@ -1,15 +1,15 @@
 # ForgeRail Support
 
-> Publication status is recorded by npm and the versioned GitHub Release. Exact-version commands below apply only after publication is confirmed. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-23; Cursor version/model and original tool-result bodies are unavailable. Release checks and authorization still apply.
+> Publication status is recorded by npm and the versioned GitHub Release. Exact-version commands below apply only after publication is confirmed. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-26; Cursor version/model are unknown and no complete original transcript was supplied. Release checks and authorization still apply.
 
-> This guide targets 0.1.10. Consult npm and the versioned GitHub Release for publication status.
+> This guide targets 0.1.11. Consult npm and the versioned GitHub Release for publication status.
 
-ForgeRail is maintained as an open-source project. The 0.1.10 support scope is npm installation, explicit packaged-Skill loading, and the evidence-bounded Cursor IDE Agent shared-Core route described below. Support is best effort; no response-time or resolution-time service level is promised.
+ForgeRail is maintained as an open-source project. The 0.1.11 support scope is npm installation, explicit packaged-Skill loading, and the evidence-bounded Cursor IDE Agent shared-Core route described below. Support is best effort; no response-time or resolution-time service level is promised.
 
 ## Start here
 
 1. Read the [README](README.md) and [installation guide](docs/installation.md).
-2. Confirm you installed `@echopath-labs/forgerail@0.1.10` (source tag `v0.1.10`) and run `forgerail validate`.
+2. Confirm you installed `@echopath-labs/forgerail@0.1.11` (source tag `v0.1.11`) and run `forgerail validate`.
 3. Explicitly load the applicable packaged Skill in your Agent and record the loading route.
 4. Reproduce the problem with Plugin Only and a read-only request when possible.
 5. Remove secrets, private paths, project memory, customer data, and production configuration before sharing evidence.
@@ -32,8 +32,8 @@ Screenshots and receipts must be redacted. Prefer copied error text over an imag
 
 ## Current support boundary
 
-- The 0.1.10 release gate covers npm installation and CLI validation on Node.js 22 and 24. Codex can explicitly load the packaged guidance; native Plugin activation is unverified.
-- The exact 0.1.10 shared Core passed bounded Cursor IDE Agent evidence review on 2026-10-23, with original version/model unknown and tool-result bodies unavailable. Support requires a fresh task when `AGENTS.md` points to the project-local ForgeRail Core and its complete tree matches the accepted package Core. The Cursor Rule fallback remains `profile-only`; broad Cursor CLI and Cloud Agent behavior remain unverified. Claude Code remains `profile-only`.
+- The 0.1.11 release gate covers npm installation and CLI validation on Node.js 22 and 24. Codex can explicitly load the packaged guidance; native Plugin activation is unverified.
+- The exact 0.1.11 shared Core passed bounded Cursor IDE Agent evidence review on 2026-10-26, with version/model unknown and no complete original transcript. Support requires a fresh task when `AGENTS.md` points to the project-local ForgeRail Core and its complete tree matches the accepted package Core. The Cursor Rule fallback remains `profile-only`; broad Cursor CLI and Cloud Agent behavior remain unverified. Claude Code remains `profile-only`.
 - Plugin Only and reviewed Lightweight Adoption are usable; persisted `.forgerail/` governance is deferred.
 - Capability Packs are independent Plugins and keep their own identity, permissions, and approval requirements.
 - npm installation is the current route. Codex Marketplace registration and Universal Plugins Directory publication are deferred.
