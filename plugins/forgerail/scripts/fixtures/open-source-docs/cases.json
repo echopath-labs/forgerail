@@ -78,6 +78,80 @@
       "kind": "no-node-claim",
       "content": "Plugin Only does not require Node.js, package.json, node_modules, or .forgerail/ in the target project.",
       "expectedErrors": []
+    },
+    {
+      "id": "neutral-release-wording",
+      "kind": "release-wording",
+      "content": "ForgeRail __RELEASE_VERSION__ provides optional guidance. 发布状态以 npm 和版本化 GitHub Release 为准。",
+      "expectedErrors": []
+    },
+    {
+      "id": "procedural-candidates-retain-meaning",
+      "kind": "release-wording",
+      "content": "The public candidate is an ordinary child of observed main. Review the installed candidate and Profile candidate. Directory remains a local submission candidate.",
+      "expectedErrors": []
+    },
+    {
+      "id": "historical-version-remains-separate",
+      "kind": "release-wording",
+      "content": "ForgeRail 0.1.10 prepares historical guidance. Old release records remain unchanged.",
+      "expectedErrors": []
+    },
+    {
+      "id": "temporary-english-intro",
+      "kind": "release-wording",
+      "content": "ForgeRail __RELEASE_VERSION__ prepares optional RelayPact delegation guidance.",
+      "expectedErrors": [
+        "temporary-release-wording"
+      ]
+    },
+    {
+      "id": "temporary-chinese-intro",
+      "kind": "release-wording",
+      "content": "ForgeRail __RELEASE_VERSION__ 准备可选 RelayPact 委派指导。",
+      "expectedErrors": [
+        "temporary-release-wording"
+      ]
+    },
+    {
+      "id": "temporary-english-heading",
+      "kind": "release-wording",
+      "content": "> **Candidate:** __RELEASE_VERSION__ / v__RELEASE_VERSION__ is prepared locally.",
+      "expectedErrors": [
+        "temporary-release-wording"
+      ]
+    },
+    {
+      "id": "temporary-chinese-heading",
+      "kind": "release-wording",
+      "content": "> **候选版本：** __RELEASE_VERSION__ 当前仅做源码准备。",
+      "expectedErrors": [
+        "temporary-release-wording"
+      ]
+    },
+    {
+      "id": "temporary-product-candidate",
+      "kind": "release-wording",
+      "content": "This candidate adds no runtime.",
+      "expectedErrors": [
+        "temporary-release-wording"
+      ]
+    },
+    {
+      "id": "temporary-chinese-core-copy",
+      "kind": "release-wording",
+      "content": "本次精确候选 Core 已验收；未发布 Core 指导。",
+      "expectedErrors": [
+        "temporary-release-wording"
+      ]
+    },
+    {
+      "id": "temporary-current-version-label",
+      "kind": "release-wording",
+      "content": "Current __RELEASE_VERSION__ candidate Core acceptance.",
+      "expectedErrors": [
+        "temporary-release-wording"
+      ]
     }
   ]
 }
