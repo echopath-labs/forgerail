@@ -1,12 +1,12 @@
-# ForgeRail 0.1.11 稳定版发布 Runbook
+# ForgeRail 0.1.12 稳定版发布 Runbook
 
-本项目自有 runbook 约束 `@echopath-labs/forgerail@0.1.11`、annotated tag
-`v0.1.11` 与对应的正式 GitHub Release。公开仓是私有 canonical source 的
+本项目自有 runbook 约束 `@echopath-labs/forgerail@0.1.12`、annotated tag
+`v0.1.12` 与对应的正式 GitHub Release。公开仓是私有 canonical source 的
 确定性投影；外部 Capability Pack 保持各自 alpha.4 身份和独立生命周期。
 本文描述流程，本身不授予执行权限。
 
-发布状态以 npm 和版本化 GitHub Release 为准；执行须获得精确目标与动作的授权。精确共用 Core 已于 2026-10-26 通过有界 Cursor IDE 证据复核，接受摘要必须继续匹配最终源码。
-版本/模型未知且未提供完整原始 transcript，见 0.1.11 发布说明；不得刷新验收摘要来绕过门禁。
+发布状态以 npm 和版本化 GitHub Release 为准；执行须获得精确目标与动作的授权。精确共用 Core 已于 2026-10-30 通过有界 Cursor IDE 证据复核，接受摘要必须继续匹配最终源码。
+版本/档位未知，模型为报告自述且未提供完整原始工具轨迹，见 0.1.12 发布说明；不得刷新验收摘要来绕过门禁。
 
 ## 独立门禁
 
@@ -25,7 +25,7 @@ Owner 明确要求发布某个版本时，可以在一条指令中同时授予�
 - 先修改并验证 canonical source，再生成公开投影；禁止 public-only 修复。
 - 将候选绑定到私有 source commit/tree、公开 base、确定性投影摘要、npm
   归档摘要与精确版本。
-- `release/0.1.11` 必须是已观测公开 `main` 的普通子 commit，并且只应用
+- `release/0.1.12` 必须是已观测公开 `main` 的普通子 commit，并且只应用
   生成的投影。使用精确 SHA refspec 非强制推送。
 - 基于已观测 `main` 创建 Draft PR；任何修正后都重新核对 head、base、
   tree、版本、许可证、required checks 和 Agent review。
@@ -45,9 +45,9 @@ Required CI 覆盖 Node.js 22/24、Core/contracts、完整 fixtures、渐进接�
    `npm run test:maintainer` 与 `npm audit`；重新生成精确 npm 归档并比较
    inventory 与摘要。
 4. 核实 `gh`、Git SSH、npm 都解析为获授权的 EchoPath Labs 身份；确认
-   `@echopath-labs/forgerail@0.1.11` 尚不存在，并观察 `latest`、`next`。
+   `@echopath-labs/forgerail@0.1.12` 尚不存在，并观察 `latest`、`next`。
 5. 获得精确 stage 上传授权后，仅通过 staged publishing 上传批准归档，目标为
-   `@echopath-labs/forgerail@0.1.11`、public access 与 npm `latest`；不使用
+   `@echopath-labs/forgerail@0.1.12`、public access 与 npm `latest`；不使用
    direct token 发布。核对 stage 身份、name/version/channel/access，并回下载
    归档比较批准字节。Owner 本人完成网页批准与 2FA，Agent 不代为批准。
    stage 上传不等于发布；registry 确认前停止后续发布动作。除非 trusted
@@ -55,8 +55,8 @@ Required CI 覆盖 Node.js 22/24、Core/contracts、完整 fixtures、渐进接�
 6. 回读 registry version、shasum、integrity、license、repository、binary
    shim 和 dist-tags；在 Node.js 22/24 匿名安装精确版本，运行
    `forgerail validate`、包内自检和一次有边界只读诊断。
-7. 在精确 merged public `main` 上创建 annotated `v0.1.11` 并非强制推送；
-   使用版本化发布说明创建正式 GitHub Release `ForgeRail 0.1.11`。本版没有
+7. 在精确 merged public `main` 上创建 annotated `v0.1.12` 并非强制推送；
+   使用版本化发布说明创建正式 GitHub Release `ForgeRail 0.1.12`。本版没有
    standalone binary assets。
 8. 将精确 tag 作为一次性 Codex Marketplace 验证：发现主 Plugin Skills，
    验证只读接入规划，只在一次性工作区应用明确批准的 managed block，

@@ -1,12 +1,12 @@
-# ForgeRail 0.1.11 Stable Release Runbook
+# ForgeRail 0.1.12 Stable Release Runbook
 
-This project-owned runbook governs `@echopath-labs/forgerail@0.1.11`, annotated
-tag `v0.1.11`, and the matching stable GitHub Release. The public repository is a
+This project-owned runbook governs `@echopath-labs/forgerail@0.1.12`, annotated
+tag `v0.1.12`, and the matching stable GitHub Release. The public repository is a
 deterministic projection of the private canonical source. External Capability
 Packs keep their independent alpha.4 identities and release lifecycles. This
 document describes the procedure; it does not grant authority by itself.
 
-Publication status is recorded by npm and the versioned GitHub Release. Execution requires authorization for the exact target and actions. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-26; the accepted digest must match the final source. Version/model are unknown and no complete original transcript was supplied; see the 0.1.11 release notes. Do not refresh an acceptance digest to bypass the gate.
+Publication status is recorded by npm and the versioned GitHub Release. Execution requires authorization for the exact target and actions. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-30; the accepted digest must match the final source. Version/tier are unknown; model identity is report-provided and no complete original tool transcript was supplied; see the 0.1.12 release notes. Do not refresh an acceptance digest to bypass the gate.
 
 ## Independent gates
 
@@ -27,7 +27,7 @@ third gate.
   Public-only fixes are prohibited.
 - Bind the candidate to the private source commit and tree, public base,
   deterministic projection digest, npm archive digest and exact version.
-- Create `release/0.1.11` as an ordinary child of the observed public `main` and
+- Create `release/0.1.12` as an ordinary child of the observed public `main` and
   apply only the generated projection. Push by exact SHA refspec without force.
 - Open a Draft PR to the observed `main`. Recheck head, base, tree, version,
   license, required checks and Agent review after any correction.
@@ -48,10 +48,10 @@ and the Universal Directory.
    `npm audit` on Node.js 22 and 24. Create the exact npm archive and compare its
    inventory and digest with the approved candidate.
 4. Verify `gh`, Git SSH and npm all resolve to the authorized EchoPath Labs
-   identity. Confirm `@echopath-labs/forgerail@0.1.11` is absent and observe the
+   identity. Confirm `@echopath-labs/forgerail@0.1.12` is absent and observe the
    current `latest` and `next` dist-tags.
 5. With exact stage-upload authorization, upload only the approved archive through
-   staged publishing for `@echopath-labs/forgerail@0.1.11`, public access and npm `latest`.
+   staged publishing for `@echopath-labs/forgerail@0.1.12`, public access and npm `latest`.
    Do not use direct token publication. Verify the stage identity, name, version,
    channel, access and downloaded archive against the approved bytes. The owner
    personally completes web approval and 2FA; the Agent never approves for the owner.
@@ -61,9 +61,9 @@ and the Universal Directory.
    shim and dist-tags. Anonymously install the exact version on Node.js 22 and
    24, then run `forgerail validate`, package self-tests and one bounded
    read-only diagnosis.
-7. Create annotated tag `v0.1.11` on the exact merged public `main` commit and
+7. Create annotated tag `v0.1.12` on the exact merged public `main` commit and
    push it without moving an existing tag. Publish stable GitHub Release
-   `ForgeRail 0.1.11` from the versioned release notes. This release has no
+   `ForgeRail 0.1.12` from the versioned release notes. This release has no
    standalone binary assets.
 8. Validate the exact tag as a disposable Codex Marketplace: discover the main
    Plugin Skills, verify read-only adoption planning, apply only an explicitly

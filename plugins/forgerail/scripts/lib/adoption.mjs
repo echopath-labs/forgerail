@@ -33,7 +33,7 @@ const adoptionOperations = new Set(["create", "append-managed-block", "replace-m
 const hostSelectionModes = new Set(["explicit", "all-detected", "all-available"]);
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 // Fresh Cursor IDE Agent acceptance is limited to this exact Core tree.
-export const acceptedCursorIdeCoreSha256 = "7ad344f3eb2b77f3d4b25d98bbbd0142150540108d2f8153c8f500f36aa6bb7d";
+export const acceptedCursorIdeCoreSha256 = "003e26034a9cb7d0650f7ace6a5ff48f65ddaa6f0546b419f003c04bdb29faa8";
 const portableRelativePath = /^(?![\\/])(?![a-zA-Z]:)(?!.*\/\/)(?!.*(?:^|\/)\.(?:\/|$))(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*(?:^|\/)[^/]*\.(?:\/|$))(?!.*(?:^|\/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\.|\/|$))(?!.*\/$)[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/;
 
 function sha256(value) {

@@ -13,6 +13,17 @@ Record the current task's:
 - the acceptance item this task advances and the evidence that will prove it;
 - required Return Receipt fields.
 
+When useful for the task, express the goal as who or what consumes the result,
+what they can accomplish and what evidence would establish it. For user-facing
+delivery, prefer a minimal coherent outcome over a collection of finished modules.
+Technical subtasks remain valid with their own bounded acceptance; do not enlarge
+a CLI, CI, library, research or maintenance task to manufacture a product flow.
+When requests or milestones change, relate them to the current outcome and carry
+forward unfinished acceptance, marking it continued, replaced or deferred according
+to the user's intent. Do not freeze a superseded goal or silently drop unfinished
+work. Clear steering needs no repeated confirmation. Use existing task records or
+conversation, without an additional report requirement.
+
 Task authorization expires with the task. Never promote it into workspace policy automatically.
 
 ## Launch Contract
@@ -21,7 +32,8 @@ Give the host Agent the resolved Envelope plus the effective rule sources. In th
 
 ## Return Receipt
 
-Require:
+Lead with the achieved outcome, supporting evidence and remaining gap, then give
+the applicable delivery details below. Require:
 
 - actual workspace, branch, and commit where applicable;
 - changed scope;
@@ -30,6 +42,11 @@ Require:
 - residual risks;
 - rollback or recovery entry;
 - deviations from the Launch Contract.
+
+Relate completion to the agreed task outcome and actual evidence. A passing build,
+test or technical subtask does not by itself establish a wider user flow or human
+acceptance. Report those separately when relevant, with unverified gaps and
+limits; do not claim user acceptance that did not occur.
 
 Compare the receipt with observable state. A mismatch keeps closeout incomplete.
 

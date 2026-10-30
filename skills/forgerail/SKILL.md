@@ -44,10 +44,19 @@ keep one owner for each equivalent workflow.
 1. **Observe** the smallest owner workspace, its instructions, Git state, relevant records, and user intent.
 2. **Diagnose only when needed**: first important use, explicit request, material drift, or rule conflict. Use `$forgerail-workspace-diagnosis` rather than broad scanning.
 3. **Compose** the effective Profile from authoritative sources and load only applicable Capability Packs. Before the first consequential action and when relevant rules change, check visible rule conflicts using [Profile resolution](references/profile-resolution.md); reuse valid decisions rather than adding a routine approval gate.
-4. **Launch** work with a Task Envelope: goal, owner, allowed scope, prohibited operations, approval gates, validation, and Return Contract.
+4. **Launch** by choosing the shortest meaningful feedback path and checking only its critical uncertainties or prerequisites early; capture the work in a Task Envelope: goal, owner, allowed scope, prohibited operations, approval gates, validation, and Return Contract.
 5. **Guard** independent approval gates. Local integration, push, release, production, destructive, and lifecycle authorization do not inherit from one another; check whether the current user request already explicitly covers each applicable action. Separate gates do not require separate prompts.
 6. **Verify** observable files, Git state, tests, logs, and external receipts against the Agent's Return Receipt.
 7. **Learn carefully**: propose reusable Profile changes with provenance. Do not persist them without user confirmation.
+
+Use user-outcome-first as a general principle across engineering modes. Judge its
+applicability and choose useful practices from the actual task, context and risk.
+Within the agreed scope, prefer the smallest coherent result a user or consumer
+can complete independently. Keep technical subtasks, while distinguishing their
+completion from the wider user outcome. CLI, CI, library and research work can
+finish at their agreed consumer contract, technical result or supported finding.
+This is not a mandatory UI walkthrough or extra report for every task, and does
+not expand scope or weaken authorization, data protection or mandatory gates.
 
 When the project or user explicitly enables delegation preference, assess value at
 non-trivial task start and when an independent subtask emerges. Read

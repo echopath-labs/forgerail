@@ -1,13 +1,13 @@
 # 渐进式采用
 
 
-> 发布状态以 npm 和版本化 GitHub Release 为准。下方精确版本命令仅在确认发布后适用。精确共用 Core 已于 2026-10-26 通过有界 Cursor IDE 证据复核；Cursor 版本、模型未知，未提供完整原始 transcript，发布检查与授权继续适用。
+> 发布状态以 npm 和版本化 GitHub Release 为准。下方精确版本命令仅在确认发布后适用。精确共用 Core 已于 2026-10-30 通过有界 Cursor IDE 证据复核；Cursor 版本、档位未知，模型为报告自述，未提供完整原始工具轨迹，发布检查与授权继续适用。
 
-> 本文对应 ForgeRail 0.1.11，可通过 npm 和版本化 GitHub Release 核对发布状态。
+> 本文对应 ForgeRail 0.1.12，可通过 npm 和版本化 GitHub Release 核对发布状态。
 
 ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执行授权**。安装 Plugin 只是让 Agent 能发现引导能力；不会编辑工作区 instructions、创建持久状态、启用 Capability Pack 或批准任何外部影响。
 
-本文对应 `0.1.11` / `v0.1.11`。按 [npm 安装说明](installation.zh-CN.md)安装并显式加载包内 Skill。npm 安装不会注册原生 Plugin；若绑定要求原生发现，必须另外核验该依赖。
+本文对应 `0.1.12` / `v0.1.12`。按 [npm 安装说明](installation.zh-CN.md)安装并显式加载包内 Skill。npm 安装不会注册原生 Plugin；若绑定要求原生发现，必须另外核验该依赖。
 
 默认从 Plugin Only 开始。只有重复证据表明“小范围持久绑定”比每次显式调用更有价值时，才升级采用层级。
 
@@ -34,13 +34,13 @@ ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执�
 
 ```bash
 # 默认：只解析当前工作区中检测到的已注册宿主。
-npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --selection all-detected
+npx --yes @echopath-labs/forgerail@0.1.12 adoption-plan --workspace . --selection all-detected
 
 # 从已验证的 Host Adapter Registry 中明确选择一部分。
-npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.12 adoption-plan --workspace . --host codex
 
 # 选择当前已验证 registry 中的全部 adapter。
-npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --selection all-available
+npx --yes @echopath-labs/forgerail@0.1.12 adoption-plan --workspace . --selection all-available
 ```
 
 只读诊断不会跟随所选工作区内部的链接。它只读取有界的常规 `package.json` 和已注册 Host 绑定文件，每个文件最多 4 MiB；内容被消费前还会按 canonical workspace 复核已打开路径。不安全、发生变化、非常规或超限条目会作为“不可用证据”交给人类复核。只有安全受限的约定目录中至少存在一个有界常规 `.md` 文件时，才会报告 Markdown 记录实践；枚举上限为 4,096 项，空目录、超限目录、链接或非常规条目都不算 ADR 实践。
@@ -61,13 +61,13 @@ npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --selectio
 
 ## Level 2 — Persisted Governance
 
-0.1.11 不启用持久任务治理；项目接入仅维护有限安装元数据。只有重要证据无法通过项目现有来源表达，例如反复出现跨宿主冲突或确有机器强制策略需求时，才应考虑这一层。
+0.1.12 不启用持久任务治理；项目接入仅维护有限安装元数据。只有重要证据无法通过项目现有来源表达，例如反复出现跨宿主冲突或确有机器强制策略需求时，才应考虑这一层。
 
-旧版 0.1.4 与上述 v1 绑定流程不会创建 `.forgerail/`。0.1.11 的显式项目接入闭环可维护有限安装元数据，具体 ownership、migration、recovery 和 deletion 见下方说明；它不启用持久治理。
+旧版 0.1.4 与上述 v1 绑定流程不会创建 `.forgerail/`。0.1.12 的显式项目接入闭环可维护有限安装元数据，具体 ownership、migration、recovery 和 deletion 见下方说明；它不启用持久治理。
 
 ## 宿主支持
 
-下表描述 ForgeRail 0.1.11。历史 0.1.6 包中的 Cursor 仍为 `profile-only`；后续版本不会改写其 Adapter 状态。
+下表描述 ForgeRail 0.1.12。历史 0.1.6 包中的 Cursor 仍为 `profile-only`；后续版本不会改写其 Adapter 状态。
 
 | 宿主 | 原生目标 | Adapter 状态 | 验证边界 |
 | --- | --- | --- | --- |
@@ -77,7 +77,7 @@ npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --selectio
 
 ForgeRail 0.1.10 Core 验收：用户于 2026-10-22 对 Core `3c75fcfd8f11317e0b2ff40878ef86d87d12b4be61b2df4654328f96de7a5a9a` 运行两个全新隔离 Cursor IDE 会话，2026-10-23 完成有界证据复核。原记录包含工程 Skill/Profile/声明策略读取、分支 before/create/after 调用、限定实现、测试调用与影响判断；无关只读原记录只有一次 README Read。留存的 before 结果通过；独立当前不可变输入/Git/文件/测试与 after 比较均通过，这些重核不补造缺失的原工具返回正文。Cursor 版本、原模型未知。工程会话还多读了参考文件，并先查错 policy 路径再读取声明源，因此不认证最小投入或每项指导均被遵守。验收仅覆盖该精确共用 Core 路径；Rule 回退、Cloud Agent 与广义 CLI 边界不变。2026-10-20 Core `bc188e56d4753a295b90e1e6ad422366a1b41aa83fef3999bac0340ec2c539b5` 的 Cursor IDE 3.25.6 / Claude Opus 5.5 High 验收保留为历史，不代表新会话身份。
 
-ForgeRail 0.1.11 Core 验收（2026-10-26）：用户运行两个全新隔离 Cursor IDE 会话后，精确 Core `7ad344f3eb2b77f3d4b25d98bbbd0142150540108d2f8153c8f500f36aa6bb7d` 通过有界复核。Agent 自撰报告描述工程任务读取 Core/optional-delegation/Profile/声明策略，结合小任务和外部 worker 禁令直接处理，以及无关只读任务仅阅读 README。独立核对准备摘要锚点、不可变输入/Core、当前 Git/文件/测试与保留的分支 before/after 通过结果，支持该限定结论。未提供完整原始 transcript，完整读取顺序、额外提问及没有未记录动作均未独立审计。Cursor 版本、模型及档位未知，Grok 4.7 仅为报告引用的系统自称。显式条件探针是推理证据，不是执行器运行时或恢复实测。仅受理既有共享 `AGENTS.md` 路径的这份精确 Core，不提升 Rule 回退、CLI、Cloud Agent 或其他宿主支持；已安装 0.1.10 须显式更新；发布状态仍须独立通过 npm 与版本化 GitHub Release 核实。
+ForgeRail 0.1.12 Core 验收（2026-10-30）：精确 Core `003e26034a9cb7d0650f7ace6a5ff48f65ddaa6f0546b419f003c04bdb29faa8` 经用户运行三个全新隔离 Cursor IDE 会话后通过有界复核，覆盖程序化页面入口修复、库函数修复和只读续接。Agent 自撰报告及保留命令输出与独立 Git/文件/Core 和功能检查相互核对。未提供完整工具轨迹，读取顺序、无遗漏操作以及报告提及的宿主浏览器规则确切优先级未独立审计。Cursor 版本与档位未知，Grok 4.7 仅为报告自述身份。未执行真实浏览器或人工验收。仅受理共享 `AGENTS.md` 加精确本地 Core 路径，不提升 Rule 回退、CLI、Cloud 或其他宿主支持；既有项目不会自动升级；发布状态以 npm 和版本化 GitHub Release 为准。
 
 默认 `all-detected` 规划会在共用 `AGENTS.md`/Core 路径匹配时纳入 Cursor，即使没有 `.cursor` 目录。收到的计划只有在多宿主契约省略 Cursor Rule 时才能携带共用 Cursor 覆盖摘要；契约写入须在首位，受覆盖的 `AGENTS.md` 更新须在末位。
 

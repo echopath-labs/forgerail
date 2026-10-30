@@ -15,6 +15,20 @@ review or full regression suite.
 - What could not be checked in the current environment?
 - What residual risk remains?
 
+Before substantial implementation, choose a small check that can resolve the key
+uncertainty about the agreed result. Verify the actual running candidate or access
+only when that feedback depends on it; ordinary local tasks need no environment
+survey. If blocked, apply existing [iteration discipline](iteration-discipline.md)
+and continue independent authorized work, not unrelated features or blind retries.
+
+Where it helps establish the agreed outcome, follow a representative user or
+consumer path from its real entry to the observable result. Check necessary
+preconditions, state, feedback or continuation only where relevant to that path
+and its risks; a UI walkthrough is not required for every task. Reuse valid
+component evidence, but do not infer a connected user outcome solely from separate
+passing components. Missing access or environment is a stated verification gap,
+not permission to bypass controls or expand the task.
+
 ## CI Checks And Semantic Review
 
 Select deterministic CI/build/test/contract checks separately from semantic

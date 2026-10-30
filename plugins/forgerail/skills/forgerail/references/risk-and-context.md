@@ -34,33 +34,19 @@ Before asking for confirmation, state:
 - Dry-run, preview, backup, or rollback plan when applicable.
 - What validation will prove success.
 
-## Stage Summaries
+## Stage Summaries And Handoff
 
-For long-running or multi-thread work, update durable records with stable facts and provide a concise stage summary:
+For long-running work, material state changes or handoff, update the existing
+owner record with the smallest useful recovery set:
 
-- Current objective.
-- Completed work.
-- Remaining work.
-- Key decisions.
-- Validation.
-- Risks.
-- Next step.
+- Current goal and why it matters; achieved results, unfinished acceptance and key decisions.
+- Owner, scope, non-goals and authorization boundaries.
+- Actual branch, working tree and candidate or running version where relevant.
+- Applicable evidence, its limitations, remaining risks and the next executable step.
+- Primary context source and minimal recovery pointers.
 
-Do not rely on chat history for durable handoff.
-
-## Handoff Discipline
-
-When handing work to another Agent or future thread, provide:
-
-- Current goal.
-- Why this work exists.
-- Owner workspace or repository.
-- Primary context source.
-- Minimal recovery set.
-- Allowed scope.
-- Non-goals.
-- Current branch and working tree state.
-- Validation already run.
-- Residual risks and next step.
-
-Prefer evidence pointers over copied source bodies.
+On resumption, check the facts the next action depends on. Use relevant confirmed
+experience within its original scope and version; do not treat old success as
+current state or proposed knowledge as accepted policy. Reuse unchanged evidence.
+Prefer pointers over copied bodies, do not depend solely on chat history, and do
+not create a new ledger or update a summary after every small action.

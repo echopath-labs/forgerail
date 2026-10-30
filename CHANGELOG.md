@@ -4,6 +4,14 @@
 
 No shipping changes yet.
 
+## 0.1.12
+
+- Add task-sensitive user-outcome-first guidance across engineering modes; relate goals, impact checks and completion to the agreed result while preserving technical tasks, Host judgment and mandatory gates.
+- Carry unfinished acceptance through explicit changes of direction; favor early checks of critical uncertainties along the shortest meaningful feedback path and compact recovery context anchored to actual state.
+- Keep implementation, programmatic verification and human acceptance distinct. The exact Core received bounded Cursor IDE evidence review on 2026-10-30; no real-browser or human acceptance, full tool audit, new configuration or execution runtime is implied.
+
+See [release notes](docs/release-0.1.12.md). Publication status is recorded by npm and the versioned GitHub Release.
+
 ## 0.1.11
 
 - Add optional RelayPact delegation guidance in Core: evaluate explicitly enabled preference, current capabilities and total cost; reuse scoped authorization and keep result collection and acceptance with the Host. No execution runtime or new configuration is added. The exact changed Core received separate bounded Cursor IDE acceptance on 2026-10-26; publication and other gates remain separate.

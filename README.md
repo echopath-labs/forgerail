@@ -1,10 +1,11 @@
 <p align="center">
   <img src="assets/forgerail-logo.svg" alt="ForgeRail" width="520">
-ForgeRail 0.1.11 provides optional RelayPact delegation guidance. Existing projects do not upgrade automatically.
 
 </p>
 
 <h1 align="center">ForgeRail</h1>
+
+ForgeRail 0.1.12 guides outcome-focused tasks, goal continuity and early feedback. Existing projects do not upgrade automatically.
 
 <p align="center"><strong>Engineering guidance and governance for coding agents, without replacing the agent or your project's existing workflow.</strong></p>
 
@@ -16,18 +17,13 @@ ForgeRail 0.1.11 provides optional RelayPact delegation guidance. Existing proje
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Version:** `0.1.11` / `v0.1.11`. Publication status is recorded by npm and the versioned GitHub Release. The commands below apply only after exact-version publication is confirmed. Native Plugin activation remains unverified.
+> **Version:** `0.1.12` / `v0.1.12`. Publication status is recorded by npm and the versioned GitHub Release. The commands below apply only after exact-version publication is confirmed. Native Plugin activation remains unverified.
 
-> **0.1.11 scope:** Optional delegation guidance reuses Core and one on-demand reference: explicitly enabled preference, verified current capability, total-cost judgment, authorization reuse, result collection and Host acceptance. No execution runtime or new configuration is added. The unchanged exact Core passed bounded Cursor IDE evidence review on 2026-10-26; see [release notes](docs/release-0.1.11.md) and [evidence limits](docs/adoption.md#host-support).
+> **0.1.12 scope:** Task-sensitive outcome guidance, goal continuity, early validation of critical uncertainties and compact recovery context. The exact Core passed bounded Cursor IDE evidence review on 2026-10-30; programmatic checks do not establish real-browser or human acceptance. See [release notes](docs/release-0.1.12.md) and [evidence limits](docs/adoption.md#host-support).
 
 Rule conflict preflight is Host Agent guidance shared across capabilities: inspect relevant visible rules, reuse valid decisions, and ask only about unresolved choices that affect the action. Mandatory host restrictions cannot be bypassed by approval. See [Profile resolution](skills/forgerail/references/profile-resolution.md).
 
-**0.1.11 guidance:** When project rules or the user explicitly enable
-delegation preference, the Host assesses bounded subtasks and full decomposition,
-handoff, execution, review and rework cost, then prefers currently verified RelayPact
-capabilities where justified. The Host collects and accepts results; RelayPact
-remains optional and owns execution. See [optional delegation](skills/forgerail/references/optional-delegation.md).
-This version does not automatically upgrade an existing 0.1.10 installation. Its exact Core passed separate bounded Cursor IDE evidence review on 2026-10-26; report and independent file/Git evidence limits are described in [adoption](docs/adoption.md#host-support).
+**0.1.12 guidance:** Relate work to the smallest coherent user or consumer result when useful, while preserving bounded technical tasks and the Host's judgment. Carry unfinished acceptance forward when the user changes direction, check critical uncertainties on the shortest meaningful feedback path, and keep recovery context compact and evidence-based. These principles apply across engineering modes without mandatory UI walkthroughs, extra reports, new configuration or a runtime. Existing authorization, data protection and mandatory gates remain. See [release notes](docs/release-0.1.12.md).
 
 ## Why ForgeRail?
 
@@ -47,7 +43,7 @@ ForgeRail is not an autonomous executor, a replacement for OpenSpec or `AGENTS.m
 **Delegate setup to your coding agent.** Open the agent in the target project and paste this prompt. You state the outcome; the agent reads the docs, chooses a route supported by its host, performs the work, and returns evidence. Codex project adoption is one released route; other hosts have separate support boundaries.
 
 ```text
-After confirming that npm and the versioned GitHub Release publish ForgeRail 0.1.11, set up that exact release from https://github.com/echopath-labs/forgerail/tree/v0.1.11 in this project so future engineering tasks can use it under project rules. Read installation and adoption guides from that tag or the exact npm package, not future commands from main. Check this agent host, Node.js, existing adoption, project instructions, and Git state, then choose a route actually supported for this host. Use the exact package @echopath-labs/forgerail@0.1.11. If another global version serves other projects, keep it: use exact-version npm exec for the Codex project-adoption CLI, and use an isolated tools directory to obtain a loadable path for explicit Skills on other hosts. For Codex project adoption, show and review the read-only plan, apply only its owned changes within this authorization, then run offline checks. For other hosts, do not call explicit loading automatic discovery. Preserve user content; explain unknown same-name Skills, drift, or rule conflicts instead of overwriting them.
+After confirming that npm and the versioned GitHub Release publish ForgeRail 0.1.12, set up that exact release from https://github.com/echopath-labs/forgerail/tree/v0.1.12 in this project so future engineering tasks can use it under project rules. Read installation and adoption guides from that tag or the exact npm package, not future commands from main. Check this agent host, Node.js, existing adoption, project instructions, and Git state, then choose a route actually supported for this host. Use the exact package @echopath-labs/forgerail@0.1.12. If another global version serves other projects, keep it: use exact-version npm exec for the Codex project-adoption CLI, and use an isolated tools directory to obtain a loadable path for explicit Skills on other hosts. For Codex project adoption, show and review the read-only plan, apply only its owned changes within this authorization, then run offline checks. For other hosts, do not call explicit loading automatic discovery. Preserve user content; explain unknown same-name Skills, drift, or rule conflicts instead of overwriting them.
 
 Report package/project-file checks, host discovery, and behavior on a concrete engineering task separately. Where possible, test with a small reversible task in a fresh session; do not change unrelated content or push, merge, or publish for this test. If you cannot start a fresh task, give me a copyable follow-up prompt and mark the missing checks unverified. Report the actual version and source, changed files, checks, applicable and non-applicable triggers, and any host capability still unverified.
 ```
@@ -56,12 +52,12 @@ See the [agent-facing installation and verification guide](docs/installation.md#
 
 The manual steps below offer a read-only first look. The prompt above chooses an adoption route according to verified host support.
 
-### 1. Install 0.1.11 with npm
+### 1. Install 0.1.12 with npm
 
 Use Node.js 22 or newer. Check the existing global version first; use `npx` below or an isolated tools directory if another project depends on a different global version. When global installation is appropriate, pin the version explicitly:
 
 ```bash
-npm install --global @echopath-labs/forgerail@0.1.11
+npm install --global @echopath-labs/forgerail@0.1.12
 forgerail validate
 forgerail diagnose --workspace .
 ```
@@ -70,7 +66,7 @@ The target project does not require its own `package.json`, `node_modules`, or `
 
 ### 2. Load guidance only when needed
 
-The installed package contains four Skills. Use `npm root --global` only if the global version is 0.1.11; otherwise install 0.1.11 in an isolated tools directory. Give your Agent the absolute path to `skills/forgerail/SKILL.md` inside that exact package for a read-only assessment. Follow the project's existing instructions and records. Report `explicit_source` loading from the npm package; npm does not register a native Plugin. See [installation and Agent loading](docs/installation.md).
+The installed package contains four Skills. Use `npm root --global` only if the global version is 0.1.12; otherwise install 0.1.12 in an isolated tools directory. Give your Agent the absolute path to `skills/forgerail/SKILL.md` inside that exact package for a read-only assessment. Follow the project's existing instructions and records. Report `explicit_source` loading from the npm package; npm does not register a native Plugin. See [installation and Agent loading](docs/installation.md).
 
 ### 3. Review the result
 
@@ -129,7 +125,7 @@ ForgeRail separates **availability** from **project adoption**:
 | --- | --- | --- |
 | Plugin Only | Nothing | Default; occasional guidance and diagnosis |
 | Lightweight Adoption | One reviewed managed instruction block or `FORGERAIL.md` binding | Repeated use where durable guidance adds value |
-| Persisted Governance | Deferred beyond 0.1.11 | Only after machine-consumed configuration has evidence-backed ownership and migration rules |
+| Persisted Governance | Deferred beyond 0.1.12 | Only after machine-consumed configuration has evidence-backed ownership and migration rules |
 
 ForgeRail never applies a Lightweight Adoption plan by itself. The agent must show exact paths and content, check current authorization, preserve unrelated content, verify the result in a new task, and return a receipt. A request that already authorizes adoption needs no repeated confirmation. Read [Progressive Adoption](docs/adoption.md) for details.
 
@@ -149,8 +145,8 @@ Host instruction files are adapters, not ForgeRail Core. OpenSpec, ADRs, project
 The npm package exposes deterministic validation and diagnosis for maintainers and CI. It is **not** required for the Agent Plugin or target project.
 
 ```bash
-npx --yes @echopath-labs/forgerail@0.1.11 validate
-npx --yes @echopath-labs/forgerail@0.1.11 diagnose --workspace .
+npx --yes @echopath-labs/forgerail@0.1.12 validate
+npx --yes @echopath-labs/forgerail@0.1.12 diagnose --workspace .
 ```
 
 The official package is scoped. The unscoped `forgerail` package is only a reservation and is not an install source.
@@ -164,15 +160,15 @@ The official package is scoped. The unscoped `forgerail` package is only a reser
 - [Migration from Agent Workflow Governance](docs/migration-from-agw.md)
 - [Architecture acceptance](docs/architecture-acceptance.md)
 - [Project Profile declaration contract](docs/project-profile-contract.md)
-- [0.1.11 release notes](docs/release-0.1.11.md)
+- [0.1.12 release notes](docs/release-0.1.12.md)
 
-See [product boundaries and current capability status](docs/product-boundary.md). The [Cursor executor experiment](docs/cursor-local-executor-canary.md) is retired. The [shared-Core Cursor IDE Agent path](docs/adoption.md#host-support) passed bounded exact-Core evidence review on 2026-10-26; the Cursor Rule fallback remains `profile-only`. The historical 0.1.6 adapter remains unchanged.
+See [product boundaries and current capability status](docs/product-boundary.md). The [Cursor executor experiment](docs/cursor-local-executor-canary.md) is retired. The [shared-Core Cursor IDE Agent path](docs/adoption.md#host-support) passed bounded exact-Core evidence review on 2026-10-30; the Cursor Rule fallback remains `profile-only`. The historical 0.1.6 adapter remains unchanged.
 
 ## Project status
 
-ForgeRail 0.1.11 provides an npm package for explicit loading of the packaged Skills. Start with Plugin Only; review any durable project binding separately:
+ForgeRail 0.1.12 provides an npm package for explicit loading of the packaged Skills. Start with Plugin Only; review any durable project binding separately:
 
-- Codex can load packaged guidance explicitly; native Plugin activation is unverified. Claude Code remains `profile-only`. The exact 0.1.11 shared Core has bounded Cursor IDE acceptance with unknown version/model and no complete original transcript; broad Cursor CLI behavior and Cloud Agent remain unverified.
+- Codex can load packaged guidance explicitly; native Plugin activation is unverified. Claude Code remains `profile-only`. The exact 0.1.12 shared Core has bounded Cursor IDE acceptance with unknown version/tier, reported model identity and no complete original tool transcript; broad Cursor CLI behavior and Cloud Agent remain unverified.
 - Persisted `.forgerail/` governance is deferred.
 - External Capability Packs remain separately installed and explicitly invoked.
 - npm installation is the current route; Codex Marketplace registration and Universal Plugins Directory publication are deferred.
@@ -194,8 +190,8 @@ ForgeRail is licensed under [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) 
 
 ## Optional project adoption
 
-Version 0.1.5 introduced an opt-in Codex project lifecycle, retained in 0.1.11; older 0.1.4 installations do not include these commands. See [project adoption and recovery](docs/project-adoption.md). Existing read-only assessment and explicit source loading remain available.
+Version 0.1.5 introduced an opt-in Codex project lifecycle, retained in 0.1.12; older 0.1.4 installations do not include these commands. See [project adoption and recovery](docs/project-adoption.md). Existing read-only assessment and explicit source loading remain available.
 
 ## Optional Project Profile
 
-ForgeRail 0.1.11 retains the reliability fixes from 0.1.9 and the capability introduced in 0.1.8: an optional workspace-owned `.forgerail/project-profile.json`, explicit activation/removal and read-only provider identity preflight. Published 0.1.7 does not include these commands. Identity observations do not authorize external operations. See the [Project Profile contract](docs/project-profile-contract.md) for lifecycle and supported-host evidence.
+ForgeRail 0.1.12 retains the reliability fixes from 0.1.9 and the capability introduced in 0.1.8: an optional workspace-owned `.forgerail/project-profile.json`, explicit activation/removal and read-only provider identity preflight. Published 0.1.7 does not include these commands. Identity observations do not authorize external operations. See the [Project Profile contract](docs/project-profile-contract.md) for lifecycle and supported-host evidence.
