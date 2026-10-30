@@ -1,13 +1,13 @@
 # Progressive Adoption
 
 
-> Publication status is recorded by npm and the versioned GitHub Release. Exact-version commands below apply only after publication is confirmed. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-26; Cursor version/model are unknown and no complete original transcript was supplied. Release checks and authorization still apply.
+> Publication status is recorded by npm and the versioned GitHub Release. Exact-version commands below apply only after publication is confirmed. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-30; Cursor version/tier are unknown; model identity is report-provided and no complete original tool transcript was supplied. Release checks and authorization still apply.
 
-> This guide accompanies ForgeRail 0.1.11. Confirm availability through npm and the versioned GitHub Release.
+> This guide accompanies ForgeRail 0.1.12. Confirm availability through npm and the versioned GitHub Release.
 
 ForgeRail separates **installation**, **availability**, **project adoption**, and **execution approval**. Installing the Plugin exposes guidance to the Agent; it does not edit workspace instructions, create durable state, enable Capability Packs, or authorize external effects.
 
-This guide accompanies the `0.1.11` / `v0.1.11` release line. Follow the [npm installation guide](installation.md) and explicitly load the packaged Skills. npm installation does not register a native Plugin; any binding that requires native discovery must have that prerequisite verified separately.
+This guide accompanies the `0.1.12` / `v0.1.12` release line. Follow the [npm installation guide](installation.md) and explicitly load the packaged Skills. npm installation does not register a native Plugin; any binding that requires native discovery must have that prerequisite verified separately.
 
 Start with Plugin Only. Move up only when repeated evidence shows that a small durable project binding is more useful than asking explicitly each time.
 
@@ -34,13 +34,13 @@ The optional planner is read-only:
 
 ```bash
 # Default: resolve only registered hosts detected in this workspace.
-npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --selection all-detected
+npx --yes @echopath-labs/forgerail@0.1.12 adoption-plan --workspace . --selection all-detected
 
 # Explicit subset chosen from the validated Host Adapter Registry.
-npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.12 adoption-plan --workspace . --host codex
 
 # Every adapter in the current validated registry.
-npx --yes @echopath-labs/forgerail@0.1.11 adoption-plan --workspace . --selection all-available
+npx --yes @echopath-labs/forgerail@0.1.12 adoption-plan --workspace . --selection all-available
 ```
 
 Read-only diagnosis never follows links inside the selected workspace. It reads only bounded regular `package.json` and registered Host binding files, with a 4 MiB per-file limit; opened paths are revalidated against the canonical workspace before content is consumed. Unsafe, changed, non-regular, or oversized entries are reported as unavailable evidence for human review. A Markdown record practice is reported only when a safely confined well-known directory contains at least one bounded regular `.md` file; enumeration is capped at 4,096 entries, and empty, oversized, linked, or non-regular evidence is not treated as an ADR practice.
@@ -61,13 +61,13 @@ A supported Cursor shared-Core plan includes a snapshot of `AGENTS.md`, both pro
 
 ## Level 2 — Persisted Governance
 
-Persisted machine-consumed ForgeRail state is deferred beyond 0.1.11. It should be considered only when important evidence cannot be represented coherently through existing project sources, such as repeated cross-host conflicts or genuinely machine-enforced policy.
+Persisted machine-consumed ForgeRail state is deferred beyond 0.1.12. It should be considered only when important evidence cannot be represented coherently through existing project sources, such as repeated cross-host conflicts or genuinely machine-enforced policy.
 
 ForgeRail does not create `.forgerail/` at this level today. A future design must define ownership, precedence, migration, recovery, and deletion before enabling it.
 
 ## Host support
 
-This table describes ForgeRail 0.1.11. The historical 0.1.6 package still labels Cursor `profile-only`; its adapter status is not rewritten by the successor release.
+This table describes ForgeRail 0.1.12. The historical 0.1.6 package still labels Cursor `profile-only`; its adapter status is not rewritten by the successor release.
 
 | Host | Native target | Adapter status | Verification boundary |
 | --- | --- | --- | --- |
@@ -77,7 +77,7 @@ This table describes ForgeRail 0.1.11. The historical 0.1.6 package still labels
 
 ForgeRail 0.1.10 Core acceptance: the user exercised two fresh isolated Cursor IDE sessions on 2026-10-22 against Core `3c75fcfd8f11317e0b2ff40878ef86d87d12b4be61b2df4654328f96de7a5a9a`; bounded evidence review completed on 2026-10-23. Original transcripts show engineering Skill/Profile/declared-policy reads, branch-check before/create/after calls, scoped implementation, testing calls and impact judgment; the unrelated read-only transcript contains only one README Read. A retained before observation passed. Independent current immutable-input/Git/file/test checks and an after comparison passed; these reruns do not reconstruct missing original tool-result bodies. Cursor version and original model are unknown. The session also read extra references and initially looked for policy at an incorrect path before using the declared source, so this does not certify minimal effort or every guidance clause. Acceptance covers this exact shared Core route only; Rule fallback, Cloud Agent and broad CLI behavior retain their prior boundaries. Earlier 2026-10-20 acceptance for Core `bc188e56d4753a295b90e1e6ad422366a1b41aa83fef3999bac0340ec2c539b5` with Cursor IDE 3.25.6 / Claude Opus 5.5 High remains historical and does not identify the new sessions.
 
-ForgeRail 0.1.11 Core acceptance (2026-10-26): exact Core `7ad344f3eb2b77f3d4b25d98bbbd0142150540108d2f8153c8f500f36aa6bb7d` passed bounded review after the user completed two fresh isolated Cursor IDE sessions. Agent-authored reports describe engineering Core/optional-delegation/Profile/policy loading, direct handling of a small task within the external-worker prohibition, and README-only activity for the unrelated read-only task. Independently matched preparation anchors, immutable inputs/Core, current Git/file/test checks and retained passing branch before/after observations support that limited result. No complete original transcript was supplied; the full read sequence, extra questions and absence of unrecorded actions are not independently audited. Cursor version, model and tier are unknown; Grok 4.7 is only a reported system self-description. Explicit condition probes are reasoning evidence, not runtime/recovery tests. This accepts the existing shared `AGENTS.md` route for this exact Core, with no Rule fallback, CLI, Cloud Agent or other-host support upgrade. Existing 0.1.10 installations require an explicit update; publication status remains separately verifiable through npm and the versioned GitHub Release.
+ForgeRail 0.1.12 Core acceptance (2026-10-30): exact Core `003e26034a9cb7d0650f7ace6a5ff48f65ddaa6f0546b419f003c04bdb29faa8` passed bounded review of three user-run fresh isolated Cursor IDE sessions: a programmatic page entry repair, a library repair and read-only continuation. Agent-authored reports and retained command outputs were compared with independent Git/file/Core and functional checks. Complete tool transcripts were not supplied; read order, absence of unrecorded actions and the exact priority of a reported host browser rule were not independently audited. Cursor version and tier are unknown; Grok 4.7 is reported self-description. Real-browser and human acceptance were not performed. Only the shared `AGENTS.md` plus exact local Core route is accepted; Rule fallback, CLI, Cloud and other hosts are not upgraded. Existing projects do not upgrade automatically; publication status is recorded by npm and the versioned GitHub Release.
 
 Default `all-detected` planning includes Cursor when the matching shared `AGENTS.md`/Core route is present, even without a `.cursor` directory. Received plans may carry shared Cursor coverage only when the multi-host contract omits the Cursor Rule; the contract write must come first and a covered `AGENTS.md` update last.
 
