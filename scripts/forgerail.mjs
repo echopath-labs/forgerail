@@ -104,6 +104,7 @@ function validateCommandOptions(command) {
     ["resolve-profile", ["--file", "--pack-manifest"]],
     ["launch", ["--profile", "--envelope", "--host-agent", "--pack-manifest"]],
     ["verify-receipt", ["--receipt", "--workspace"]],
+    ["outcome-gate", []],
   ]);
   const allowed = allowedByCommand.get(command);
   if (!allowed) return;
@@ -349,7 +350,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.12") errors.push("Plugin version must be 0.1.12");
+  if (manifest.version !== "0.1.13") errors.push("Plugin version must be 0.1.13");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -931,11 +932,13 @@ if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
     ...args("--pack-manifest").map((path) => readJson(resolve(path))),
   ];
   const result = createLaunchContract(effectiveProfile, readJson(resolve(envelope)), hostAgent, manifests); emit(result); if (!result.valid) process.exitCode = 1;
+} else if (command === "outcome-gate") {
+  await import("./outcome-gate.mjs");
 } else if (command === "verify-receipt") {
   const receipt = arg("--receipt"); const workspace = arg("--workspace");
   if (!receipt || !workspace) fail("verify-receipt requires --receipt and --workspace");
   const result = verifyReceipt(readJson(resolve(receipt)), workspace); emit(result); if (!result.valid) process.exitCode = 1;
-} else fail("usage: forgerail.mjs init | update | doctor | remove | recover | project-profile-set | project-profile-remove | project-profile-inspect | branch-check | validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt");
+} else fail("usage: forgerail.mjs init | update | doctor | remove | recover | project-profile-set | project-profile-remove | project-profile-inspect | branch-check | validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt | outcome-gate");
 
 } catch (error) {
   const code = error instanceof SyntaxError ? "INVALID_JSON" : ["ENOENT", "EACCES", "EPERM", "EISDIR", "ENOTDIR"].includes(error.code) ? "INPUT_UNAVAILABLE" : "INTERNAL_ERROR";
