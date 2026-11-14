@@ -4,6 +4,13 @@
 
 No shipping changes yet.
 
+## 0.1.13
+
+- Add Experimental / Opt-in Outcome Gate (`capture / unchanged / run / check`) for bounded local evidence verification.
+- Preserve Core, Skills, Profile Schema and verify-receipt. No default gate.
+- Document POSIX, trusted Host isolation, snapshot and process-local evidence limits; historical intermittent UNVERIFIED root cause remains unknown.
+
+
 ## 0.1.12
 
 - Add task-sensitive user-outcome-first guidance across engineering modes; relate goals, impact checks and completion to the agreed result while preserving technical tasks, Host judgment and mandatory gates.

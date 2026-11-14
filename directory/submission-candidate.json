@@ -2,8 +2,11 @@
   "schemaVersion": "1.0",
   "candidateType": "openai-universal-plugin-directory",
   "submissionType": "skills_only",
-  "status": "local_0112_candidate",
-  "approval": { "type": "submission_approval", "status": "not_granted" },
+  "status": "local_0113_candidate",
+  "approval": {
+    "type": "submission_approval",
+    "status": "not_granted"
+  },
   "officialBaseline": {
     "observedAt": "2026-08-30",
     "sources": [
@@ -13,7 +16,7 @@
   },
   "plugin": {
     "id": "forgerail",
-    "version": "0.1.12",
+    "version": "0.1.13",
     "manifest": ".codex-plugin/plugin.json",
     "skills": [
       "forgerail",
@@ -30,16 +33,46 @@
     }
   },
   "listing": {
-    "name": { "state": "observed", "value": "ForgeRail" },
-    "shortDescription": { "state": "candidate", "value": "Engineering guidance and guardrails for coding agents." },
-    "longDescription": { "state": "candidate", "value": "ForgeRail helps coding agents diagnose a workspace, select explicit governance boundaries, review workspace health, and find duplicated architecture ownership. Its Skills are available without adding Node.js, package.json, or persistent ForgeRail state to the project." },
-    "category": { "state": "confirmed_by_user", "value": "Productivity" },
-    "websiteUrl": { "state": "observed", "value": "https://github.com/echopath-labs/forgerail" },
-    "supportUrl": { "state": "confirmed_by_user", "value": "https://github.com/echopath-labs/forgerail/issues" },
-    "privacyPolicyUrl": { "state": "confirmed_by_user", "value": "https://github.com/echopath-labs/forgerail/blob/main/PRIVACY.md" },
-    "termsOfServiceUrl": { "state": "confirmed_by_user", "value": "https://github.com/echopath-labs/forgerail/blob/main/TERMS.md" },
-    "composerIcon": { "state": "candidate", "value": "./assets/forgerail-icon.svg" },
-    "logo": { "state": "candidate", "value": "./assets/forgerail-logo.svg" },
+    "name": {
+      "state": "observed",
+      "value": "ForgeRail"
+    },
+    "shortDescription": {
+      "state": "candidate",
+      "value": "Engineering guidance and guardrails for coding agents."
+    },
+    "longDescription": {
+      "state": "candidate",
+      "value": "ForgeRail helps coding agents diagnose a workspace, select explicit governance boundaries, review workspace health, and find duplicated architecture ownership. Its Skills are available without adding Node.js, package.json, or persistent ForgeRail state to the project."
+    },
+    "category": {
+      "state": "confirmed_by_user",
+      "value": "Productivity"
+    },
+    "websiteUrl": {
+      "state": "observed",
+      "value": "https://github.com/echopath-labs/forgerail"
+    },
+    "supportUrl": {
+      "state": "confirmed_by_user",
+      "value": "https://github.com/echopath-labs/forgerail/issues"
+    },
+    "privacyPolicyUrl": {
+      "state": "confirmed_by_user",
+      "value": "https://github.com/echopath-labs/forgerail/blob/main/PRIVACY.md"
+    },
+    "termsOfServiceUrl": {
+      "state": "confirmed_by_user",
+      "value": "https://github.com/echopath-labs/forgerail/blob/main/TERMS.md"
+    },
+    "composerIcon": {
+      "state": "candidate",
+      "value": "./assets/forgerail-icon.svg"
+    },
+    "logo": {
+      "state": "candidate",
+      "value": "./assets/forgerail-logo.svg"
+    },
     "starterPrompts": [
       "Use ForgeRail to govern this engineering task.",
       "Diagnose this workspace before recommending governance changes.",
@@ -47,18 +80,31 @@
     ]
   },
   "availability": {
-    "intent": { "state": "confirmed_by_user", "value": "all_platform_supported_regions" },
-    "portalEnumeration": { "state": "pending_confirmation", "values": [] }
+    "intent": {
+      "state": "confirmed_by_user",
+      "value": "all_platform_supported_regions"
+    },
+    "portalEnumeration": {
+      "state": "pending_confirmation",
+      "values": []
+    }
   },
   "publisher": {
-    "displayName": { "state": "candidate", "value": "EchoPath Labs" },
-    "verifiedDeveloperOrBusinessIdentity": { "state": "pending_confirmation" },
-    "appsManagementWrite": { "state": "pending_confirmation" }
+    "displayName": {
+      "state": "candidate",
+      "value": "EchoPath Labs"
+    },
+    "verifiedDeveloperOrBusinessIdentity": {
+      "state": "pending_confirmation"
+    },
+    "appsManagementWrite": {
+      "state": "pending_confirmation"
+    }
   },
   "releaseNotes": {
     "state": "candidate",
-    "path": "./directory/release-notes-0.1.12.md",
-    "value": "ForgeRail 0.1.12: task-sensitive outcomes, goal continuity, early feedback and compact recovery context. Publication status is recorded by npm and the versioned GitHub Release. Local catalog only; Directory submission remains deferred and unapproved."
+    "path": "./directory/release-notes-0.1.13.md",
+    "value": "ForgeRail 0.1.13: Experimental / Opt-in Outcome Gate for bounded local engineering evidence; Core, Skills and Profile unchanged. Publication status is recorded by npm and the versioned GitHub Release. Directory submission remains deferred and unapproved."
   },
   "evaluationFile": "./directory/evaluations.json",
   "unresolvedGates": [
