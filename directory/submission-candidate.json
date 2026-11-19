@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "candidateType": "openai-universal-plugin-directory",
   "submissionType": "skills_only",
-  "status": "local_0113_candidate",
+  "status": "local_0114_candidate",
   "approval": {
     "type": "submission_approval",
     "status": "not_granted"
@@ -16,7 +16,7 @@
   },
   "plugin": {
     "id": "forgerail",
-    "version": "0.1.13",
+    "version": "0.1.14",
     "manifest": ".codex-plugin/plugin.json",
     "skills": [
       "forgerail",
@@ -103,8 +103,8 @@
   },
   "releaseNotes": {
     "state": "candidate",
-    "path": "./directory/release-notes-0.1.13.md",
-    "value": "ForgeRail 0.1.13: Experimental / Opt-in Outcome Gate for bounded local engineering evidence; Core, Skills and Profile unchanged. Publication status is recorded by npm and the versioned GitHub Release. Directory submission remains deferred and unapproved."
+    "path": "./directory/release-notes-0.1.14.md",
+    "value": "ForgeRail 0.1.14: Optional CLI command-completion telemetry through the ForgeRail HTTPS collector, off by default. Publication status is recorded by npm and the versioned GitHub Release. Directory submission remains deferred and unapproved."
   },
   "evaluationFile": "./directory/evaluations.json",
   "unresolvedGates": [

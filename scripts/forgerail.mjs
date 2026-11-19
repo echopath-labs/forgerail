@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { sendCommandFinished, telemetryStatus, setTelemetry } from "./lib/telemetry.mjs";
 import { createHash } from "node:crypto";
 import { closeSync, constants, existsSync, fstatSync, openSync, readSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
@@ -18,7 +19,9 @@ import { checkBranchPolicy } from "./lib/branch-policy.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-function fail(message, code = "INVALID_INPUT") { emit({ valid: false, code, errors: [message] }); process.exit(1); }
+const failedInput = Symbol("failed-input");
+const [command] = process.argv.slice(2);
+function fail(message, code = "INVALID_INPUT") { emit({ valid: false, code, errors: [message] }); process.exitCode=1; throw failedInput; }
 function emit(value) { console.log(JSON.stringify(value, null, 2)); }
 function optionValues(name) {
   const values = [];
@@ -350,7 +353,7 @@ function validatePlugin() {
   const manifestPath = resolve(root, ".codex-plugin/plugin.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   if (manifest.name !== "forgerail") errors.push("Plugin name must be forgerail");
-  if (manifest.version !== "0.1.13") errors.push("Plugin version must be 0.1.13");
+  if (manifest.version !== "0.1.14") errors.push("Plugin version must be 0.1.14");
   if (manifest.license !== "Apache-2.0") errors.push("Plugin license must be Apache-2.0");
   const expectedSkills = ["architecture-convergence-audit", "forgerail", "forgerail-workspace-diagnosis", "workspace-health-review"];
   const actualSkills = readdirSync(resolve(root, "skills"), { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
@@ -757,9 +760,12 @@ function validateAdoption() {
 }
 
 try {
-const [command] = process.argv.slice(2);
 validateCommandOptions(command);
-if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
+if (command === "telemetry") {
+  const action=process.argv[3] ?? "status";
+  if(process.argv.length>4 || !["status","enable","disable"].includes(action)) fail("usage: forgerail telemetry status | enable | disable");
+  emit(action==="status" ? telemetryStatus() : setTelemetry(action==="enable"));
+} else if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
   const workspace = arg("--workspace");
   if (!workspace) fail(`${command} requires --workspace`);
   const options = { legacyLock: arg("--legacy-lock") ?? null, legacySource: arg("--legacy-source") ?? null };
@@ -938,9 +944,14 @@ if (["init", "update", "remove", "doctor", "recover"].includes(command)) {
   const receipt = arg("--receipt"); const workspace = arg("--workspace");
   if (!receipt || !workspace) fail("verify-receipt requires --receipt and --workspace");
   const result = verifyReceipt(readJson(resolve(receipt)), workspace); emit(result); if (!result.valid) process.exitCode = 1;
-} else fail("usage: forgerail.mjs init | update | doctor | remove | recover | project-profile-set | project-profile-remove | project-profile-inspect | branch-check | validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt | outcome-gate");
+} else fail("usage: forgerail.mjs init | update | doctor | remove | recover | project-profile-set | project-profile-remove | project-profile-inspect | branch-check | validate | validate-fixtures | validate-fixture-matrix | validate-adoption | validate-contract | diagnose | adoption-plan | resolve-profile | launch | verify-receipt | outcome-gate | telemetry");
 
 } catch (error) {
-  const code = error instanceof SyntaxError ? "INVALID_JSON" : ["ENOENT", "EACCES", "EPERM", "EISDIR", "ENOTDIR"].includes(error.code) ? "INPUT_UNAVAILABLE" : "INTERNAL_ERROR";
-  fail(`${error.code && !error.message.startsWith(`${error.code}: `) ? `${error.code}: ` : ""}${error.message}`, code);
+  if(error!==failedInput) {
+    const code = error instanceof SyntaxError ? "INVALID_JSON" : ["ENOENT", "EACCES", "EPERM", "EISDIR", "ENOTDIR"].includes(error.code) ? "INPUT_UNAVAILABLE" : "INTERNAL_ERROR";
+    emit({valid:false,code,errors:[`${error.code && !error.message.startsWith(`${error.code}: `) ? `${error.code}: ` : ""}${error.message}`]});
+    process.exitCode=1;
+  }
+} finally {
+  await sendCommandFinished(command, process.exitCode ?? 0);
 }

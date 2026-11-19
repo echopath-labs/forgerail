@@ -64,11 +64,11 @@ function validateMarkdownLinks(relativePath) {
 }
 
 assert(candidate.submissionType === "skills_only", "candidate is Skills-only");
-assert(candidate.status === "local_0113_candidate", "candidate status is local 0.1.13 integrity preparation");
+assert(candidate.status === "local_0114_candidate", "candidate status is local 0.1.14 integrity preparation");
 assert(candidate.approval.status === "not_granted", "submission approval is not granted");
 assert(candidate.plugin.id === manifest.name, "candidate and manifest Plugin identity match");
 assert(candidate.plugin.version === manifest.version, "candidate and manifest version match");
-assert(candidate.plugin.version === "0.1.13", "candidate version is 0.1.13");
+assert(candidate.plugin.version === "0.1.14", "candidate version is 0.1.14");
 assert(packageJson.version === candidate.plugin.version, "optional scoped package version matches candidate");
 assert(candidate.plugin.mcpServers.length === 0, "candidate has no MCP server requirement");
 assert(candidate.plugin.authentication === "none", "candidate has no authentication requirement");
@@ -108,12 +108,23 @@ for (const field of ["websiteUrl", "supportUrl", "privacyPolicyUrl", "termsOfSer
 }
 assert(candidate.availability.intent.state === "confirmed_by_user" && candidate.availability.intent.value === "all_platform_supported_regions", "all-platform-supported-regions intent is user-confirmed");
 assert(candidate.availability.portalEnumeration.state === "pending_confirmation" && candidate.availability.portalEnumeration.values.length === 0, "portal region enumeration remains pending without an invented country list");
-assert(candidate.releaseNotes.state === "candidate" && candidate.releaseNotes.path === "./directory/release-notes-0.1.13.md", "0.1.13 release notes path is explicit");
-assert(existsSync(resolve(pluginRoot, candidate.releaseNotes.path)), "0.1.13 release notes file exists");
+assert(candidate.releaseNotes.state === "candidate" && candidate.releaseNotes.path === "./directory/release-notes-0.1.14.md", "0.1.14 release notes path is explicit");
+assert(existsSync(resolve(pluginRoot, candidate.releaseNotes.path)), "0.1.14 release notes file exists");
 
 const privacy = readFileSync(resolve(pluginRoot, "PRIVACY.md"), "utf8");
 const terms = readFileSync(resolve(pluginRoot, "TERMS.md"), "utf8");
-for (const phrase of ["Skills-only Agent Plugin", "does not operate its own server", "do not themselves collect, transmit, or store telemetry", "host Agent or platform", "external Capability Packs"]) {
+for (const phrase of [
+  "Skills-only Agent Plugin",
+  "Skills do not collect telemetry",
+  "ForgeRail HTTPS collector hosted by Vercel",
+  "PostHog US Cloud",
+  "off by default",
+  "The PostHog token stays on the server",
+  "does not forward the client IP or request headers",
+  "No user content, persistent identity or Person Profile",
+  "host Agent or platform",
+  "external Capability Packs"
+]) {
   assert(privacy.includes(phrase), `Privacy notice contains required boundary: ${phrase}`);
 }
 for (const phrase of ["Apache License 2.0", "without warranties", "You are responsible", "external actions", "does not provide legal advice", "service-level agreement"]) {

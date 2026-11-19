@@ -1,8 +1,8 @@
 # ForgeRail Privacy Notice
 
-Effective date: 2026-10-12
+Applies to ForgeRail 0.1.14
 
-ForgeRail is a Skills-only Agent Plugin. ForgeRail does not operate its own server, MCP endpoint, account system, or authentication service. The ForgeRail Plugin and optional local CLI do not themselves collect, transmit, or store telemetry or user content for EchoPath Labs.
+ForgeRail is a Skills-only Agent Plugin with a separately invoked CLI. Skills do not collect telemetry. After explicit opt-in, the CLI sends the command name, package version and exit result to the ForgeRail HTTPS collector hosted by Vercel. The collector forwards those fields to PostHog US Cloud with a random ID per event. Telemetry is off by default. The PostHog token stays on the server. Vercel can observe the source IP at the connection layer. The collector does not forward the client IP or request headers to PostHog. See [telemetry controls, fields and network/IP limits](docs/telemetry.md). No user content, persistent identity or Person Profile is collected.
 
 ForgeRail Skills run through the host Agent or platform selected by the user. That host may process prompts, workspace files, command output, and other context under the host provider's own privacy terms and settings. Installing ForgeRail does not change those terms or data controls.
 
