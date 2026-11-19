@@ -4,6 +4,12 @@
 
 No shipping changes yet.
 
+## 0.1.14
+
+- Add optional CLI command-completion telemetry through the ForgeRail HTTPS collector.
+- Keep telemetry off until explicitly enabled. DNT and CI suppress sending.
+- Send only the command name, version and exit result with a bounded HTTPS deadline. See [telemetry controls and collection limits](docs/telemetry.md).
+
 ## 0.1.13
 
 - Add Experimental / Opt-in Outcome Gate (`capture / unchanged / run / check`) for bounded local evidence verification.

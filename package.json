@@ -1,6 +1,6 @@
 {
   "name": "@echopath-labs/forgerail",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Deterministic validation and diagnosis CLI for the ForgeRail Agent Plugin.",
   "license": "Apache-2.0",
   "type": "module",
@@ -69,13 +69,17 @@
     "scripts/engineering-governance-cli.test.mjs",
     "scripts/outcome-gate.mjs",
     "scripts/lib/outcome-gate.mjs",
-    "scripts/outcome-gate.test.mjs"
+    "scripts/outcome-gate.test.mjs",
+    "scripts/lib/telemetry.mjs",
+    "scripts/lib/telemetry-event.mjs",
+    "scripts/telemetry-test-support.mjs",
+    "scripts/telemetry.test.mjs"
   ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures --scope core && node scripts/forgerail.mjs validate-adoption && npm run test:replacement && npm run test:boundary && npm run test:scope && npm run test:adoption && npm run test:reliability && npm run test:project-adoption && npm run test:project-profile && npm run test:engineering-governance && npm run test:outcome-gate",
+    "test": "node scripts/forgerail.mjs validate && node scripts/forgerail.mjs validate-fixtures --scope core && node scripts/forgerail.mjs validate-adoption && npm run test:replacement && npm run test:boundary && npm run test:scope && npm run test:adoption && npm run test:reliability && npm run test:project-adoption && npm run test:project-profile && npm run test:engineering-governance && npm run test:outcome-gate && npm run test:telemetry",
     "test:integrity": "node scripts/integrity-regressions.mjs",
     "test:docs": "node scripts/validate-open-source-docs.mjs",
     "test:consumer": "node scripts/disposable-consumer.mjs",
@@ -94,7 +98,8 @@
     "test:project-adoption": "node --test scripts/project-adoption.test.mjs",
     "test:project-profile": "node --test scripts/project-profile.test.mjs scripts/provider-adapters.test.mjs",
     "test:engineering-governance": "node --test scripts/engineering-mode.test.mjs scripts/branch-policy.test.mjs scripts/engineering-governance-cli.test.mjs",
-    "test:outcome-gate": "node --test scripts/outcome-gate.test.mjs"
+    "test:outcome-gate": "node --test scripts/outcome-gate.test.mjs",
+    "test:telemetry": "node --test scripts/telemetry.test.mjs"
   },
   "repository": {
     "type": "git",

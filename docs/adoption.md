@@ -3,11 +3,11 @@
 
 > Publication status is recorded by npm and the versioned GitHub Release. Exact-version commands below apply only after publication is confirmed. The exact shared Core passed bounded Cursor IDE evidence review on 2026-10-30; Cursor version/tier are unknown; model identity is report-provided and no complete original tool transcript was supplied. Release checks and authorization still apply.
 
-> This guide accompanies ForgeRail 0.1.13. Confirm availability through npm and the versioned GitHub Release.
+> This guide accompanies ForgeRail 0.1.14. Confirm availability through npm and the versioned GitHub Release.
 
 ForgeRail separates **installation**, **availability**, **project adoption**, and **execution approval**. Installing the Plugin exposes guidance to the Agent; it does not edit workspace instructions, create durable state, enable Capability Packs, or authorize external effects.
 
-This guide accompanies the `0.1.13` / `v0.1.13` release line. Follow the [npm installation guide](installation.md) and explicitly load the packaged Skills. npm installation does not register a native Plugin; any binding that requires native discovery must have that prerequisite verified separately.
+This guide accompanies the `0.1.14` / `v0.1.14` release line. Follow the [npm installation guide](installation.md) and explicitly load the packaged Skills. npm installation does not register a native Plugin; any binding that requires native discovery must have that prerequisite verified separately.
 
 Start with Plugin Only. Move up only when repeated evidence shows that a small durable project binding is more useful than asking explicitly each time.
 
@@ -34,13 +34,13 @@ The optional planner is read-only:
 
 ```bash
 # Default: resolve only registered hosts detected in this workspace.
-npx --yes @echopath-labs/forgerail@0.1.13 adoption-plan --workspace . --selection all-detected
+npx --yes @echopath-labs/forgerail@0.1.14 adoption-plan --workspace . --selection all-detected
 
 # Explicit subset chosen from the validated Host Adapter Registry.
-npx --yes @echopath-labs/forgerail@0.1.13 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.14 adoption-plan --workspace . --host codex
 
 # Every adapter in the current validated registry.
-npx --yes @echopath-labs/forgerail@0.1.13 adoption-plan --workspace . --selection all-available
+npx --yes @echopath-labs/forgerail@0.1.14 adoption-plan --workspace . --selection all-available
 ```
 
 Read-only diagnosis never follows links inside the selected workspace. It reads only bounded regular `package.json` and registered Host binding files, with a 4 MiB per-file limit; opened paths are revalidated against the canonical workspace before content is consumed. Unsafe, changed, non-regular, or oversized entries are reported as unavailable evidence for human review. A Markdown record practice is reported only when a safely confined well-known directory contains at least one bounded regular `.md` file; enumeration is capped at 4,096 entries, and empty, oversized, linked, or non-regular evidence is not treated as an ADR practice.
@@ -61,13 +61,13 @@ A supported Cursor shared-Core plan includes a snapshot of `AGENTS.md`, both pro
 
 ## Level 2 — Persisted Governance
 
-Persisted machine-consumed ForgeRail state is deferred beyond 0.1.13. It should be considered only when important evidence cannot be represented coherently through existing project sources, such as repeated cross-host conflicts or genuinely machine-enforced policy.
+Persisted machine-consumed ForgeRail state is deferred beyond 0.1.14. It should be considered only when important evidence cannot be represented coherently through existing project sources, such as repeated cross-host conflicts or genuinely machine-enforced policy.
 
 ForgeRail does not create `.forgerail/` at this level today. A future design must define ownership, precedence, migration, recovery, and deletion before enabling it.
 
 ## Host support
 
-This table describes ForgeRail 0.1.13. The historical 0.1.6 package still labels Cursor `profile-only`; its adapter status is not rewritten by the successor release.
+This table describes ForgeRail 0.1.14. The historical 0.1.6 package still labels Cursor `profile-only`; its adapter status is not rewritten by the successor release.
 
 | Host | Native target | Adapter status | Verification boundary |
 | --- | --- | --- | --- |

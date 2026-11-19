@@ -3,11 +3,11 @@
 
 > 发布状态以 npm 和版本化 GitHub Release 为准。下方精确版本命令仅在确认发布后适用。精确共用 Core 已于 2026-10-30 通过有界 Cursor IDE 证据复核；Cursor 版本、档位未知，模型为报告自述，未提供完整原始工具轨迹，发布检查与授权继续适用。
 
-> 本文对应 ForgeRail 0.1.13，可通过 npm 和版本化 GitHub Release 核对发布状态。
+> 本文对应 ForgeRail 0.1.14，可通过 npm 和版本化 GitHub Release 核对发布状态。
 
 ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执行授权**。安装 Plugin 只是让 Agent 能发现引导能力；不会编辑工作区 instructions、创建持久状态、启用 Capability Pack 或批准任何外部影响。
 
-本文对应 `0.1.13` / `v0.1.13`。按 [npm 安装说明](installation.zh-CN.md)安装并显式加载包内 Skill。npm 安装不会注册原生 Plugin；若绑定要求原生发现，必须另外核验该依赖。
+本文对应 `0.1.14` / `v0.1.14`。按 [npm 安装说明](installation.zh-CN.md)安装并显式加载包内 Skill。npm 安装不会注册原生 Plugin；若绑定要求原生发现，必须另外核验该依赖。
 
 默认从 Plugin Only 开始。只有重复证据表明“小范围持久绑定”比每次显式调用更有价值时，才升级采用层级。
 
@@ -34,13 +34,13 @@ ForgeRail 明确区分**安装**、**能力可用**、**项目采用**和**执�
 
 ```bash
 # 默认：只解析当前工作区中检测到的已注册宿主。
-npx --yes @echopath-labs/forgerail@0.1.13 adoption-plan --workspace . --selection all-detected
+npx --yes @echopath-labs/forgerail@0.1.14 adoption-plan --workspace . --selection all-detected
 
 # 从已验证的 Host Adapter Registry 中明确选择一部分。
-npx --yes @echopath-labs/forgerail@0.1.13 adoption-plan --workspace . --host codex
+npx --yes @echopath-labs/forgerail@0.1.14 adoption-plan --workspace . --host codex
 
 # 选择当前已验证 registry 中的全部 adapter。
-npx --yes @echopath-labs/forgerail@0.1.13 adoption-plan --workspace . --selection all-available
+npx --yes @echopath-labs/forgerail@0.1.14 adoption-plan --workspace . --selection all-available
 ```
 
 只读诊断不会跟随所选工作区内部的链接。它只读取有界的常规 `package.json` 和已注册 Host 绑定文件，每个文件最多 4 MiB；内容被消费前还会按 canonical workspace 复核已打开路径。不安全、发生变化、非常规或超限条目会作为“不可用证据”交给人类复核。只有安全受限的约定目录中至少存在一个有界常规 `.md` 文件时，才会报告 Markdown 记录实践；枚举上限为 4,096 项，空目录、超限目录、链接或非常规条目都不算 ADR 实践。
@@ -61,13 +61,13 @@ npx --yes @echopath-labs/forgerail@0.1.13 adoption-plan --workspace . --selectio
 
 ## Level 2 — Persisted Governance
 
-0.1.13 不启用持久任务治理；项目接入仅维护有限安装元数据。只有重要证据无法通过项目现有来源表达，例如反复出现跨宿主冲突或确有机器强制策略需求时，才应考虑这一层。
+0.1.14 不启用持久任务治理；项目接入仅维护有限安装元数据。只有重要证据无法通过项目现有来源表达，例如反复出现跨宿主冲突或确有机器强制策略需求时，才应考虑这一层。
 
-旧版 0.1.4 与上述 v1 绑定流程不会创建 `.forgerail/`。0.1.13 的显式项目接入闭环可维护有限安装元数据，具体 ownership、migration、recovery 和 deletion 见下方说明；它不启用持久治理。
+旧版 0.1.4 与上述 v1 绑定流程不会创建 `.forgerail/`。0.1.14 的显式项目接入闭环可维护有限安装元数据，具体 ownership、migration、recovery 和 deletion 见下方说明；它不启用持久治理。
 
 ## 宿主支持
 
-下表描述 ForgeRail 0.1.13。历史 0.1.6 包中的 Cursor 仍为 `profile-only`；后续版本不会改写其 Adapter 状态。
+下表描述 ForgeRail 0.1.14。历史 0.1.6 包中的 Cursor 仍为 `profile-only`；后续版本不会改写其 Adapter 状态。
 
 | 宿主 | 原生目标 | Adapter 状态 | 验证边界 |
 | --- | --- | --- | --- |
